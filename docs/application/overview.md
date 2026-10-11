@@ -56,23 +56,27 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 
 - **Errors** are RFC 9457 Problem Details (`application/problem+json`), shape defined in the contract. Per-aggregate
   `@RestControllerAdvice` classes run at highest precedence; `GlobalExceptionHandler` (lowest precedence) handles
-  bean-validation failures and is the catch-all for anything else as a 500 without internal details. Validation
-  errors name the field but never echo the rejected value, so personal data does not end up in responses or logs.
+  bean-validation failures and unreadable bodies (malformed JSON, a value outside an enum: `400`), and is the
+  catch-all for anything else as a 500 without internal details. Validation errors name the field but never echo the
+  rejected value, so personal data does not end up in responses or logs. Handlers only map: each response has its own
+  exception, so no handler inspects an exception to choose a status.
 - **GDPR**: every persisted field is marked `@PersonalData` or `@ProcessData` (enforced by `ArchitectureTest`), so
   anonymization can wipe personal data and keep process data.
 - **Time**: a `Clock` bean (`ClockConfig`, Europe/Amsterdam) is injected wherever "now" is needed.
 - **Asynchronous work**: `@Async` (enabled in `AsyncConfig`) runs on Spring Boot's application task executor, which
   uses virtual threads (`spring.threads.virtual.enabled`, which also puts Tomcat on virtual threads). Background work is
   started from `@TransactionalEventListener(AFTER_COMMIT)` listeners, so it only starts once the data it needs is
-  committed; see `generation.md`. Integration tests swap in a synchronous executor.
+  committed; see `generation.md`. Integration tests swap in an executor that runs each task on its own thread and
+  waits for it, so the work has finished when the request returns and no transaction of the request leaks into it.
 - **Scheduled jobs**: enabled in `SchedulingConfig` unless `jobzy.scheduling.enabled=false` (the test profile). Every
   instance runs every job, so jobs must be idempotent. The only job is the generation retention clean-up.
 - **Outbound HTTP**: `spring.http.clients.*` sets a 5 s connect and 15 s read timeout on the JDK HTTP client for every
   `RestClient` built from Spring Boot's builder. The Mistral adapter is the only user so far; give a new integration
   its own settings if these do not fit.
 - **AI**: Mistral through Spring AI, chat model only (embedding, moderation and OCR auto-configuration are switched off
-  with `spring.ai.model.*: none`). Retries are configured explicitly (`spring.ai.retry.*`, 3 attempts); the Spring AI
-  default retries for minutes. Calls to the provider are a recurring cost per generation.
+  with `spring.ai.model.*: none`). Retries are configured explicitly (`spring.ai.retry.*`, 3 attempts, 429 and 5xx
+  only); the Spring AI default retries for minutes. Calls to the provider are a recurring cost per generation. Tests
+  replace Mistral with WireMock (`MistralStub`), never with a mock of our own port.
 - **CORS**: allowed origins come from `jobzy.cors.allowed-origins` (`CORS_ALLOWED_ORIGINS`); empty means no CORS
   mapping at all.
 - **Security**: the contract declares bearer auth, but there is no authentication or authorization yet. Every endpoint

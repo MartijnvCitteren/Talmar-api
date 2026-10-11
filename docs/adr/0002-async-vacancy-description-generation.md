@@ -1,6 +1,6 @@
 # ADR 0002 — Asynchronous AI vacancy description generation
 
-- **Status:** Accepted
+- **Status:** Accepted, revised 2026-10-11 (see "Revision: review of PR #96" at the end)
 - **Date:** 2026-10-09
 
 ## Context
@@ -156,3 +156,42 @@ technology.
   the clean-up directly.
 - Delivered in two PRs: (1) contract, domain, persistence, use cases, async flow and a stub generator so the frontend
   can integrate; (2) the Mistral adapter, prompts and output validation.
+
+## Revision: review of PR #96 (2026-10-11)
+
+The maintainer's review changed the following. The original text above is kept; where it conflicts, this section wins.
+
+1. **Classification: input and draft are process data.** §1 classified the answers and the draft as `@PersonalData`
+   because "free text about a team routinely names people". Rejected by the maintainer: the answers and the draft
+   describe a job and a team, and do not identify a specific person. Every column of the generation is
+   `@ProcessData`.
+2. **No `REQUIRES_NEW` in the completion.** §2 required `Propagation.REQUIRES_NEW` because the integration tests ran
+   `@Async` work on the calling thread, where the already committed transaction is still bound inside an
+   `AFTER_COMMIT` callback. That put transaction plumbing (a `TransactionTemplate` per step) into the use case only
+   for the sake of the test setup. Superseded: the test executor now runs each task on its own virtual thread and waits
+   for it, so the task never sees the request's transaction, exactly as in production. The completion service has no
+   transaction of its own; loading and saving are each the repository's own short transaction, so still no connection
+   is held while waiting on the provider.
+3. **Output validation in the adapter, not in the domain.** §4 applied the content and length rules to the draft in
+   the domain (`GeneratedDraft.isSaveableAsDescription`). Superseded by the maintainer's "fail fast at the edge" rule:
+   data is validated once, where it enters the application. The Mistral adapter now validates the draft
+   (`GeneratedDraftValidator`); the domain no longer re-checks it, nor does it null-check its value objects.
+4. **Retryable vs. non-retryable provider failures.** §4 reported every provider failure as `PROVIDER_ERROR` (500).
+   Following Mistral's error guidance, 429 and 5xx are retried (429 explicitly, via `spring.ai.retry.on-http-codes`),
+   and become `PROVIDER_ERROR` (500) when the retries run out. Every other 4xx (bad request, key, access, unknown
+   model) is not retried and becomes the new `PROVIDER_UNAVAILABLE`, answered with a `503` (new `ServiceUnavailable`
+   response in the contract, an additive change): retrying cannot help until we fix our side, so the user hears at
+   once that AI generation is unavailable.
+5. **One exception per response.** The poll no longer builds a "timed-out view" of a `PENDING` generation for the
+   controller to inspect. The get use case throws a specific exception per kind of failure (rejected → 422, unavailable
+   → 503, failed or timed out → 500), and the exception handler only maps it, with a fixed detail per status; the exact
+   reason is logged, never returned.
+6. **Temperature 1.1** instead of 0.5, for livelier texts. This is above Mistral's recommended 0.0–0.7; the strict JSON
+   schema and the output validation still bound the output.
+7. **Prompt versions are semver** (`vacancy-description/1.0.0`) instead of a `v1` directory. The templates live in
+   `prompt/vacancy-description/` and start with a template comment holding the version and a changelog, which is
+   removed when rendering. Git keeps the old versions; a prompt change bumps the version and adds a changelog line.
+8. **`language` is upper case** in the contract (`NL`, `EN`, `DE`, `FR`), like the country code. An unknown or
+   lower-case value is a `400`.
+9. **Tests**: integration tests go through the API only and replace Mistral with WireMock instead of mocking the
+   generator port; the vacancies they need are seeded with an SQL script.
