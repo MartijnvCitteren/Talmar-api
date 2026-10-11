@@ -89,7 +89,7 @@ paths:
               confirmation:
                 summary: The token from the confirmation link and the chosen password
                 value:
-                  token: q5Yc3S0oS7uXQ3mVb1Z3pE0dJ6kKk2r9xWv8Hn4tLfA
+                  token: "<43-character token from the confirmation link>"
                   password: correct horse battery staple
       responses:
         '200':
