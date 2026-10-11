@@ -5,23 +5,25 @@ confirmation (ADR 0003). Login, tokens, `GET /me`, owner approval and securing t
 
 ## Domain model
 
-Two aggregates in `domain/identity`, linked by id only (a user holds `companyId`, there is no JPA association).
+Two aggregates in `domain/identity`, linked by id only in the domain (a user holds `companyId`). In the database
+`app_user.company_id` is a foreign key to `company`: one company, many users.
 
 `Company`
 
 | Field | Notes |
 |-------|-------|
 | `id` | UUIDv7. |
-| `name` | Given by the first registrant of the domain; trimmed, required. |
+| `name` | Derived from the e-mail domain when the company is founded: the registrable label, capitalised (`acme.nl` and `sales.acme.co.uk` → "Acme"; `co`, `com`, `org`, `net`, `ac`, `gov`, `edu` before the top-level domain are skipped). There is no endpoint to correct it yet. |
 | `emailDomain` | Lower case, unique. The key for "same company". |
+| `lastModifiedBy` | Required. The `app_user` id of whoever last created or changed the company: the founder, since nothing changes a company yet. |
 
 `User`
 
 | Field | Notes |
 |-------|-------|
 | `id` | UUIDv7; will become the `sub` claim. |
-| `firstName`, `lastName` | Trimmed, required (`Registrant`). |
-| `email` | `EmailAddress`: trimmed, lower case, one `@`, a domain with a dot. |
+| `firstName`, `lastName` | As validated by the contract (`Registrant`). |
+| `email` | `EmailAddress`: lower case; its shape is validated by the contract. |
 | `jobRole` | `RECRUITER`, `HIRING_MANAGER`, `HR`, `FOUNDER_OR_DIRECTOR`, `OTHER`. A profile field, not a right. |
 | `companyId` | The company of the e-mail domain. |
 | `membership` | `OWNER` for the first user of a company, `MEMBER` after that. Derived, never chosen. |
@@ -31,14 +33,16 @@ Two aggregates in `domain/identity`, linked by id only (a user holds `companyId`
 
 Rules the `User` aggregate owns:
 
-- `register` decides membership from whether the company already existed and starts in `PENDING_VERIFICATION`.
+- `register` decides membership from whether the company already existed and starts in `PENDING_VERIFICATION`. It
+  takes an id generated up front (`User.newId()`), so a company founded by the same registration can record the
+  founder as `lastModifiedBy` before either is saved.
 - `confirm` only works while `PENDING_VERIFICATION`, with the matching token hash, before `expiresAt`. It sets the
   credentials, clears the token (single use) and moves to `ACTIVE` or `PENDING_APPROVAL`. Otherwise it throws
   `InvalidVerificationTokenException`, one message for unknown, used and expired tokens.
 - `renewVerificationToken` replaces the token of an unconfirmed user; the old link stops working.
 
-`Password` enforces 12 to 128 characters, counted as code points, with no composition rules (NIST SP 800-63B).
-`toString` of `EmailAddress`, `Password`, `Registrant`, `UserCredentials`, `User` and the commands is redacted, so
+Input validation is not in the domain: the value objects (`EmailAddress`, `Password`, `Registrant`) trust the REST
+adapter, which validates every request against the contract first. `toString` of `EmailAddress`, `Password`, `Registrant`, `UserCredentials`, `User` and the commands is redacted, so
 personal data and secrets do not reach the logs.
 
 ## Implemented use cases
@@ -47,15 +51,20 @@ personal data and secrets do not reach the logs.
 
 `RegisterUserService`:
 
-1. Bean validation on the contract model: required fields, lengths, non-blank names, `@Email`. Then
-   `EmailAddress` checks the shape the domain needs. A public mail domain (`PublicEmailDomains` port) is rejected.
-   Both give `400` on `email`.
-2. Address unknown: the domain's company is looked up. If there is none, `Company.found` creates it and the user
-   becomes `OWNER`. Otherwise the user joins as `MEMBER` and `companyName` is ignored. A token is issued, the user
-   is saved and `RegistrationMailer.sendVerificationMail` gets the raw token.
-3. Address known and still unconfirmed: a fresh token replaces the old one and a new verification mail goes out.
-   The name, job role and company name of the repeated request are ignored.
-4. Address known and confirmed: `sendAccountExistsMail`, nothing is saved.
+1. In the REST adapter, bean validation on the generated contract model rejects a request that breaks the contract
+   with `400` on the field, before the use case runs:
+   - `firstName`, `lastName`: 1–35 characters; letters of any script with their combining marks, spaces, hyphens,
+     apostrophes (`'` and `’`) and periods; at least one letter; no leading, trailing or double spaces.
+   - `email`: at most 75 characters, `@Email`, and a pattern for one `@` and a domain with a dot.
+   - `jobRole`: one of the enum values.
+2. In the use case, a public mail domain (`PublicEmailDomains` port) is rejected with `400` on `email`.
+3. Address unknown: the domain's company is looked up. If there is none, `Company.found` creates it with a derived
+   name and the new user's id as `lastModifiedBy`, and the user becomes `OWNER`. Otherwise the user joins as
+   `MEMBER`. A token is issued, the company (if new) and the user are saved and
+   `RegistrationMailer.sendVerificationMail` gets the raw token.
+4. Address known and still unconfirmed: a fresh token replaces the old one and a new verification mail goes out.
+   The name and job role of the repeated request are ignored.
+5. Address known and confirmed: `sendAccountExistsMail`, nothing is saved.
 
 The response is always `202` with an empty body for a valid request, so it never reveals whether an address has an
 account. That the company exists does leak, through `PENDING_APPROVAL` after confirmation; ADR 0003 accepts that.
@@ -65,10 +74,14 @@ Only the SHA-256 hash is stored. A token is valid for `jobzy.identity.unconfirme
 
 ### Confirm — `POST /registration/confirm`
 
-`ConfirmRegistrationService` checks the password policy first and then the token, and only then hashes the password.
-That way the slow Argon2 hash runs only for a request that will succeed. It returns `200` with
-`{"status": "ACTIVE" | "PENDING_APPROVAL"}`. A policy violation gives `400` on `password`. An unknown, used or
-expired token gives `400` on `token`.
+The contract enforces the password policy: 12 to 128 characters, no composition rules (NIST SP 800-63B). A
+violation gives `400` on `password` from bean validation. Note that bean validation counts UTF-16 units, so a
+password of astral-plane characters (emoji) can pass with fewer than 12 code points.
+
+`ConfirmRegistrationService` checks the token before it hashes the password, so the slow Argon2 hash runs only for a
+request that will succeed. It returns `200` with `{"status": "ACTIVE" | "PENDING_APPROVAL"}`. An unknown, used or
+expired token gives `400` on `token`; the contract tells the frontend to offer a new registration, which mails a
+fresh link. It is deliberately not a `401` (ADR 0003, "Revisions").
 
 ### Purge unconfirmed registrations (scheduled)
 
@@ -79,14 +92,15 @@ renews the token, retention runs from the latest verification mail. Tests call t
 
 ## Adapters
 
-- **REST**: `RegistrationController` implements the generated `RegistrationApi`. `IdentityExceptionHandler`
-  (highest precedence) maps the three identity exceptions to `400` problem details naming the field. Requests are
-  not logged.
+- **REST**: `RegistrationController` implements the generated `RegistrationApi`. The request mappers turn the
+  validated strings into `EmailAddress` and `Password`. `IdentityExceptionHandler` (highest precedence) maps the two
+  identity exceptions to `400` problem details naming the field. Requests are not logged.
 - **Mail**: `LoggingRegistrationMailer` writes the confirmation link to the log at INFO, built from
   `jobzy.identity.confirmation-url` plus `?token=…`. It names the user by id, never by e-mail address. An EU mail
   provider replaces it behind the same port; that is where recurring cost starts.
-- **Password hashing**: `Argon2PasswordHasher` uses Spring Security's `Argon2PasswordEncoder` with the OWASP minimum:
-  19 MiB memory, 2 iterations, parallelism 1, 16-byte salt, 32-byte hash. Argon2 needs BouncyCastle
+- **Password hashing**: `Argon2PasswordHasher` uses Spring Security's `Argon2PasswordEncoder` with RFC 9106's second
+  recommended option: 64 MiB memory, 3 iterations, parallelism 4, 16-byte salt, 32-byte hash. About 200 ms and
+  64 MiB per hash on a developer machine, so concurrent confirmations (and later logins) cost server memory. Argon2 needs BouncyCastle
   (`bcprov-jdk18on`), which Spring Boot does not manage; its version is pinned under the security overrides in the root `pom.xml`.
 - **Block list**: `ClasspathPublicEmailDomains` reads `identity/public-email-domains.txt` once at startup. It has
   one domain per line and `#` comments. An entry like `hotmail.*` matches the name under any top-level domain. Extend
@@ -96,12 +110,16 @@ renews the token, retention runs from the latest verification mail. Tests call t
 
 | Table | Entity | Notes |
 |-------|--------|-------|
-| `company` | `CompanyJpaEntity` | `email_domain` unique. All fields `@ProcessData`. |
-| `app_user` | `UserJpaEntity` | `user` is reserved in SQL Server. `email` unique. Indexes on `company_id` and `verification_token_hash`. |
+| `company` | `CompanyJpaEntity` | `email_domain` unique. `last_modified_by` not null. All fields `@ProcessData`. |
+| `app_user` | `UserJpaEntity` | `user` is reserved in SQL Server. `email` unique. `company_id` is a foreign key to `company` (`fk_app_user_company`), mapped as a lazy `@ManyToOne`; the adapter sets it with `getReferenceById`, without a query. Indexes on `company_id` and `verification_token_hash`. |
 | `user_credentials` | `UserCredentialsJpaEntity` | Shares the user's primary key (`@MapsId`), fetched eagerly, saved and deleted by cascade. |
 
-- GDPR: `first_name`, `last_name`, `email` and `password_hash` are `@PersonalData`. `job_role`, `company_id`,
-  `membership`, `status` and the token columns are `@ProcessData`, following the ADR 0003 table.
+- GDPR: `first_name`, `last_name`, `email` and `password_hash` are `@PersonalData`. `job_role`, `membership`,
+  `status`, the token columns and `last_modified_by` are `@ProcessData`, following the ADR 0003 table. `company_id`
+  is an association and the company classifies its own columns.
+- `company.last_modified_by` holds the user id without a foreign key. The purge can delete a founder whose colleague
+  already joined; the company then keeps pointing at a user id that no longer exists. That is deliberate (ADR 0003,
+  "Revisions"): the audit reference is never blocked or rewritten.
 - The token hash has a plain index, not a unique constraint. SQL Server allows only one `NULL` in a unique column,
   and every confirmed user has a `NULL` hash.
 

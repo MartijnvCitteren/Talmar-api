@@ -17,7 +17,7 @@ it gets published to job boards and receives candidates.
 | `hoursPerWeek` | `HoursPerWeek(minHours, maxHours)` | Required. `BigDecimal`, so part-time hours like 32.5 are exact. |
 | `status` | `VacancyStatus` | `DRAFT`, `PUBLISHED`, `FILLED`, `CLOSED`. Defaults to `DRAFT`. |
 | `description` | `VacancyDescription` | Optional, see below. |
-| `createdAt`, `lastModifiedAt`, `modifiedBy` | from `BaseObject` | `createdAt` is required and passed in by the use case. |
+| `createdAt`, `lastModifiedAt`, `lastModifiedBy` | from `BaseObject` | `createdAt` is required and passed in by the use case. |
 
 `VacancyDescription` is a value object with five optional texts (`summary`, `jobDescription`, `tasks`, `whatWeOffer`,
 `aboutUs`) and a `source`: `MANUAL` (typed by the user) or `GENERATED` (reserved for AI generation, not reachable yet).
@@ -60,8 +60,8 @@ returns `null`. The domain has no `ARCHIVED` status, contact person or offer yet
 - `VacancyRepositoryAdapter.save` writes vacancy and description in one cascaded save. When the description is
   removed, it deletes the row explicitly, because `orphanRemoval` does not fire when merging a freshly mapped entity
   graph.
-- All vacancy fields are `@ProcessData`: a vacancy holds no personal data. `modifiedBy` (from `BaseJpaEntity`) is the
-  only `@PersonalData` column, and it is not filled yet.
+- All vacancy fields are `@ProcessData`: a vacancy holds no personal data. `lastModifiedBy` (from `BaseJpaEntity`) is
+  a user id, also process data, and it is not filled yet.
 
 ## Known gaps
 

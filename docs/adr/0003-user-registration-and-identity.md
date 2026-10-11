@@ -1,6 +1,6 @@
 # ADR 0003 — User registration and identity in the backend
 
-- **Status:** Accepted
+- **Status:** Accepted, revised 2026-10-11 after PR review (see "Revisions")
 - **Date:** 2026-10-09
 
 ## Context
@@ -53,8 +53,9 @@ Two aggregates in `domain/identity/`:
 | Field | Classification | Notes |
 |-------|----------------|-------|
 | `id` | – | UUIDv7. |
-| `name` | `@ProcessData` | Given by the first registrant. |
+| `name` | `@ProcessData` | Derived from the e-mail domain (`acme.co.uk` → "Acme"); the users correct it later. |
 | `emailDomain` | `@ProcessData` | Unique, lower-case. The key for "same company". |
+| `lastModifiedBy` | `@ProcessData` | Required: the `app_user` id of whoever last created or changed the company; the founder at first. An id, no foreign key (see "Revisions"). |
 
 `User`
 
@@ -63,10 +64,10 @@ Two aggregates in `domain/identity/`:
 | `id` | – | UUIDv7; becomes the `sub` claim. |
 | `firstName`, `lastName`, `email` | `@PersonalData` | `email` unique, lower-case. |
 | `jobRole` | `@ProcessData` | Enum from the registration dropdown: `RECRUITER`, `HIRING_MANAGER`, `HR`, `FOUNDER_OR_DIRECTOR`, `OTHER`. A profile field, not a right. Classified as process data (maintainer decision): the values are too generic to identify a person on their own. |
-| `companyId` | `@ProcessData` | |
+| `companyId` | – | Foreign key to `company` (`@ManyToOne` in JPA): one company, many users. The domain keeps the id only. |
 | `membership` | `@ProcessData` | `OWNER` or `MEMBER`; derived, never chosen in a form. First user of a company is `OWNER`. |
 | `status` | `@ProcessData` | `PENDING_VERIFICATION` → `ACTIVE` (first user of the company) or `PENDING_APPROVAL` (later users) → `ACTIVE` once the owner approves. |
-| `credentials` | `@PersonalData` | Separate entity: Argon2id password hash, set at confirmation. Separate so an external identity (SSO) can be added without touching the user row. |
+| `credentials` | `@PersonalData` | Separate entity: Argon2id password hash (64 MiB, 3 iterations, parallelism 4), set at confirmation. Separate so an external identity (SSO) can be added without touching the user row. |
 | `verificationToken` | `@ProcessData` | SHA-256 of the token and its expiry; cleared on confirmation. |
 
 Rules the aggregates own:
@@ -78,20 +79,26 @@ Rules the aggregates own:
 
 ### 3. Registration flow
 
-1. `POST /registration` with `firstName`, `lastName`, `email`, `jobRole`, `companyName`.
-   - `email` must be syntactically valid and its domain must not be on the public-domain block list
-     (`identity/public-email-domains.txt` on the classpath; extendable without code) → otherwise `400` on `email`.
-   - Domain unknown → create `Company(name = companyName, emailDomain)`, user becomes `OWNER`.
-   - Domain known → user joins that company as `MEMBER`; `companyName` is ignored.
+1. `POST /registration` with `firstName`, `lastName`, `email`, `jobRole`.
+   - The REST adapter validates the request against the contract before anything else runs: names 1–35 characters
+     of letters, spaces, hyphens, apostrophes and periods; `email` at most 75 characters with a domain that contains
+     a dot → otherwise `400` on that field.
+   - The domain of `email` must not be on the public-domain block list (`identity/public-email-domains.txt` on the
+     classpath; extendable without code) → otherwise `400` on `email`. A business rule, so it lives in the use case.
+   - Domain unknown → create `Company(name derived from the domain, emailDomain, lastModifiedBy = the new user's
+     id)`, user becomes `OWNER`.
+   - Domain known → user joins that company as `MEMBER`.
    - Always `202`, also when the e-mail is already registered: an existing unconfirmed registration gets a fresh token
      and a new verification mail, a confirmed one gets a mail saying the account exists and inviting to log in. The
      response never reveals whether an e-mail address exists (enumeration). That the *company* exists is revealed (status `PENDING_APPROVAL` after confirmation); accepted.
    - A verification mail is sent through the `RegistrationMailer` port with a link to
      `jobzy.identity.confirmation-url` plus the token.
 2. `POST /registration/confirm` with `token` and `password`.
-   - Password 12–128 characters, no composition rules (NIST 800-63B), stored as Argon2id. No breach-list check: it
+   - Password 12–128 characters, no composition rules (NIST 800-63B), checked by the contract; stored as Argon2id
+     with RFC 9106's second recommended parameters (64 MiB, 3 iterations, parallelism 4). No breach-list check: it
      would be an external call per registration and the usual service is outside the EU.
-   - Valid token → `ACTIVE` for an owner, `PENDING_APPROVAL` for a member; token cleared. Invalid or expired → `400`.
+   - Valid token → `ACTIVE` for an owner, `PENDING_APPROVAL` for a member; token cleared. Unknown, used or expired
+     → `400` on `token`, one response for all three.
 3. A `@Scheduled` purge deletes users still `PENDING_VERIFICATION` after `jobzy.identity.unconfirmed-retention`
    (default `PT48H`), with their company if it has no other users. Same pattern as the generation purge in ADR 0002.
 
@@ -113,7 +120,9 @@ than the vacancy API. The existing `bearerAuth` scheme in `VacancyApi.yml` stays
 
 ## Consequences
 
-- New tables: `company`, `app_user` (`user` is reserved in SQL Server), `user_credentials`. `schema-change` label.
+- New tables: `company`, `app_user` (`user` is reserved in SQL Server), `user_credentials`, with a foreign key from
+  `app_user.company_id` to `company`. `BaseJpaEntity.modifiedBy` (a string) becomes `lastModifiedBy` (a user id,
+  `@ProcessData`) for every table. `schema-change` label.
 - A second codegen execution in `jobzy-api/pom.xml` (`<build>` change → `guardrail-change-ok`).
 - `spring-boot-starter-security` enters the dependency tree now (Argon2 comes with it). The starter secures everything
   by default, so this slice ships a `SecurityFilterChain` that explicitly permits all requests and disables CSRF and
@@ -124,3 +133,39 @@ than the vacancy API. The existing `bearerAuth` scheme in `VacancyApi.yml` stays
   `202` as "check your mail" regardless of whether the address was new.
 - Delivered as one PR for registration and confirmation (contract, domain, persistence, use cases, mail port, purge,
   docs); login and securing endpoints are a separate PR series with its own ADR if the design here needs revision.
+
+## Revisions
+
+Changed on 2026-10-11 after the maintainer's review of the first PR. The superseded choices and why they lost:
+
+- **Company name in the registration form → derived from the e-mail domain.** The form asked for `companyName`,
+  used only by the first registrant of a domain and silently ignored for everyone after. That is a field most users
+  fill in for nothing, and the domain is the company key anyway. The name now starts as the registrable label of the
+  domain, capitalised; correcting it is a later feature for the company's users.
+- **Validation in the domain → validation at the adapter.** The first version checked null, blank, length, e-mail
+  shape and the password policy in the value objects (`EmailAddress`, `Password`, `Registrant`). Those are contract
+  rules: they belong in `IdentityApi.yml`, where bean validation rejects a bad request before the application layer
+  runs and the frontend sees the same rules. The domain keeps the business rules (public mail domains, membership,
+  token expiry).
+- **Free-text names (1–100, any non-blank text) → 1–35 characters from a whitelist.** 35 is the length the UK
+  Government Data Standards Catalogue uses for given and family names. There is no international standard for the
+  characters in a name (ICAO 9303 only covers the transliterated passport zone); following the W3C guidance on
+  personal names, any letter of any script is allowed, plus the punctuation real names use (`'t Hooft`, `O’Brien`,
+  `Anne-Marie`, `St. John`). Digits and symbols are rejected. E-mail is limited to 75 characters instead of RFC
+  5321's 254.
+- **Argon2id at the OWASP baseline (19 MiB, 2 iterations, parallelism 1) → RFC 9106's second recommended option
+  (64 MiB, 3 iterations, parallelism 4).** The baseline is the least OWASP accepts; the stronger setting costs about
+  200 ms and 64 MiB per hash, which is affordable at our volume. RFC 9106's first option (2 GiB per hash) is not, on
+  a small container. Hashing endpoints need rate limiting once login exists.
+- **User and company linked by id only → a foreign key.** The database now guards the one-to-many relation between
+  `company` and `app_user` (`@ManyToOne` in JPA). The domain still references the company by id: they stay separate
+  aggregates.
+- **Who changed a company was not recorded → `company.last_modified_by` holds the `app_user` id, required.** It has
+  no foreign key on purpose: the purge deletes unconfirmed users, including a founder whose colleague already joined,
+  and a foreign key would block that delete or force the audit reference to be rewritten. An id without personal
+  data also survives anonymization, like the rest of the audit trail.
+- **`401` for an expired confirmation token was considered and rejected.** The token is not an authentication
+  credential, `401` requires a `WWW-Authenticate` challenge, and once login exists the frontend will treat `401` as
+  "access token expired". The frontend gets `400` with an error on `token` and offers to register again, which mails
+  a fresh link. Unknown, used and expired stay indistinguishable; with the purge, an expired registration becomes an
+  unknown one within an hour anyway.

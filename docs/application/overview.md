@@ -98,5 +98,5 @@ Open issues an agent should know about before building on top of them. Remove an
   when vacancy text generation is built.
 - Javadoc and code comments refer to ADR 0004 and ADR 0005, which are not in `docs/adr/`.
 - `application-local.yml` connects to database `jobzy`, while `docker-compose.yaml` creates `jobzy_db`.
-- `BaseJpaEntity.modifiedBy` is never filled: there is no `AuditorAware` yet (users exist, but nobody is
-  authenticated yet).
+- `BaseJpaEntity.lastModifiedBy` (an `app_user` id) is filled only for companies, by the registration use case.
+  For vacancies it stays empty until login exists: there is no `AuditorAware`, because nobody is authenticated yet.
