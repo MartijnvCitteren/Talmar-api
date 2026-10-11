@@ -188,7 +188,7 @@ The maintainer's review changed the following. The original text above is kept; 
    reason is logged, never returned.
 6. **Temperature 1.1** instead of 0.5, for livelier texts. This is above Mistral's recommended 0.0–0.7; the strict JSON
    schema and the output validation still bound the output.
-7. **Prompt versions are semver** (`vacancy-description/1.0.0`) instead of a `v1` directory. The templates live in
+7. **Prompt versions are semver** (`vacancy-description/V1.0.0`) instead of a `v1` directory. The templates live in
    `prompt/vacancy-description/` and start with a template comment holding the version and a changelog, which is
    removed when rendering. Git keeps the old versions; a prompt change bumps the version and adds a changelog line.
 8. **`language` is upper case** in the contract (`NL`, `EN`, `DE`, `FR`), like the country code. An unknown or

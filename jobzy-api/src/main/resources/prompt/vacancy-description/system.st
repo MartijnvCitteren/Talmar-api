@@ -1,7 +1,7 @@
 {! vacancy-description system prompt
-Version: 1.0.0 (major.minor.patch; equals VacancyDescriptionPrompt.VERSION, bump both together)
+Version: V1.0.0 (major.minor.patch; equals VacancyDescriptionPrompt.VERSION, bump both together)
 Changelog, newest first:
-- 1.0.0 (2026-10-11): initial version.
+- V1.0.0 (2026-10-11): initial version.
 This comment is removed when the template is rendered; the model never sees it. !}
 You write job vacancy texts for a recruitment platform. Your only task is to draft three sections of one vacancy, written in {language}, from the facts in the user message.
 

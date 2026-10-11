@@ -81,13 +81,13 @@ a sealed type that permits `Drafted(draft, model, promptVersion)` and `Rejected(
 generation and never sees Spring AI or contract types.
 
 `MistralVacancyDescriptionGenerator` (`adapter/out/ai/mistral`) is the only implementation, using a Spring AI
-`ChatClient` (`MistralChatClientConfig`) with the Mistral starter:
+`ChatClient` (`MistralChatClientConfig`; Spring Boot only auto-configures its builder) with the Mistral starter:
 
 - **Configuration** (`application.yml`): `mistral-small-latest`, temperature 1.1 (above Mistral's recommended 0–0.7,
   for livelier texts; the schema and the draft validation bound the output), max 1000 output tokens; API key from
   `MISTRAL_API_KEY`. The recorded `model` is the version Mistral reports in the response (a dated snapshot).
 - **Prompts** are classpath templates in `prompt/vacancy-description/` (`system.st`, `user.st`). The version is semver
-  (`VacancyDescriptionPrompt.VERSION`, now `vacancy-description/1.0.0`) and is stored on every generation. Each template
+  (`VacancyDescriptionPrompt.VERSION`, now `vacancy-description/V1.0.0`) and is stored on every generation. Each template
   starts with a template comment (`{! … !}`) holding the version and a changelog; the comment is removed when rendering,
   so the model never sees it. A prompt change bumps the version, adds a changelog line and is a reviewed PR;
   `VacancyDescriptionPromptTest` checks that both headers carry the version in the code.

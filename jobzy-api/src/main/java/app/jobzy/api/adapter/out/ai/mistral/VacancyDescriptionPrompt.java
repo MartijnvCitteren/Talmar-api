@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 @Component
 class VacancyDescriptionPrompt {
 
-  static final String VERSION = "vacancy-description/1.0.0";
+  static final String VERSION = "vacancy-description/V1.0.0";
 
   private static final String DELIMITER_OPEN = "[[[";
   private static final String DELIMITER_CLOSE = "]]]";

@@ -6,7 +6,10 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * The chat client of the Mistral adapter, built from Spring AI's auto-configured builder (model,
- * options and retry come from {@code spring.ai.*}).
+ * options and retry come from {@code spring.ai.*}). A class rather than properties because Spring
+ * Boot only auto-configures the builder, not a client. The client merges the configured model
+ * options into every call; calling the {@code ChatModel} directly with call options would drop
+ * them.
  */
 @Configuration
 class MistralChatClientConfig {

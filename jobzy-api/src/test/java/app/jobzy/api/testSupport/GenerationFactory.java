@@ -11,7 +11,7 @@ public class GenerationFactory {
   public static final UUID VACANCY_ID = UUID.fromString("01a10000-0000-7000-8000-000000000001");
   public static final LocalDateTime REQUESTED_AT = LocalDateTime.of(2026, 1, 1, 9, 0);
   public static final String MODEL = "mistral-small-2506";
-  public static final String PROMPT_VERSION = "vacancy-description/1.0.0";
+  public static final String PROMPT_VERSION = "vacancy-description/V1.0.0";
 
   public static GenerationInput input() {
     return new GenerationInput(
