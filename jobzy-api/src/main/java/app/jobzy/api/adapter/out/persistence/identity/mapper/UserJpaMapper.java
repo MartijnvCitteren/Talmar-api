@@ -21,15 +21,18 @@ import org.mapstruct.ReportingPolicy;
 public interface UserJpaMapper {
 
   /**
-   * Maps the user without its credentials: the credentials row shares the user's primary key and is
-   * wired by {@code UserRepositoryAdapter}.
+   * Maps the user without its company and credentials: both are wired by {@code
+   * UserRepositoryAdapter}, the company as a reference to its row and the credentials sharing the
+   * user's primary key.
    */
   @Mapping(target = "email", source = "email.value")
+  @Mapping(target = "company", ignore = true)
   @Mapping(target = "verificationTokenHash", source = "verificationToken.tokenHash")
   @Mapping(target = "verificationTokenExpiresAt", source = "verificationToken.expiresAt")
   @Mapping(target = "credentials", ignore = true)
   UserJpaEntity toJpaEntity(User user);
 
+  @Mapping(target = "companyId", source = "company.id")
   @Mapping(target = "verificationToken", source = ".")
   User toDomain(UserJpaEntity entity);
 

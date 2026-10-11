@@ -1,7 +1,6 @@
 package app.jobzy.api.adapter.in.rest.identity;
 
 import app.jobzy.api.domain.identity.InvalidEmailAddressException;
-import app.jobzy.api.domain.identity.InvalidPasswordException;
 import app.jobzy.api.domain.identity.InvalidVerificationTokenException;
 import app.jobzy.api.shared.Constants;
 import app.jobzy.api.vacancy.adapter.in.web.contract.ProblemDetails;
@@ -34,12 +33,6 @@ public class IdentityExceptionHandler {
   ResponseEntity<ProblemDetails> handleInvalidEmailAddressException(
       InvalidEmailAddressException ex, HttpServletRequest request) {
     return badRequest("email", ex.getMessage(), request);
-  }
-
-  @ExceptionHandler(InvalidPasswordException.class)
-  ResponseEntity<ProblemDetails> handleInvalidPasswordException(
-      InvalidPasswordException ex, HttpServletRequest request) {
-    return badRequest("password", ex.getMessage(), request);
   }
 
   @ExceptionHandler(InvalidVerificationTokenException.class)

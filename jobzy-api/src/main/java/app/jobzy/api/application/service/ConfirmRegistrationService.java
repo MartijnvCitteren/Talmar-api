@@ -5,7 +5,6 @@ import app.jobzy.api.application.port.in.command.ConfirmRegistrationCommand;
 import app.jobzy.api.application.port.out.PasswordHasher;
 import app.jobzy.api.application.port.out.UserRepository;
 import app.jobzy.api.domain.identity.InvalidVerificationTokenException;
-import app.jobzy.api.domain.identity.valueobject.Password;
 import app.jobzy.api.domain.identity.valueobject.UserCredentials;
 import app.jobzy.api.domain.identity.valueobject.UserStatus;
 import app.jobzy.api.domain.identity.valueobject.VerificationToken;
@@ -18,8 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Confirms a registration with the token from the verification mail and sets the password (ADR
- * 0003). The password policy is checked first and the token before the password is hashed, so the
- * deliberately slow hash only runs for a request that will succeed.
+ * 0003). The REST adapter has already checked the password policy; the token is checked before the
+ * password is hashed, so the deliberately slow hash only runs for a request that will succeed.
  */
 @Service
 @Log4j2
@@ -32,7 +31,6 @@ public class ConfirmRegistrationService implements ConfirmRegistrationUseCase {
   @Override
   @Transactional
   public UserStatus confirm(ConfirmRegistrationCommand command) {
-    var password = new Password(command.password());
     var tokenHash = VerificationToken.hashOf(command.token());
     var now = LocalDateTime.now(clock);
 
@@ -42,7 +40,7 @@ public class ConfirmRegistrationService implements ConfirmRegistrationUseCase {
             .filter(candidate -> candidate.canBeConfirmedWith(tokenHash, now))
             .orElseThrow(InvalidVerificationTokenException::new);
 
-    user.confirm(tokenHash, new UserCredentials(passwordHasher.hash(password)), now);
+    user.confirm(tokenHash, new UserCredentials(passwordHasher.hash(command.password())), now);
     userRepository.save(user);
 
     log.info("Registration is confirmed: {}", user);

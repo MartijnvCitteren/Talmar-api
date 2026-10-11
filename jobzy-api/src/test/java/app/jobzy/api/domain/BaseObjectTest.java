@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -25,7 +26,7 @@ class BaseObjectTest {
 
     assertEquals(CREATED_AT, testObject.getCreatedAt());
     assertEquals(CREATED_AT, testObject.getLastModifiedAt());
-    assertNull(testObject.getModifiedBy());
+    assertNull(testObject.getLastModifiedBy());
   }
 
   @Test
@@ -40,12 +41,13 @@ class BaseObjectTest {
   }
 
   @Test
-  @DisplayName("given object, when setModifiedBy then getModifiedBy returns new value")
-  void givenObjectWhenSetModifiedByThenGetModifiedByReturnsNewValue() {
+  @DisplayName("given object, when setLastModifiedBy then getLastModifiedBy returns new value")
+  void givenObjectWhenSetLastModifiedByThenGetLastModifiedByReturnsNewValue() {
     var testObject = new TestObject();
+    var userId = UUID.randomUUID();
 
-    testObject.setModifiedBy("jane.doe");
+    testObject.setLastModifiedBy(userId);
 
-    assertEquals("jane.doe", testObject.getModifiedBy());
+    assertEquals(userId, testObject.getLastModifiedBy());
   }
 }

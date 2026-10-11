@@ -14,7 +14,8 @@ tags:
     description: >
       Self-service registration with a work e-mail address. The e-mail domain decides the company: the first
       registrant of a domain creates the company and becomes its owner, later registrants join it after the owner
-      approves them.
+      approves them. The company starts with a name derived from the e-mail domain (`acme-logistics.nl` becomes
+      `Acme-logistics`); its users can correct the name later.
 
 paths:
   /registration:
@@ -29,9 +30,9 @@ paths:
         in. Treat `202` as "check your mail".
 
 
-        An e-mail address on a public mail domain (gmail, outlook, proton, ...) is rejected with `400` on `email`.
-        When the e-mail domain already belongs to a company, the user joins that company and `companyName` is
-        ignored.
+        An e-mail address on a public mail domain (gmail, googlemail, outlook, hotmail, live, msn, yahoo, aol,
+        icloud, proton, gmx, ...) is rejected with `400` on `email`. When the e-mail domain already belongs to a
+        company, the user joins that company; otherwise a company is created for the domain.
       security: []
       requestBody:
         required: true
@@ -39,6 +40,21 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RegistrationRequest'
+            examples:
+              recruiter:
+                summary: A recruiter registers with their work e-mail address
+                value:
+                  firstName: Sanne
+                  lastName: van den Berg
+                  email: sanne.vandenberg@acme-logistics.nl
+                  jobRole: RECRUITER
+              hiringManager:
+                summary: A hiring manager with an apostrophe and accents in their name
+                value:
+                  firstName: José
+                  lastName: "'t Hooft"
+                  email: jose.thooft@acme-logistics.nl
+                  jobRole: HIRING_MANAGER
       responses:
         '202':
           description: Registration accepted; a mail is on its way.
@@ -56,7 +72,12 @@ paths:
         Confirms the e-mail address with the token from the verification mail and sets the password. The token is
         single-use and expires. The resulting account status tells the frontend what to show: `ACTIVE` for the owner
         of a new company, `PENDING_APPROVAL` for a user who joined an existing company and waits for its owner.
-        An invalid, used or expired token is rejected with `400` on `token`.
+
+
+        An unknown, already used or expired token is rejected with `400` and an error on `token`; the three cases are
+        deliberately indistinguishable. The frontend shows that the link is invalid or expired and offers to register
+        again with the same address, which mails a fresh link. This is not a `401`: the token is not an
+        authentication credential, and `401` is reserved for missing or expired access tokens once login exists.
       security: []
       requestBody:
         required: true
@@ -64,6 +85,12 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RegistrationConfirmationRequest'
+            examples:
+              confirmation:
+                summary: The token from the confirmation link and the chosen password
+                value:
+                  token: q5Yc3S0oS7uXQ3mVb1Z3pE0dJ6kKk2r9xWv8Hn4tLfA
+                  password: correct horse battery staple
       responses:
         '200':
           description: E-mail address confirmed and password set.
@@ -106,31 +133,40 @@ components:
 
     RegistrationRequest:
       type: object
-      required: [firstName, lastName, email, jobRole, companyName]
+      required: [firstName, lastName, email, jobRole]
       properties:
         firstName:
           type: string
           minLength: 1
-          maxLength: 100
-          pattern: '.*\S.*'
+          maxLength: 35
+          pattern: '^(?=.*\p{L})[\p{L}\p{M}''’.-]+( [\p{L}\p{M}''’.-]+)*$'
+          description: >
+            1 to 35 characters, the length the UK Government Data Standards Catalogue uses for given and family
+            names. Letters of any script (with their accents and other combining marks), spaces, hyphens,
+            apostrophes and periods, with at least one letter: `José`, `Anne-Marie`, `'t Hooft`, `O’Brien`,
+            `St. John`. Digits and symbols such as `_ @ # $ % & * ( ) [ ] { } ! / | \ ~` are rejected. No leading,
+            trailing or double spaces.
         lastName:
           type: string
           minLength: 1
-          maxLength: 100
-          pattern: '.*\S.*'
+          maxLength: 35
+          pattern: '^(?=.*\p{L})[\p{L}\p{M}''’.-]+( [\p{L}\p{M}''’.-]+)*$'
+          description: >
+            1 to 35 characters, the length the UK Government Data Standards Catalogue uses for given and family
+            names. Letters of any script (with their accents and other combining marks), spaces, hyphens,
+            apostrophes and periods, with at least one letter: `José`, `Anne-Marie`, `'t Hooft`, `O’Brien`,
+            `St. John`. Digits and symbols such as `_ @ # $ % & * ( ) [ ] { } ! / | \ ~` are rejected. No leading,
+            trailing or double spaces.
         email:
           type: string
           format: email
-          maxLength: 254
-          description: Work e-mail address. Its domain decides the company; public mail domains are rejected.
+          maxLength: 75
+          pattern: '^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$'
+          description: >
+            Work e-mail address, at most 75 characters, with a domain that contains a dot. Its domain decides the
+            company; public mail domains are rejected. Compared case-insensitively.
         jobRole:
           $ref: '#/components/schemas/JobRole'
-        companyName:
-          type: string
-          minLength: 1
-          maxLength: 200
-          pattern: '.*\S.*'
-          description: Used only when the e-mail domain does not belong to a company yet.
 
     RegistrationConfirmationRequest:
       type: object

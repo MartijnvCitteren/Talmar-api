@@ -1,7 +1,7 @@
 package app.jobzy.api.adapter.out.persistence.identity;
 
-import static app.jobzy.api.testSupport.IdentityFactory.COMPANY_NAME;
 import static app.jobzy.api.testSupport.IdentityFactory.EMAIL_DOMAIN;
+import static app.jobzy.api.testSupport.IdentityFactory.FOUNDER_ID;
 import static app.jobzy.api.testSupport.IdentityFactory.NOW;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -38,8 +38,9 @@ class CompanyRepositoryAdapterTest {
     var reloaded = adapter.findByEmailDomain(EMAIL_DOMAIN).orElseThrow();
 
     assertEquals(company.getId(), reloaded.getId());
-    assertEquals(COMPANY_NAME, reloaded.getName());
-    assertEquals(EMAIL_DOMAIN, reloaded.getEmailDomain());
+    assertEquals(company.getName(), reloaded.getName());
+    assertEquals(company.getEmailDomain(), reloaded.getEmailDomain());
+    assertEquals(company.getLastModifiedBy(), reloaded.getLastModifiedBy());
   }
 
   @Test
@@ -68,7 +69,7 @@ class CompanyRepositoryAdapterTest {
   void givenCompanyForDomainWhenSecondCompanyForSameDomainIsSavedThenRejected() {
     adapter.save(IdentityFactory.company());
     flushAndClear();
-    adapter.save(Company.found("Other", EMAIL_DOMAIN, NOW));
+    adapter.save(Company.found(EMAIL_DOMAIN, FOUNDER_ID, NOW));
 
     assertThrows(DataIntegrityViolationException.class, () -> companyJpaRepository.flush());
   }

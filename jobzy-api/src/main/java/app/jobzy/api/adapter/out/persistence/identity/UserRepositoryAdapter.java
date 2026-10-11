@@ -15,17 +15,20 @@ import org.springframework.stereotype.Component;
 /**
  * Persistence adapter for {@code UserRepository}. Saves a user and, once confirmed, its credentials
  * in one cascaded save through the {@code @OneToOne} relation, like {@code
- * VacancyRepositoryAdapter} does for the vacancy description.
+ * VacancyRepositoryAdapter} does for the vacancy description. The company is set as a reference (no
+ * query), so the foreign key is written without loading the company.
  */
 @Component
 @RequiredArgsConstructor
 public class UserRepositoryAdapter implements UserRepository {
   private final UserJpaMapper jpaMapper;
   private final UserJpaRepository jpaRepository;
+  private final CompanyJpaRepository companyJpaRepository;
 
   @Override
   public void save(User user) {
     var entity = jpaMapper.toJpaEntity(user);
+    entity.setCompany(companyJpaRepository.getReferenceById(user.getCompanyId()));
     if (user.getCredentials() != null) {
       var credentialsEntity = new UserCredentialsJpaEntity();
       // Set the @MapsId-derived id explicitly: without it, Hibernate's merge cascade cannot tell an

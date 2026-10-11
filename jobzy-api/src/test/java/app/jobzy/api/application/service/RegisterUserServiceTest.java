@@ -1,6 +1,5 @@
 package app.jobzy.api.application.service;
 
-import static app.jobzy.api.testSupport.IdentityFactory.COMPANY_NAME;
 import static app.jobzy.api.testSupport.IdentityFactory.EMAIL;
 import static app.jobzy.api.testSupport.IdentityFactory.EMAIL_DOMAIN;
 import static app.jobzy.api.testSupport.IdentityFactory.FIRST_NAME;
@@ -76,25 +75,30 @@ class RegisterUserServiceTest {
 
   @Test
   @DisplayName(
-      "given an unknown e-mail domain, when register then a company is founded and the user"
-          + " becomes its owner and gets a verification mail")
+      "given an unknown e-mail domain, when register then a company named after the domain is"
+          + " founded by the user, who becomes its owner and gets a verification mail")
   void givenUnknownEmailDomainWhenRegisterThenCompanyIsFoundedAndUserBecomesOwner() {
     when(companyRepository.findByEmailDomain(EMAIL_DOMAIN)).thenReturn(Optional.empty());
     when(verificationTokenIssuer.issue()).thenReturn(ISSUED_TOKEN);
+    var command = command(EMAIL);
 
-    service.register(command(EMAIL));
+    service.register(command);
 
     var company = ArgumentCaptor.forClass(Company.class);
     verify(companyRepository).save(company.capture());
-    assertEquals(COMPANY_NAME, company.getValue().getName());
+    var user = savedUser();
+    assertEquals("Acme", company.getValue().getName());
     assertEquals(EMAIL_DOMAIN, company.getValue().getEmailDomain());
+    assertEquals(user.getId(), company.getValue().getLastModifiedBy());
     assertEquals(NOW, company.getValue().getCreatedAt());
 
-    var user = savedUser();
     assertEquals(company.getValue().getId(), user.getCompanyId());
     assertEquals(Membership.OWNER, user.getMembership());
     assertEquals(UserStatus.PENDING_VERIFICATION, user.getStatus());
-    assertEquals(new EmailAddress(EMAIL), user.getEmail());
+    assertEquals(command.email(), user.getEmail());
+    assertEquals(command.firstName(), user.getFirstName());
+    assertEquals(command.lastName(), user.getLastName());
+    assertEquals(command.jobRole(), user.getJobRole());
     assertEquals(ISSUED_TOKEN.token(), user.getVerificationToken());
     verify(registrationMailer).sendVerificationMail(user, NEW_RAW_TOKEN);
   }
@@ -102,7 +106,7 @@ class RegisterUserServiceTest {
   @Test
   @DisplayName(
       "given a known e-mail domain, when register then the user joins that company as a member"
-          + " and the company name is ignored")
+          + " and the company is not changed")
   void givenKnownEmailDomainWhenRegisterThenUserJoinsCompanyAsMember() {
     var existingCompany = IdentityFactory.company();
     when(companyRepository.findByEmailDomain(EMAIL_DOMAIN))
@@ -125,16 +129,6 @@ class RegisterUserServiceTest {
   void givenAddressOnPublicMailDomainWhenRegisterThenRejectedAndNothingSavedOrSent() {
     when(publicEmailDomains.isPublic("gmail.com")).thenReturn(true);
     var command = command("jane@gmail.com");
-
-    assertThrows(InvalidEmailAddressException.class, () -> service.register(command));
-
-    verifyNoInteractions(userRepository, companyRepository, registrationMailer);
-  }
-
-  @Test
-  @DisplayName("given a malformed address, when register then it is rejected")
-  void givenMalformedAddressWhenRegisterThenItIsRejected() {
-    var command = command("not-an-address");
 
     assertThrows(InvalidEmailAddressException.class, () -> service.register(command));
 
@@ -184,9 +178,8 @@ class RegisterUserServiceTest {
     return RegisterUserCommand.builder()
         .firstName(FIRST_NAME)
         .lastName(LAST_NAME)
-        .email(email)
+        .email(new EmailAddress(email))
         .jobRole(JOB_ROLE)
-        .companyName(COMPANY_NAME)
         .build();
   }
 }

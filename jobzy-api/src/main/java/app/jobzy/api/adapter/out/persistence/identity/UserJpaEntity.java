@@ -12,8 +12,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
@@ -23,8 +26,9 @@ import lombok.Setter;
 
 /**
  * JPA entity for users, in table {@code app_user} because {@code user} is a reserved word in SQL
- * Server. The company is referenced by id only, not as an association: company and user are
- * separate aggregates.
+ * Server. A company has many users: {@code company_id} is a foreign key to {@code company}, mapped
+ * as a lazy {@code @ManyToOne} so the database guards the relation. The domain still references the
+ * company by id only, because company and user are separate aggregates.
  *
  * <p>The verification token hash gets a plain index, not a unique constraint: SQL Server allows
  * only one {@code NULL} in a unique column, and every confirmed user has none.
@@ -58,9 +62,12 @@ public class UserJpaEntity extends BaseJpaEntity {
   @Enumerated(EnumType.STRING)
   private JobRole jobRole;
 
-  @ProcessData
-  @Column(name = "company_id", nullable = false)
-  private UUID companyId;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(
+      name = "company_id",
+      nullable = false,
+      foreignKey = @ForeignKey(name = "fk_app_user_company"))
+  private CompanyJpaEntity company;
 
   @ProcessData
   @Column(nullable = false)

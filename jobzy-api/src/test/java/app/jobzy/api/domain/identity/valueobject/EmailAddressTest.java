@@ -2,53 +2,26 @@ package app.jobzy.api.domain.identity.valueobject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import app.jobzy.api.domain.identity.InvalidEmailAddressException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 class EmailAddressTest {
 
   @Test
-  @DisplayName(
-      "given an address with upper case and surrounding spaces, when created then it is trimmed"
-          + " and lower case")
-  void givenAddressWithUpperCaseAndSpacesWhenCreatedThenItIsTrimmedAndLowerCase() {
-    var email = new EmailAddress("  Jane.Doe@ACME.nl ");
+  @DisplayName("given an address with upper case, when created then it is lower case")
+  void givenAddressWithUpperCaseWhenCreatedThenItIsLowerCase() {
+    var email = new EmailAddress("Jane.Doe@ACME.nl");
 
     assertEquals("jane.doe@acme.nl", email.value());
   }
 
   @Test
-  @DisplayName("given a valid address, when domain then returns the part after the at sign")
-  void givenValidAddressWhenDomainThenReturnsThePartAfterTheAtSign() {
+  @DisplayName("given an address, when domain then returns the part after the at sign")
+  void givenAddressWhenDomainThenReturnsThePartAfterTheAtSign() {
     var email = new EmailAddress("jane@sales.acme.co.uk");
 
     assertEquals("sales.acme.co.uk", email.domain());
-  }
-
-  @ParameterizedTest
-  @NullSource
-  @ValueSource(
-      strings = {
-        "",
-        "jane.doe",
-        "@acme.nl",
-        "jane@",
-        "jane@acme",
-        "jane@@acme.nl",
-        "jane@doe@acme.nl",
-        "jane doe@acme.nl",
-        "jane@.acme.nl",
-        "jane@acme.nl."
-      })
-  @DisplayName("given a malformed address, when created then it is rejected")
-  void givenMalformedAddressWhenCreatedThenItIsRejected(String malformed) {
-    assertThrows(InvalidEmailAddressException.class, () -> new EmailAddress(malformed));
   }
 
   @Test

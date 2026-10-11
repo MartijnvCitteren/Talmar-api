@@ -15,8 +15,8 @@ import static org.mockito.Mockito.when;
 import app.jobzy.api.application.port.in.command.ConfirmRegistrationCommand;
 import app.jobzy.api.application.port.out.PasswordHasher;
 import app.jobzy.api.application.port.out.UserRepository;
-import app.jobzy.api.domain.identity.InvalidPasswordException;
 import app.jobzy.api.domain.identity.InvalidVerificationTokenException;
+import app.jobzy.api.domain.identity.valueobject.Password;
 import app.jobzy.api.domain.identity.valueobject.UserCredentials;
 import app.jobzy.api.domain.identity.valueobject.UserStatus;
 import app.jobzy.api.testSupport.IdentityFactory;
@@ -38,7 +38,7 @@ class ConfirmRegistrationServiceTest {
       Clock.fixed(Instant.parse("2026-10-09T13:00:00Z"), ZoneOffset.UTC);
   private static final Clock CLOCK_AFTER_EXPIRY =
       Clock.fixed(Instant.parse("2026-10-11T12:00:00Z"), ZoneOffset.UTC);
-  private static final String PASSWORD = "correct horse battery staple";
+  private static final Password PASSWORD = new Password("correct horse battery staple");
 
   @Mock private UserRepository userRepository;
   @Mock private PasswordHasher passwordHasher;
@@ -57,7 +57,7 @@ class ConfirmRegistrationServiceTest {
   void givenPendingOwnerAndValidTokenWhenConfirmThenActiveWithHashedPasswordSaved() {
     var user = IdentityFactory.pendingOwner(UUID.randomUUID());
     when(userRepository.findByVerificationTokenHash(TOKEN_HASH)).thenReturn(Optional.of(user));
-    when(passwordHasher.hash(any())).thenReturn(PASSWORD_HASH);
+    when(passwordHasher.hash(PASSWORD)).thenReturn(PASSWORD_HASH);
 
     var status = service.confirm(new ConfirmRegistrationCommand(RAW_TOKEN, PASSWORD));
 
@@ -72,7 +72,7 @@ class ConfirmRegistrationServiceTest {
   void givenPendingMemberAndValidTokenWhenConfirmThenPendingApproval() {
     var user = IdentityFactory.pendingMember(UUID.randomUUID());
     when(userRepository.findByVerificationTokenHash(TOKEN_HASH)).thenReturn(Optional.of(user));
-    when(passwordHasher.hash(any())).thenReturn(PASSWORD_HASH);
+    when(passwordHasher.hash(PASSWORD)).thenReturn(PASSWORD_HASH);
 
     var status = service.confirm(new ConfirmRegistrationCommand(RAW_TOKEN, PASSWORD));
 
@@ -105,15 +105,5 @@ class ConfirmRegistrationServiceTest {
 
     assertEquals(UserStatus.PENDING_VERIFICATION, user.getStatus());
     verify(userRepository, never()).save(any());
-  }
-
-  @Test
-  @DisplayName("given a too short password, when confirm then rejected before the token lookup")
-  void givenTooShortPasswordWhenConfirmThenRejectedBeforeTokenLookup() {
-    var command = new ConfirmRegistrationCommand(RAW_TOKEN, "short");
-
-    assertThrows(InvalidPasswordException.class, () -> service.confirm(command));
-
-    verifyNoInteractions(userRepository, passwordHasher);
   }
 }

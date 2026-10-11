@@ -22,8 +22,8 @@ public class IdentityFactory {
   public static final String FIRST_NAME = "Jane";
   public static final String LAST_NAME = "Doe";
   public static final JobRole JOB_ROLE = JobRole.RECRUITER;
-  public static final String COMPANY_NAME = "Acme";
-  public static final String PASSWORD_HASH = "$argon2id$v=19$m=19456,t=2,p=1$c2FsdA$aGFzaA";
+  public static final UUID FOUNDER_ID = UUID.fromString("0199c9a0-0000-7000-8000-000000000001");
+  public static final String PASSWORD_HASH = "$argon2id$v=19$m=65536,t=3,p=4$c2FsdA$aGFzaA";
 
   public static VerificationToken validToken() {
     return new VerificationToken(TOKEN_HASH, TOKEN_EXPIRES_AT);
@@ -34,15 +34,15 @@ public class IdentityFactory {
   }
 
   public static Company company() {
-    return Company.found(COMPANY_NAME, EMAIL_DOMAIN, NOW);
+    return Company.found(EMAIL_DOMAIN, FOUNDER_ID, NOW);
   }
 
   public static User pendingOwner(UUID companyId) {
-    return User.register(registrant(), companyId, false, validToken(), NOW);
+    return User.register(User.newId(), registrant(), companyId, false, validToken(), NOW);
   }
 
   public static User pendingMember(UUID companyId) {
-    return User.register(registrant(), companyId, true, validToken(), NOW);
+    return User.register(User.newId(), registrant(), companyId, true, validToken(), NOW);
   }
 
   public static User activeOwner(UUID companyId) {

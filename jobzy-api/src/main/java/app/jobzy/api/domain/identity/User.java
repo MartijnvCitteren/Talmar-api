@@ -53,6 +53,8 @@ public class User extends BaseObject {
   /**
    * Registers a new user who still has to confirm their e-mail address.
    *
+   * @param id the user's id, generated up front with {@link #newId()} so that a company founded by
+   *     this registration can record it before the user is saved
    * @param registrant the profile from the registration form
    * @param companyId the company the e-mail domain belongs to
    * @param companyAlreadyExisted whether that company existed before this registration; decides
@@ -61,12 +63,14 @@ public class User extends BaseObject {
    * @param registeredAt when the registration happened
    */
   public static User register(
+      UUID id,
       Registrant registrant,
       UUID companyId,
       boolean companyAlreadyExisted,
       VerificationToken verificationToken,
       LocalDateTime registeredAt) {
     return builder()
+        .id(id)
         .firstName(registrant.firstName())
         .lastName(registrant.lastName())
         .email(registrant.email())
@@ -78,6 +82,11 @@ public class User extends BaseObject {
             Objects.requireNonNull(verificationToken, "verificationToken is required"))
         .createdAt(registeredAt)
         .build();
+  }
+
+  /** A new user id: a UUIDv7, like every id in the domain. */
+  public static UUID newId() {
+    return UuidV7Generator.getUUID();
   }
 
   /** Whether the user still has to confirm their e-mail address. */
@@ -280,7 +289,7 @@ public class User extends BaseObject {
       Objects.requireNonNull(membership, "membership is required");
       Objects.requireNonNull(status, "status is required");
       Objects.requireNonNull(createdAt, "createdAt is required");
-      return new User(this, explicitId != null ? explicitId : UuidV7Generator.getUUID());
+      return new User(this, explicitId != null ? explicitId : newId());
     }
   }
 }

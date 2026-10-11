@@ -14,6 +14,7 @@ import app.jobzy.api.domain.identity.valueobject.Registrant;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
@@ -26,8 +27,11 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>Whether the address is already registered never shows in the outcome, only in which mail is
  * sent: an unconfirmed registration gets a fresh verification link, a confirmed account a mail that
- * the account exists. The details of a repeated registration (name, job role, company name) are
- * ignored; the first registration stands.
+ * the account exists. The details of a repeated registration (name, job role) are ignored; the
+ * first registration stands.
+ *
+ * <p>The request is already validated against the contract by the REST adapter; this service only
+ * applies the business rules.
  */
 @Service
 @Log4j2
@@ -43,39 +47,51 @@ public class RegisterUserService implements RegisterUserUseCase {
   @Override
   @Transactional
   public void register(RegisterUserCommand command) {
-    var email = new EmailAddress(command.email());
+    rejectPublicEmailDomain(command.email());
+    var now = LocalDateTime.now(clock);
+
+    userRepository
+        .findByEmail(command.email())
+        .ifPresentOrElse(
+            existingUser -> registerAgain(existingUser, now), () -> registerNewUser(command, now));
+  }
+
+  /**
+   * A work e-mail address is a business rule, not a contract rule: the domain decides the company,
+   * and a public mail domain belongs to no company.
+   */
+  private void rejectPublicEmailDomain(EmailAddress email) {
     if (publicEmailDomains.isPublic(email.domain())) {
       throw new InvalidEmailAddressException(
           "Use your work e-mail address; public mail domains are not accepted");
     }
-    var now = LocalDateTime.now(clock);
-
-    userRepository
-        .findByEmail(email)
-        .ifPresentOrElse(
-            existingUser -> registerAgain(existingUser, now),
-            () -> registerNewUser(command, email, now));
   }
 
-  private void registerNewUser(RegisterUserCommand command, EmailAddress email, LocalDateTime now) {
-    Optional<Company> existingCompany = companyRepository.findByEmailDomain(email.domain());
-    Company company =
-        existingCompany.orElseGet(() -> foundCompany(command.companyName(), email.domain(), now));
+  private void registerNewUser(RegisterUserCommand command, LocalDateTime now) {
+    var emailDomain = command.email().domain();
+    var userId = User.newId();
+    Optional<Company> existingCompany = companyRepository.findByEmailDomain(emailDomain);
+    Company company = existingCompany.orElseGet(() -> foundCompany(emailDomain, userId, now));
 
     var registrant =
-        new Registrant(command.firstName(), command.lastName(), email, command.jobRole());
+        new Registrant(command.firstName(), command.lastName(), command.email(), command.jobRole());
     var issuedToken = verificationTokenIssuer.issue();
     var user =
         User.register(
-            registrant, company.getId(), existingCompany.isPresent(), issuedToken.token(), now);
+            userId,
+            registrant,
+            company.getId(),
+            existingCompany.isPresent(),
+            issuedToken.token(),
+            now);
     userRepository.save(user);
 
     log.info("User is registered: {}", user);
     registrationMailer.sendVerificationMail(user, issuedToken.rawToken());
   }
 
-  private Company foundCompany(String companyName, String emailDomain, LocalDateTime now) {
-    var company = Company.found(companyName, emailDomain, now);
+  private Company foundCompany(String emailDomain, UUID founderId, LocalDateTime now) {
+    var company = Company.found(emailDomain, founderId, now);
     companyRepository.save(company);
     log.info("Company is founded: {}", company);
     return company;

@@ -39,6 +39,18 @@ class UserTest {
   }
 
   @Test
+  @DisplayName("given an id generated up front, when a user registers then the user has that id")
+  void givenIdGeneratedUpFrontWhenUserRegistersThenTheUserHasThatId() {
+    var id = User.newId();
+
+    var user =
+        User.register(
+            id, IdentityFactory.registrant(), COMPANY_ID, false, IdentityFactory.validToken(), NOW);
+
+    assertEquals(id, user.getId());
+  }
+
+  @Test
   @DisplayName(
       "given an existing company, when a user registers then they become a member, pending"
           + " verification")

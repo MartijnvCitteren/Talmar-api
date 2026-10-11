@@ -15,12 +15,12 @@ class Argon2PasswordHasherTest {
 
   @Test
   @DisplayName(
-      "given a password, when hashed then the result is an Argon2id hash with the OWASP"
+      "given a password, when hashed then the result is an Argon2id hash with the RFC 9106"
           + " parameters that verifies the password")
-  void givenPasswordWhenHashedThenResultIsVerifiableArgon2idHashWithOwaspParameters() {
+  void givenPasswordWhenHashedThenResultIsVerifiableArgon2idHashWithRfc9106Parameters() {
     var hash = hasher.hash(PASSWORD);
 
-    assertTrue(hash.startsWith("$argon2id$v=19$m=19456,t=2,p=1$"));
+    assertTrue(hash.startsWith("$argon2id$v=19$m=65536,t=3,p=4$"));
     assertTrue(
         Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8().matches(PASSWORD.value(), hash));
   }

@@ -28,6 +28,7 @@ import app.jobzy.api.integration.BaseIntegrationTest;
 import app.jobzy.api.vacancy.adapter.in.web.contract.ProblemDetails;
 import io.restassured.http.ContentType;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -79,7 +80,8 @@ class RegistrationIntegrationTest extends BaseIntegrationTest {
     var company = companyJpaRepository.findByEmailDomain("acme.nl").orElseThrow();
     assertEquals("Acme", company.getName());
     var user = userJpaRepository.findByEmail("jane.doe@acme.nl").orElseThrow();
-    assertEquals(company.getId(), user.getCompanyId());
+    assertEquals(company.getId(), user.getCompany().getId());
+    assertEquals(user.getId(), company.getLastModifiedBy());
     assertEquals(Membership.OWNER, user.getMembership());
     assertEquals(UserStatus.PENDING_VERIFICATION, user.getStatus());
     assertNotEquals(capturedRawToken(), user.getVerificationTokenHash());
@@ -140,18 +142,98 @@ class RegistrationIntegrationTest extends BaseIntegrationTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"not-an-address", "jane@acme"})
-  @DisplayName("given a malformed address, when registering then 400 on email")
+  @ValueSource(
+      strings = {
+        "not-an-address",
+        "jane@acme",
+        "@acme.nl",
+        "jane@@acme.nl",
+        "jane@doe@acme.nl",
+        "jane doe@acme.nl",
+        " jane@acme.nl",
+        "jane@.acme.nl",
+        "jane@acme.nl.",
+        "jane@acme..nl"
+      })
+  @DisplayName(
+      "given a malformed address, when registering then 400 on email before anything is stored")
   void givenMalformedAddressWhenRegisteringThen400OnEmail(String email) {
     assertProblemOnField(postRegistration(registration(email), HttpStatus.BAD_REQUEST), "email");
+    assertEquals(0, companyJpaRepository.count());
   }
 
   @Test
-  @DisplayName("given a blank first name, when registering then 400 on firstName")
-  void givenBlankFirstNameWhenRegisteringThen400OnFirstName() {
-    var body = registration("jane.doe@acme.nl").replace("\"Jane\"", "\"   \"");
+  @DisplayName("given an address of 76 characters, when registering then 400 on email")
+  void givenAddressOf76CharactersWhenRegisteringThen400OnEmail() {
+    var email = "j".repeat(76 - "@acme.nl".length()) + "@acme.nl";
 
-    assertProblemOnField(postRegistration(body, HttpStatus.BAD_REQUEST), "firstName");
+    assertProblemOnField(postRegistration(registration(email), HttpStatus.BAD_REQUEST), "email");
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "José",
+        "Anne-Marie",
+        "'t Hooft",
+        "O’Brien",
+        "St. John",
+        "Zoë",
+        "Łukasz",
+        "Nguyễn",
+        "李",
+        "محمد"
+      })
+  @DisplayName(
+      "given a name with letters of any script and name punctuation, when registering then 202")
+  void givenNameWithLettersOfAnyScriptAndNamePunctuationWhenRegisteringThen202(String name) {
+    postRegistration(registration(name, name, "jane.doe@acme.nl"), HttpStatus.ACCEPTED);
+
+    var user = userJpaRepository.findByEmail("jane.doe@acme.nl").orElseThrow();
+    assertEquals(name, user.getFirstName());
+    assertEquals(name, user.getLastName());
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "   ",
+        "-",
+        "'",
+        " Jane",
+        "Jane ",
+        "Jane  Doe",
+        "Jane1",
+        "Jane_Doe",
+        "J@ne",
+        "Jane#",
+        "Jane$",
+        "Jane%",
+        "Jane&",
+        "Jane*",
+        "Jane(",
+        "Jane[",
+        "Jane{",
+        "Jane!",
+        "Jane/",
+        "Jane|",
+        "Jane\\",
+        "Jane§",
+        "Jane±",
+        "Jane~",
+        "Jane^",
+        "abcdefghijklmnopqrstuvwxyzabcdefghij"
+      })
+  @DisplayName(
+      "given a name with symbols, digits, stray spaces or more than 35 characters, when"
+          + " registering then 400 on that name")
+  void givenInvalidNameWhenRegisteringThen400OnThatName(String name) {
+    assertProblemOnField(
+        postRegistration(registration(name, "Doe", "jane.doe@acme.nl"), HttpStatus.BAD_REQUEST),
+        "firstName");
+    assertProblemOnField(
+        postRegistration(registration("Jane", name, "jane.doe@acme.nl"), HttpStatus.BAD_REQUEST),
+        "lastName");
   }
 
   @Test
@@ -291,15 +373,15 @@ class RegistrationIntegrationTest extends BaseIntegrationTest {
   }
 
   private static String registration(String email) {
-    return """
-        {
-          "firstName": "Jane",
-          "lastName": "Doe",
-          "email": "%s",
-          "jobRole": "RECRUITER",
-          "companyName": "Acme"
-        }
-        """
-        .formatted(email);
+    return registration("Jane", "Doe", email);
+  }
+
+  private static String registration(String firstName, String lastName, String email) {
+    var body = new LinkedHashMap<String, String>();
+    body.put("firstName", firstName);
+    body.put("lastName", lastName);
+    body.put("email", email);
+    body.put("jobRole", "RECRUITER");
+    return JSON_MAPPER.writeValueAsString(body);
   }
 }
