@@ -17,6 +17,8 @@ public interface VacancyDescriptionGenerationJpaRepository
    * associations or lifecycle callbacks that a bulk delete would skip.
    */
   @Modifying
-  @Query("delete from VacancyDescriptionGenerationJpaEntity g where g.requestedAt < :cutoff")
+  @Query(
+      "delete from VacancyDescriptionGenerationJpaEntity generation"
+          + " where generation.requestedAt < :cutoff")
   int deleteByRequestedAtBefore(@Param("cutoff") LocalDateTime cutoff);
 }

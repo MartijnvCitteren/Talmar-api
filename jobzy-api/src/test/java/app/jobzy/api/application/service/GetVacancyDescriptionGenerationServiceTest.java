@@ -1,24 +1,30 @@
 package app.jobzy.api.application.service;
 
 import static app.jobzy.api.testSupport.GenerationFactory.REQUESTED_AT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.Mockito.when;
 
 import app.jobzy.api.application.port.out.VacancyDescriptionGenerationRepository;
+import app.jobzy.api.domain.generation.VacancyDescriptionGenerationFailedException;
 import app.jobzy.api.domain.generation.VacancyDescriptionGenerationNotFoundException;
+import app.jobzy.api.domain.generation.VacancyDescriptionGenerationRejectedException;
+import app.jobzy.api.domain.generation.VacancyDescriptionGenerationUnavailableException;
 import app.jobzy.api.domain.generation.valueobject.GenerationFailureReason;
-import app.jobzy.api.domain.generation.valueobject.GenerationStatus;
 import app.jobzy.api.testSupport.GenerationFactory;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -33,8 +39,8 @@ class GetVacancyDescriptionGenerationServiceTest {
   }
 
   @Test
-  @DisplayName("given a generation of this vacancy, when get then it is returned")
-  void givenGenerationOfThisVacancyWhenGetThenReturned() {
+  @DisplayName("given a completed generation of this vacancy, when get then it is returned")
+  void givenCompletedGenerationOfThisVacancyWhenGetThenReturned() {
     var generation = GenerationFactory.completed();
     when(generationRepository.findById(generation.getId())).thenReturn(Optional.of(generation));
 
@@ -45,17 +51,64 @@ class GetVacancyDescriptionGenerationServiceTest {
   }
 
   @Test
-  @DisplayName(
-      "given a pending generation past its deadline, when get then it is reported as a timeout")
-  void givenPendingGenerationPastDeadlineWhenGetThenReportedAsTimeout() {
+  @DisplayName("given a pending generation within its deadline, when get then it is returned")
+  void givenPendingGenerationWithinDeadlineWhenGetThenReturned() {
     var generation = GenerationFactory.pending();
     when(generationRepository.findById(generation.getId())).thenReturn(Optional.of(generation));
 
     var result =
-        serviceAt(REQUESTED_AT.plusSeconds(91)).get(generation.getVacancyId(), generation.getId());
+        serviceAt(REQUESTED_AT.plusSeconds(30)).get(generation.getVacancyId(), generation.getId());
 
-    assertEquals(GenerationStatus.FAILED, result.getStatus());
-    assertEquals(GenerationFailureReason.TIMEOUT, result.getFailureReason());
+    assertSame(generation, result);
+  }
+
+  @Test
+  @DisplayName(
+      "given a pending generation past its deadline, when get then it fails as a failed"
+          + " generation")
+  void givenPendingGenerationPastDeadlineWhenGetThenFailed() {
+    var generation = GenerationFactory.pending();
+    when(generationRepository.findById(generation.getId())).thenReturn(Optional.of(generation));
+    var service = serviceAt(REQUESTED_AT.plusSeconds(91));
+    var vacancyId = generation.getVacancyId();
+    var generationId = generation.getId();
+
+    assertThrows(
+        VacancyDescriptionGenerationFailedException.class,
+        () -> service.get(vacancyId, generationId));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("failures")
+  @DisplayName("given a failed generation, when get then it throws the exception for its failure")
+  void givenFailedGenerationWhenGetThenThrowsExceptionForItsFailure(
+      GenerationFailureReason reason, Class<? extends RuntimeException> expected) {
+    var generation = GenerationFactory.pending();
+    generation.fail(reason, REQUESTED_AT.plusSeconds(5));
+    when(generationRepository.findById(generation.getId())).thenReturn(Optional.of(generation));
+    var service = serviceAt(REQUESTED_AT.plusMinutes(5));
+    var vacancyId = generation.getVacancyId();
+    var generationId = generation.getId();
+
+    assertThrows(expected, () -> service.get(vacancyId, generationId));
+  }
+
+  private static Stream<Arguments> failures() {
+    return Stream.of(
+        arguments(
+            GenerationFailureReason.INPUT_REJECTED,
+            VacancyDescriptionGenerationRejectedException.class),
+        arguments(
+            GenerationFailureReason.PROVIDER_UNAVAILABLE,
+            VacancyDescriptionGenerationUnavailableException.class),
+        arguments(
+            GenerationFailureReason.PROVIDER_ERROR,
+            VacancyDescriptionGenerationFailedException.class),
+        arguments(
+            GenerationFailureReason.TIMEOUT, VacancyDescriptionGenerationFailedException.class),
+        arguments(
+            GenerationFailureReason.INVALID_OUTPUT,
+            VacancyDescriptionGenerationFailedException.class));
   }
 
   @Test
@@ -65,10 +118,11 @@ class GetVacancyDescriptionGenerationServiceTest {
     when(generationRepository.findById(generation.getId())).thenReturn(Optional.of(generation));
     var service = serviceAt(REQUESTED_AT);
     var otherVacancyId = UUID.randomUUID();
+    var generationId = generation.getId();
 
     assertThrows(
         VacancyDescriptionGenerationNotFoundException.class,
-        () -> service.get(otherVacancyId, generation.getId()));
+        () -> service.get(otherVacancyId, generationId));
   }
 
   @Test

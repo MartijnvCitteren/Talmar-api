@@ -7,9 +7,11 @@ import app.jobzy.api.application.port.out.VacancyRepository;
 import app.jobzy.api.domain.generation.VacancyDescriptionGeneration;
 import app.jobzy.api.domain.generation.VacancyDescriptionGenerationStarted;
 import app.jobzy.api.domain.generation.valueobject.GenerationInput;
+import app.jobzy.api.domain.vacancy.Vacancy;
 import app.jobzy.api.domain.vacancy.VacancyNotFoundException;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.ApplicationEventPublisher;
@@ -36,25 +38,31 @@ public class StartVacancyDescriptionGenerationService
   @Override
   @Transactional
   public VacancyDescriptionGeneration start(StartVacancyDescriptionGenerationCommand command) {
-    var vacancy =
-        vacancyRepository
-            .findById(command.vacancyId())
-            .orElseThrow(() -> new VacancyNotFoundException(command.vacancyId()));
+    var vacancy = getVacancy(command.vacancyId());
+    var pendingGeneration =
+        VacancyDescriptionGeneration.newPending(
+            vacancy.getId(), toGenerationInput(vacancy, command), LocalDateTime.now(clock));
 
-    var input =
-        new GenerationInput(
-            vacancy.getJobTitle(),
-            vacancy.getLanguage(),
-            command.mostImportantTasks(),
-            command.team(),
-            command.whyNiceJob());
-    var generation =
-        VacancyDescriptionGeneration.start(vacancy.getId(), input, LocalDateTime.now(clock));
+    generationRepository.save(pendingGeneration);
+    eventPublisher.publishEvent(new VacancyDescriptionGenerationStarted(pendingGeneration.getId()));
+    log.info("Description generation is started: {}", pendingGeneration);
 
-    generationRepository.save(generation);
-    eventPublisher.publishEvent(new VacancyDescriptionGenerationStarted(generation.getId()));
-    log.info("Description generation is started: {}", generation);
+    return pendingGeneration;
+  }
 
-    return generation;
+  private Vacancy getVacancy(UUID vacancyId) {
+    return vacancyRepository
+        .findById(vacancyId)
+        .orElseThrow(() -> new VacancyNotFoundException(vacancyId));
+  }
+
+  private static GenerationInput toGenerationInput(
+      Vacancy vacancy, StartVacancyDescriptionGenerationCommand command) {
+    return new GenerationInput(
+        vacancy.getJobTitle(),
+        vacancy.getLanguage(),
+        command.mostImportantTasks(),
+        command.team(),
+        command.whyNiceJob());
   }
 }

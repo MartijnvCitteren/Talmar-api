@@ -1,13 +1,16 @@
 package app.jobzy.api.adapter.in.rest.generation;
 
+import app.jobzy.api.domain.generation.VacancyDescriptionGenerationFailedException;
 import app.jobzy.api.domain.generation.VacancyDescriptionGenerationNotFoundException;
-import app.jobzy.api.domain.generation.valueobject.GenerationFailureReason;
+import app.jobzy.api.domain.generation.VacancyDescriptionGenerationRejectedException;
+import app.jobzy.api.domain.generation.VacancyDescriptionGenerationUnavailableException;
 import app.jobzy.api.shared.Constants;
 import app.jobzy.api.vacancy.adapter.in.web.contract.ProblemDetails;
 import app.jobzy.api.vacancy.adapter.in.web.contract.ProblemDetailsErrorsInner;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.List;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -18,9 +21,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
  * Translates generation-specific exceptions into the {@code ProblemDetails} representation of the
- * API contract. Ordered at highest precedence for the same reason as {@code
- * VacancyExceptionHandler}: the catch-all in {@code GlobalExceptionHandler} must not shadow it.
+ * API contract. One exception per response, so each handler only maps; it never inspects the
+ * exception to decide on a status. A failed generation answers with a fixed detail per status: the
+ * exact failure is logged, never shown to the user.
+ *
+ * <p>Ordered at highest precedence for the same reason as {@code VacancyExceptionHandler}: the
+ * catch-all in {@code GlobalExceptionHandler} must not shadow it.
  */
+@Log4j2
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class GenerationExceptionHandler {
@@ -28,26 +36,40 @@ public class GenerationExceptionHandler {
   @ExceptionHandler(VacancyDescriptionGenerationNotFoundException.class)
   ResponseEntity<ProblemDetails> handleGenerationNotFound(
       VacancyDescriptionGenerationNotFoundException ex, HttpServletRequest request) {
-    return respond(
-        HttpStatus.NOT_FOUND,
-        problem(HttpStatus.NOT_FOUND, Constants.NOT_FOUND_TITLE, ex.getMessage(), request));
+    return respond(HttpStatus.NOT_FOUND, Constants.NOT_FOUND_TITLE, ex.getMessage(), request);
   }
 
-  /**
-   * A failed generation as the contract describes it: {@code 422} when the input was rejected,
-   * because only changing the input helps; {@code 500} for every failure on our side, where
-   * starting a new generation may help. The detail never repeats model output.
-   */
+  @ExceptionHandler(VacancyDescriptionGenerationRejectedException.class)
+  ResponseEntity<ProblemDetails> handleGenerationRejected(
+      VacancyDescriptionGenerationRejectedException ex, HttpServletRequest request) {
+    log.warn(ex.getMessage());
+    return respond(
+        HttpStatus.UNPROCESSABLE_CONTENT,
+        Constants.GENERATION_FAILED_TITLE,
+        Constants.GENERATION_REJECTED_DETAIL,
+        request);
+  }
+
   @ExceptionHandler(VacancyDescriptionGenerationFailedException.class)
   ResponseEntity<ProblemDetails> handleGenerationFailed(
       VacancyDescriptionGenerationFailedException ex, HttpServletRequest request) {
-    var status =
-        ex.getReason() == GenerationFailureReason.INPUT_REJECTED
-            ? HttpStatus.UNPROCESSABLE_CONTENT
-            : HttpStatus.INTERNAL_SERVER_ERROR;
+    log.error(ex.getMessage());
     return respond(
-        status,
-        problem(status, Constants.GENERATION_FAILED_TITLE, detail(ex.getReason()), request));
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        Constants.GENERATION_FAILED_TITLE,
+        Constants.GENERATION_FAILED_DETAIL,
+        request);
+  }
+
+  @ExceptionHandler(VacancyDescriptionGenerationUnavailableException.class)
+  ResponseEntity<ProblemDetails> handleGenerationUnavailable(
+      VacancyDescriptionGenerationUnavailableException ex, HttpServletRequest request) {
+    log.error(ex.getMessage());
+    return respond(
+        HttpStatus.SERVICE_UNAVAILABLE,
+        Constants.GENERATION_UNAVAILABLE_TITLE,
+        Constants.GENERATION_UNAVAILABLE_DETAIL,
+        request);
   }
 
   /** Same shape as a bean-validation failure: the field is named, its value is not echoed. */
@@ -65,16 +87,9 @@ public class GenerationExceptionHandler {
     return respond(HttpStatus.BAD_REQUEST, problemDetails);
   }
 
-  private static String detail(GenerationFailureReason reason) {
-    return switch (reason) {
-      case INPUT_REJECTED ->
-          "The answers were not recognised as a description of this job. Adjust them and start a"
-              + " new generation.";
-      case TIMEOUT -> "The generation did not finish in time. Start a new generation.";
-      case PROVIDER_ERROR ->
-          "The AI provider could not generate a description. Start a new generation.";
-      case INVALID_OUTPUT -> "The generated text did not pass validation. Start a new generation.";
-    };
+  private static ResponseEntity<ProblemDetails> respond(
+      HttpStatus status, String title, String detail, HttpServletRequest request) {
+    return respond(status, problem(status, title, detail, request));
   }
 
   private static ProblemDetails problem(

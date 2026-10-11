@@ -5,8 +5,11 @@ import java.util.UUID;
 public interface CompleteVacancyDescriptionGenerationUseCase {
 
   /**
-   * Produces the draft for a {@code PENDING} generation and records the outcome. Does nothing for a
-   * generation that no longer exists or already ended.
+   * Produces the draft for a {@code PENDING} generation and records the outcome.
+   *
+   * @throws app.jobzy.api.domain.generation.VacancyDescriptionGenerationNotFoundException if the
+   *     generation does not exist
+   * @throws IllegalStateException if the generation already ended
    */
   void complete(UUID generationId);
 }

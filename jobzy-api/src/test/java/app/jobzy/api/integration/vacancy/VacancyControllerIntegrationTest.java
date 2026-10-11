@@ -44,7 +44,7 @@ class VacancyControllerIntegrationTest extends BaseIntegrationTest {
   private static final Map<String, String> VALID_CORE_REQUEST =
       Map.ofEntries(
           Map.entry("jobTitle", "\"Sales Manager\""),
-          Map.entry("language", "\"nl\""),
+          Map.entry("language", "\"NL\""),
           Map.entry("category", "\"SALES\""),
           Map.entry("location", "{\"country\": \"NL\", \"city\": \"Amsterdam\"}"),
           Map.entry("workplaceType", "\"HYBRID\""),
@@ -131,6 +131,29 @@ class VacancyControllerIntegrationTest extends BaseIntegrationTest {
         arguments(
             "maxHoursPerWeek is not greater than 1", "maxHoursPerWeek", "maxHoursPerWeek", "1"),
         arguments("maxHoursPerWeek exceeds 60", "maxHoursPerWeek", "maxHoursPerWeek", "61"));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("unreadableRequests")
+  @DisplayName(
+      "given a core request with a value outside an enum, when create vacancy, then it is rejected"
+          + " with 400")
+  void givenValueOutsideEnumWhenCreateVacancyThenRejectedWith400(
+      String violation, String jsonField, String jsonValue) {
+    var problemDetails =
+        makeRequestAndExpectedStatus(
+            requestBody(Map.of(jsonField, jsonValue)),
+            HttpStatus.BAD_REQUEST,
+            ProblemDetails.class);
+
+    assertEquals("Validation failed", problemDetails.getTitle());
+    assertEquals(0, vacancyJpaRepository.count());
+  }
+
+  private static Stream<Arguments> unreadableRequests() {
+    return Stream.of(
+        arguments("language in lower case", "language", "\"nl\""),
+        arguments("unknown category", "category", "\"ASTRONAUT\""));
   }
 
   private String requestBody(Map<String, String> overrides) {

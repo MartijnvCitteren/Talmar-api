@@ -4,7 +4,6 @@ import app.jobzy.api.adapter.out.persistence.BaseJpaEntity;
 import app.jobzy.api.domain.generation.valueobject.GenerationFailureReason;
 import app.jobzy.api.domain.generation.valueobject.GenerationStatus;
 import app.jobzy.api.domain.vacancy.valueobject.Language;
-import app.jobzy.api.shared.gdpr.PersonalData;
 import app.jobzy.api.shared.gdpr.ProcessData;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,10 +21,9 @@ import lombok.Setter;
  * JPA entity for {@code VacancyDescriptionGeneration}, flattened into one row.
  *
  * <p>{@code vacancyId} is a plain column, not an association: the generation only references the
- * vacancy and never loads it. The user's answers and the draft are personal data (free text about a
- * team routinely names people, and the draft can repeat it); the job title and language are copies
- * of vacancy fields, which are process data on the vacancy as well. The index on {@code
- * requestedAt} serves the retention clean-up.
+ * vacancy and never loads it. Every column is process data: the answers and the draft describe a
+ * job and a team, not a person, and the job title and language are copies of vacancy fields. The
+ * index on {@code requestedAt} serves the retention clean-up.
  */
 @Getter
 @Setter
@@ -59,27 +57,27 @@ public class VacancyDescriptionGenerationJpaEntity extends BaseJpaEntity {
   @Column(nullable = false, length = 2)
   private Language language;
 
-  @PersonalData
+  @ProcessData
   @Column(nullable = false, length = 1000)
   private String mostImportantTasks;
 
-  @PersonalData
+  @ProcessData
   @Column(nullable = false, length = 1000)
   private String team;
 
-  @PersonalData
+  @ProcessData
   @Column(nullable = false, length = 1000)
   private String whyNiceJob;
 
-  @PersonalData
+  @ProcessData
   @Column(length = 1000)
   private String draftSummary;
 
-  @PersonalData
+  @ProcessData
   @Column(length = 5000)
   private String draftJobDescription;
 
-  @PersonalData
+  @ProcessData
   @Column(length = 5000)
   private String draftTasks;
 

@@ -39,13 +39,17 @@ spring:
       api-key: ${MISTRAL_API_KEY}
       chat:
         model: mistral-small-latest
-        temperature: 0.5
+        # Above Mistral's recommended 0.0-0.7 for livelier vacancy texts; the JSON schema and the draft
+        # validation still bound the output.
+        temperature: 1.1
         max-tokens: 1000
     # Three attempts in total (max-attempts counts the retries after the first one) with a short
     # backoff, so the worst case of 3 x 15 s + 3 s stays under one minute. Spring AI's default retries
-    # 10 times with up to 3 minutes between attempts.
+    # 10 times with up to 3 minutes between attempts. Retried: 5xx, I/O errors and, per Mistral's
+    # guidance, 429 (rate limit). Every other 4xx is not retried: it fails until we fix the request.
     retry:
       max-attempts: 2
+      on-http-codes: 429
       backoff:
         initial-interval: 1s
         multiplier: 2

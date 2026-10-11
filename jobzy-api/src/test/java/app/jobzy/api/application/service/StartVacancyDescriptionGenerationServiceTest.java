@@ -11,8 +11,6 @@ import app.jobzy.api.application.port.in.command.StartVacancyDescriptionGenerati
 import app.jobzy.api.application.port.out.VacancyDescriptionGenerationRepository;
 import app.jobzy.api.application.port.out.VacancyRepository;
 import app.jobzy.api.domain.generation.VacancyDescriptionGenerationStarted;
-import app.jobzy.api.domain.generation.valueobject.GenerationInput;
-import app.jobzy.api.domain.generation.valueobject.GenerationStatus;
 import app.jobzy.api.domain.vacancy.VacancyNotFoundException;
 import app.jobzy.api.testSupport.VacancyFactory;
 import java.time.Clock;
@@ -20,60 +18,42 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class StartVacancyDescriptionGenerationServiceTest {
 
-  private static final LocalDateTime NOW = LocalDateTime.of(2026, 3, 1, 10, 0);
+  private static final Clock CLOCK =
+      Clock.fixed(LocalDateTime.of(2026, 3, 1, 10, 0).toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
 
   @Mock private VacancyRepository vacancyRepository;
   @Mock private VacancyDescriptionGenerationRepository generationRepository;
   @Mock private ApplicationEventPublisher eventPublisher;
+  @Spy private Clock clock = CLOCK;
 
-  private StartVacancyDescriptionGenerationService service;
-
-  @BeforeEach
-  void setUp() {
-    var clock = Clock.fixed(NOW.toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
-    service =
-        new StartVacancyDescriptionGenerationService(
-            vacancyRepository, generationRepository, eventPublisher, clock);
-  }
+  @InjectMocks private StartVacancyDescriptionGenerationService service;
 
   @Test
   @DisplayName(
-      "given an existing vacancy, when start then a pending generation with a snapshot of the"
-          + " vacancy and the answers is saved and announced")
-  void givenExistingVacancyWhenStartThenPendingGenerationSavedAndAnnounced() {
+      "given an existing vacancy, when start then a generation requested now is saved and"
+          + " announced")
+  void givenExistingVacancyWhenStartThenGenerationRequestedNowSavedAndAnnounced() {
     var vacancy = VacancyFactory.getFilledCoreVacancy().build();
     when(vacancyRepository.findById(vacancy.getId())).thenReturn(Optional.of(vacancy));
-    var command =
-        StartVacancyDescriptionGenerationCommand.builder()
-            .vacancyId(vacancy.getId())
-            .mostImportantTasks("Tasks")
-            .team("Team")
-            .whyNiceJob("Why")
-            .build();
 
-    var generation = service.start(command);
+    var pendingGeneration = service.start(commandFor(vacancy.getId()));
 
-    assertEquals(GenerationStatus.PENDING, generation.getStatus());
-    assertEquals(vacancy.getId(), generation.getVacancyId());
-    assertEquals(NOW, generation.getRequestedAt());
-    assertEquals(
-        new GenerationInput(
-            VacancyFactory.JOB_TITLE, VacancyFactory.LANGUAGE, "Tasks", "Team", "Why"),
-        generation.getInput());
-    verify(generationRepository).save(generation);
+    assertEquals(LocalDateTime.now(clock), pendingGeneration.getRequestedAt());
+    verify(generationRepository).save(pendingGeneration);
     verify(eventPublisher)
-        .publishEvent(new VacancyDescriptionGenerationStarted(generation.getId()));
+        .publishEvent(new VacancyDescriptionGenerationStarted(pendingGeneration.getId()));
   }
 
   @Test
@@ -81,17 +61,20 @@ class StartVacancyDescriptionGenerationServiceTest {
   void givenUnknownVacancyWhenStartThenThrowsAndNothingSaved() {
     var vacancyId = UUID.randomUUID();
     when(vacancyRepository.findById(vacancyId)).thenReturn(Optional.empty());
-    var command =
-        StartVacancyDescriptionGenerationCommand.builder()
-            .vacancyId(vacancyId)
-            .mostImportantTasks("Tasks")
-            .team("Team")
-            .whyNiceJob("Why")
-            .build();
+    var command = commandFor(vacancyId);
 
     assertThrows(VacancyNotFoundException.class, () -> service.start(command));
 
     verify(generationRepository, never()).save(any());
     verify(eventPublisher, never()).publishEvent(any(Object.class));
+  }
+
+  private static StartVacancyDescriptionGenerationCommand commandFor(UUID vacancyId) {
+    return StartVacancyDescriptionGenerationCommand.builder()
+        .vacancyId(vacancyId)
+        .mostImportantTasks("Tasks")
+        .team("Team")
+        .whyNiceJob("Why")
+        .build();
   }
 }

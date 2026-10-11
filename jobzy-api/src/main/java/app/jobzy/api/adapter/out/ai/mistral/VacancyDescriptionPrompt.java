@@ -5,46 +5,50 @@ import app.jobzy.api.domain.vacancy.valueobject.Language;
 import java.util.Map;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Component;
 
 /**
  * The versioned prompt for drafting a vacancy description, rendered from the classpath templates
- * under {@code prompt/vacancy-description/<version>/}. A prompt change is a new version directory
- * in a reviewed PR, never a runtime setting, and every generation records the version it used.
+ * under {@code prompt/vacancy-description/}. A prompt change is a reviewed PR, never a runtime
+ * setting: it bumps {@link #VERSION} (major.minor.patch) and adds a changelog line to the header
+ * comment of the templates, so the files themselves keep the trail of what changed. The header is a
+ * template comment, removed when rendering, so the model never sees it. Every generation records
+ * the version it used.
  *
  * <p>The user's answers go into the user message only, each wrapped in fixed delimiters that the
  * system prompt declares to be data. The delimiter brackets are stripped from the answers first, so
  * an answer cannot close its own block and pose as an instruction.
  */
+@Component
 class VacancyDescriptionPrompt {
 
-  static final String VERSION = "vacancy-description/v1";
+  static final String VERSION = "vacancy-description/1.0.0";
 
   private static final String DELIMITER_OPEN = "[[[";
   private static final String DELIMITER_CLOSE = "]]]";
 
-  private final PromptTemplate systemTemplate;
-  private final PromptTemplate userTemplate;
-
-  VacancyDescriptionPrompt() {
-    this.systemTemplate = load("system.st");
-    this.userTemplate = load("user.st");
-  }
+  private final PromptTemplate systemTemplate = load("system.st");
+  private final PromptTemplate userTemplate = load("user.st");
 
   /**
    * @param canary a token unique to this call; seeing it in the output means the model leaked its
    *     instructions
    */
   String system(Language language, String canary) {
-    return systemTemplate.render(Map.of("language", languageName(language), "canary", canary));
+    return systemTemplate
+        .render(Map.of("language", languageName(language), "canary", canary))
+        .strip();
   }
 
   String user(GenerationInput input) {
-    return userTemplate.render(
-        Map.of(
-            "jobTitle", stripDelimiters(input.jobTitle()),
-            "mostImportantTasks", stripDelimiters(input.mostImportantTasks()),
-            "team", stripDelimiters(input.team()),
-            "whyNiceJob", stripDelimiters(input.whyNiceJob())));
+    return userTemplate
+        .render(
+            Map.of(
+                "jobTitle", stripDelimiters(input.jobTitle()),
+                "mostImportantTasks", stripDelimiters(input.mostImportantTasks()),
+                "team", stripDelimiters(input.team()),
+                "whyNiceJob", stripDelimiters(input.whyNiceJob())))
+        .strip();
   }
 
   static String stripDelimiters(String text) {
@@ -66,7 +70,7 @@ class VacancyDescriptionPrompt {
   }
 
   private static PromptTemplate load(String fileName) {
-    var resource = new ClassPathResource("prompt/" + VERSION + "/" + fileName);
+    var resource = new ClassPathResource("prompt/vacancy-description/" + fileName);
     return PromptTemplate.builder().resource(resource).build();
   }
 }

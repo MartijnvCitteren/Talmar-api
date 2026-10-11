@@ -5,7 +5,6 @@ import app.jobzy.api.adapter.in.rest.generation.mapper.response.VacancyDescripti
 import app.jobzy.api.adapter.in.rest.generation.validation.GenerateVacancyDescriptionRequestValidator;
 import app.jobzy.api.application.port.in.GetVacancyDescriptionGenerationUseCase;
 import app.jobzy.api.application.port.in.StartVacancyDescriptionGenerationUseCase;
-import app.jobzy.api.domain.generation.valueobject.GenerationStatus;
 import app.jobzy.api.vacancy.adapter.in.rest.GenerationApi;
 import app.jobzy.api.vacancy.adapter.in.web.contract.GenerateVacancyDescriptionRequest;
 import app.jobzy.api.vacancy.adapter.in.web.contract.VacancyDescriptionGeneration;
@@ -26,32 +25,29 @@ public class VacancyDescriptionGenerationController implements GenerationApi {
   private final GenerateVacancyDescriptionRequestValidator requestValidator;
   private final GenerateVacancyDescriptionRequestMapper requestMapper;
   private final VacancyDescriptionGenerationResponseMapper responseMapper;
-  private final StartVacancyDescriptionGenerationUseCase startUseCase;
-  private final GetVacancyDescriptionGenerationUseCase getUseCase;
+  private final StartVacancyDescriptionGenerationUseCase startGenerationUseCase;
+  private final GetVacancyDescriptionGenerationUseCase getGenerationUseCase;
 
   @Override
   public ResponseEntity<VacancyDescriptionGeneration> generateVacancyDescription(
       UUID id, GenerateVacancyDescriptionRequest generateVacancyDescriptionRequest) {
     requestValidator.validate(generateVacancyDescriptionRequest);
     var command = requestMapper.toCommand(id, generateVacancyDescriptionRequest);
-    var generation = startUseCase.start(command);
+    var pendingGeneration = startGenerationUseCase.start(command);
     var pollLocation =
         ServletUriComponentsBuilder.fromCurrentRequest()
             .path("/{generationId}")
-            .buildAndExpand(generation.getId())
+            .buildAndExpand(pendingGeneration.getId())
             .toUri();
     return ResponseEntity.accepted()
         .location(pollLocation)
-        .body(responseMapper.toResponse(generation));
+        .body(responseMapper.toResponse(pendingGeneration));
   }
 
   @Override
   public ResponseEntity<VacancyDescriptionGeneration> getVacancyDescriptionGeneration(
       UUID id, UUID generationId) {
-    var generation = getUseCase.get(id, generationId);
-    if (generation.getStatus() == GenerationStatus.FAILED) {
-      throw new VacancyDescriptionGenerationFailedException(generation.getFailureReason());
-    }
+    var generation = getGenerationUseCase.get(id, generationId);
     return ResponseEntity.ok(responseMapper.toResponse(generation));
   }
 }

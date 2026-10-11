@@ -16,4 +16,11 @@ public class VacancyDescriptionGenerationNotFoundException extends BaseException
   public VacancyDescriptionGenerationNotFoundException(UUID vacancyId, UUID generationId) {
     super("Description generation " + generationId + " not found for vacancy " + vacancyId);
   }
+
+  /**
+   * @param generationId the generation id that was not found
+   */
+  public VacancyDescriptionGenerationNotFoundException(UUID generationId) {
+    super("Description generation " + generationId + " not found");
+  }
 }

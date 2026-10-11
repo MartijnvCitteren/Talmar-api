@@ -12,8 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Deletes generations after the retention period. A draft only has to live long enough for the user
- * to pick it up; after that it is personal data without a purpose, so it is removed rather than
- * kept "just in case". Touches the generation table only, never a vacancy.
+ * to pick it up; after that it has no purpose, so it is removed rather than kept "just in case".
+ * Touches the generation table only, never a vacancy.
  */
 @Service
 @Log4j2
@@ -25,10 +25,9 @@ public class PurgeExpiredGenerationsService implements PurgeExpiredGenerationsUs
 
   @Override
   @Transactional
-  public int purgeExpired() {
+  public void purgeExpired() {
     var cutoff = LocalDateTime.now(clock).minus(generationProperties.retention());
     int deleted = generationRepository.deleteRequestedBefore(cutoff);
     log.info("Purged {} description generations requested before {}", deleted, cutoff);
-    return deleted;
   }
 }

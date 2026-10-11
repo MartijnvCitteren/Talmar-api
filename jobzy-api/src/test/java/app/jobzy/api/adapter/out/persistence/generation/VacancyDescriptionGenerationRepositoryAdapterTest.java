@@ -2,6 +2,7 @@ package app.jobzy.api.adapter.out.persistence.generation;
 
 import static app.jobzy.api.testSupport.GenerationFactory.REQUESTED_AT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import app.jobzy.api.adapter.out.persistence.generation.mapper.VacancyDescriptionGenerationJpaMapperImpl;
@@ -66,7 +67,7 @@ class VacancyDescriptionGenerationRepositoryAdapterTest {
     var reloaded = saveAndReload(generation);
 
     assertEquals(GenerationFailureReason.PROVIDER_ERROR, reloaded.getFailureReason());
-    assertEquals(null, reloaded.getDraft());
+    assertNull(reloaded.getDraft());
   }
 
   @Test
@@ -75,10 +76,10 @@ class VacancyDescriptionGenerationRepositoryAdapterTest {
           + " older ones are removed")
   void givenGenerationsAroundCutoffWhenDeleteRequestedBeforeThenOnlyOlderRemoved() {
     var old =
-        VacancyDescriptionGeneration.start(
+        VacancyDescriptionGeneration.newPending(
             GenerationFactory.VACANCY_ID, GenerationFactory.input(), REQUESTED_AT);
     var atCutoff =
-        VacancyDescriptionGeneration.start(
+        VacancyDescriptionGeneration.newPending(
             GenerationFactory.VACANCY_ID, GenerationFactory.input(), REQUESTED_AT.plusHours(1));
     adapter.save(old);
     adapter.save(atCutoff);

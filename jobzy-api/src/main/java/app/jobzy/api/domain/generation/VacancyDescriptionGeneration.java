@@ -22,14 +22,15 @@ import java.util.UUID;
  * <ul>
  *   <li>A generation starts {@code PENDING} and ends exactly once, in {@code COMPLETED} or {@code
  *       FAILED}; after that it is immutable.
- *   <li>A {@code PENDING} generation older than {@link #PENDING_TIMEOUT} is treated as {@code
- *       FAILED} / {@code TIMEOUT}. This covers a crash or restart during generation without a
- *       watchdog process: nobody will ever finish it, so a poll must not wait forever.
+ *   <li>A {@code PENDING} generation older than {@link #PENDING_TIMEOUT} has timed out. This covers
+ *       a crash or restart during generation without a watchdog process: nobody will ever finish
+ *       it, so a poll must not wait forever.
  *   <li>Once that deadline has passed, a late result cannot turn the generation into a success any
  *       more: a poll may already have reported the timeout, and the outcome must not flip.
- *   <li>A draft is only accepted if the user could save it unchanged as the vacancy's description
- *       (see {@link GeneratedDraft#isSaveableAsDescription()}).
  * </ul>
+ *
+ * <p>Input and output are validated where they enter the application (the REST adapter and the AI
+ * adapter), not again here.
  */
 public final class VacancyDescriptionGeneration {
 
@@ -38,7 +39,7 @@ public final class VacancyDescriptionGeneration {
    * (three provider attempts of at most 15 seconds plus backoff, under one minute), so it only
    * fires when the work was lost.
    */
-  public static final Duration PENDING_TIMEOUT = Duration.ofSeconds(90);
+  private static final Duration PENDING_TIMEOUT = Duration.ofSeconds(90);
 
   private final UUID id;
   private final UUID vacancyId;
@@ -53,23 +54,23 @@ public final class VacancyDescriptionGeneration {
 
   private VacancyDescriptionGeneration(Builder builder) {
     this.id = builder.id != null ? builder.id : UuidV7Generator.getUUID();
-    this.vacancyId = Objects.requireNonNull(builder.vacancyId, "vacancyId is required");
-    this.input = Objects.requireNonNull(builder.input, "input is required");
-    this.requestedAt = Objects.requireNonNull(builder.requestedAt, "requestedAt is required");
-    this.status = Objects.requireNonNull(builder.status, "status is required");
+    this.vacancyId = builder.vacancyId;
+    this.input = builder.input;
+    this.requestedAt = builder.requestedAt;
+    this.status = builder.status;
     this.failureReason = builder.failureReason;
     this.draft = builder.draft;
     this.model = builder.model;
     this.promptVersion = builder.promptVersion;
     this.completedAt = builder.completedAt;
-    requireConsistentState();
   }
 
   /**
-   * Starts a new generation for a vacancy. Starting one while another is still {@code PENDING} is
-   * allowed: the user polls the newest, the old one finishes or times out on its own.
+   * Creates a new {@code PENDING} generation for a vacancy. Only builds the object: the draft is
+   * produced elsewhere, once the generation is saved. Creating one while another is still {@code
+   * PENDING} is allowed: the user polls the newest, the old one finishes or times out on its own.
    */
-  public static VacancyDescriptionGeneration start(
+  public static VacancyDescriptionGeneration newPending(
       UUID vacancyId, GenerationInput input, LocalDateTime requestedAt) {
     return builder()
         .vacancyId(vacancyId)
@@ -80,8 +81,7 @@ public final class VacancyDescriptionGeneration {
   }
 
   /**
-   * Records the draft a model produced. Ends in {@code COMPLETED}, unless the draft could not be
-   * saved as a description ({@code FAILED} / {@code INVALID_OUTPUT}) or the deadline has already
+   * Records the draft a model produced. Ends in {@code COMPLETED}, unless the deadline has already
    * passed ({@code FAILED} / {@code TIMEOUT}).
    *
    * @throws IllegalStateException if the generation already ended
@@ -89,22 +89,15 @@ public final class VacancyDescriptionGeneration {
   public void acceptDraft(
       GeneratedDraft draft, String model, String promptVersion, LocalDateTime completedAt) {
     requirePending();
-    Objects.requireNonNull(draft, "draft is required");
-    Objects.requireNonNull(model, "model is required");
-    Objects.requireNonNull(promptVersion, "promptVersion is required");
-    // Kept on failure too: knowing which model and prompt produced an invalid draft is what a
-    // prompt fix starts from.
     this.model = model;
     this.promptVersion = promptVersion;
     if (isTimedOutAt(completedAt)) {
       end(GenerationFailureReason.TIMEOUT, completedAt);
-    } else if (!draft.isSaveableAsDescription()) {
-      end(GenerationFailureReason.INVALID_OUTPUT, completedAt);
-    } else {
-      this.status = GenerationStatus.COMPLETED;
-      this.draft = draft;
-      this.completedAt = completedAt;
+      return;
     }
+    this.status = GenerationStatus.COMPLETED;
+    this.draft = draft;
+    this.completedAt = completedAt;
   }
 
   /**
@@ -115,30 +108,12 @@ public final class VacancyDescriptionGeneration {
    */
   public void fail(GenerationFailureReason reason, LocalDateTime failedAt) {
     requirePending();
-    Objects.requireNonNull(reason, "reason is required");
     end(isTimedOutAt(failedAt) ? GenerationFailureReason.TIMEOUT : reason, failedAt);
   }
 
   /** Whether this generation is still {@code PENDING} past its deadline at the given moment. */
   public boolean isTimedOutAt(LocalDateTime now) {
     return status == GenerationStatus.PENDING && !now.isBefore(requestedAt.plus(PENDING_TIMEOUT));
-  }
-
-  /**
-   * This generation as a poll at {@code now} has to report it: a {@code PENDING} generation past
-   * its deadline is returned as {@code FAILED} / {@code TIMEOUT}. The result is a read-only view
-   * for that one answer and is never saved; the stored generation stays {@code PENDING} until the
-   * retention clean-up removes it.
-   */
-  public VacancyDescriptionGeneration observedAt(LocalDateTime now) {
-    if (!isTimedOutAt(now)) {
-      return this;
-    }
-    return toBuilder()
-        .status(GenerationStatus.FAILED)
-        .failureReason(GenerationFailureReason.TIMEOUT)
-        .completedAt(requestedAt.plus(PENDING_TIMEOUT))
-        .build();
   }
 
   private void end(GenerationFailureReason reason, LocalDateTime endedAt) {
@@ -150,34 +125,6 @@ public final class VacancyDescriptionGeneration {
   private void requirePending() {
     if (status != GenerationStatus.PENDING) {
       throw new IllegalStateException("Generation " + id + " already ended as " + status);
-    }
-  }
-
-  private void requireConsistentState() {
-    switch (status) {
-      case PENDING -> {
-        requireAbsent(draft, "draft");
-        requireAbsent(failureReason, "failureReason");
-        requireAbsent(completedAt, "completedAt");
-      }
-      case COMPLETED -> {
-        Objects.requireNonNull(draft, "draft is required when COMPLETED");
-        Objects.requireNonNull(model, "model is required when COMPLETED");
-        Objects.requireNonNull(promptVersion, "promptVersion is required when COMPLETED");
-        Objects.requireNonNull(completedAt, "completedAt is required when COMPLETED");
-        requireAbsent(failureReason, "failureReason");
-      }
-      case FAILED -> {
-        Objects.requireNonNull(failureReason, "failureReason is required when FAILED");
-        Objects.requireNonNull(completedAt, "completedAt is required when FAILED");
-        requireAbsent(draft, "draft");
-      }
-    }
-  }
-
-  private void requireAbsent(Object value, String name) {
-    if (value != null) {
-      throw new IllegalArgumentException(name + " must be absent when " + status);
     }
   }
 
@@ -226,23 +173,9 @@ public final class VacancyDescriptionGeneration {
     return completedAt;
   }
 
-  /** Builder for reconstituting a stored generation; new generations use {@link #start}. */
+  /** Builder for reconstituting a stored generation; new generations use {@link #newPending}. */
   public static Builder builder() {
     return new Builder();
-  }
-
-  private Builder toBuilder() {
-    return builder()
-        .id(id)
-        .vacancyId(vacancyId)
-        .input(input)
-        .requestedAt(requestedAt)
-        .status(status)
-        .failureReason(failureReason)
-        .draft(draft)
-        .model(model)
-        .promptVersion(promptVersion)
-        .completedAt(completedAt);
   }
 
   @Override

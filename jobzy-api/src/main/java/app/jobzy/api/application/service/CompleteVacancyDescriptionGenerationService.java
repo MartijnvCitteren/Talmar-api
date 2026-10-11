@@ -5,29 +5,22 @@ import app.jobzy.api.application.port.out.GenerationResult;
 import app.jobzy.api.application.port.out.VacancyDescriptionGenerationRepository;
 import app.jobzy.api.application.port.out.VacancyDescriptionGenerator;
 import app.jobzy.api.domain.generation.VacancyDescriptionGeneration;
+import app.jobzy.api.domain.generation.VacancyDescriptionGenerationNotFoundException;
 import app.jobzy.api.domain.generation.valueobject.GenerationFailureReason;
 import app.jobzy.api.domain.generation.valueobject.GenerationInput;
-import app.jobzy.api.domain.generation.valueobject.GenerationStatus;
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Produces the draft for a {@code PENDING} generation and records the outcome.
  *
- * <p>Runs from an {@code AFTER_COMMIT} listener. There the starting transaction is still bound to
- * the thread when the executor is synchronous (as in the integration tests), and a plain
- * transactional call would join that already committed transaction and its writes would never be
- * flushed. Both database steps therefore run in a new transaction ({@code REQUIRES_NEW}). They are
- * two short transactions around the provider call rather than one around the whole method, so no
- * database connection is held while waiting up to a minute on the AI provider.
+ * <p>Deliberately not {@code @Transactional}: it runs on a background thread after the starting
+ * transaction committed, and loading and saving are each their own short transaction (the
+ * repository's), so no database connection is held while waiting up to a minute on the AI provider.
  */
 @Service
 @Log4j2
@@ -37,41 +30,27 @@ public class CompleteVacancyDescriptionGenerationService
   private final VacancyDescriptionGenerationRepository generationRepository;
   private final VacancyDescriptionGenerator generator;
   private final Clock clock;
-  private final PlatformTransactionManager transactionManager;
 
   @Override
   public void complete(UUID generationId) {
-    Optional<VacancyDescriptionGeneration> pending = findPending(generationId);
-    if (pending.isEmpty()) {
-      log.warn("Generation {} is gone or already ended, nothing to complete", generationId);
-      return;
-    }
-    var generation = pending.get();
+    var generation = getGeneration(generationId);
 
     var result = generateSafely(generation.getInput());
     var now = LocalDateTime.now(clock);
     switch (result) {
-      case GenerationResult.Drafted drafted ->
-          generation.acceptDraft(drafted.draft(), drafted.model(), drafted.promptVersion(), now);
-      case GenerationResult.Rejected rejected -> generation.fail(rejected.reason(), now);
+      case GenerationResult.Drafted(var draft, var model, var promptVersion) ->
+          generation.acceptDraft(draft, model, promptVersion, now);
+      case GenerationResult.Rejected(var reason) -> generation.fail(reason, now);
     }
 
-    newTransaction().executeWithoutResult(status -> generationRepository.save(generation));
+    generationRepository.save(generation);
     log.info("Description generation is completed: {}", generation);
   }
 
-  private Optional<VacancyDescriptionGeneration> findPending(UUID generationId) {
-    Optional<VacancyDescriptionGeneration> found =
-        newTransaction().execute(status -> generationRepository.findById(generationId));
-    return Optional.ofNullable(found)
-        .flatMap(generation -> generation)
-        .filter(generation -> generation.getStatus() == GenerationStatus.PENDING);
-  }
-
-  private TransactionTemplate newTransaction() {
-    var template = new TransactionTemplate(transactionManager);
-    template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-    return template;
+  private VacancyDescriptionGeneration getGeneration(UUID generationId) {
+    return generationRepository
+        .findById(generationId)
+        .orElseThrow(() -> new VacancyDescriptionGenerationNotFoundException(generationId));
   }
 
   /**

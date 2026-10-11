@@ -205,8 +205,10 @@ paths:
         is done. A failed generation is returned as a problem response instead of a `200`: `422`
         when the inputs were rejected as not describing a job (retrying the same inputs will not
         help, the user has to change them), `500` when the generation failed on our side or did
-        not finish within 90 seconds (starting a new generation may help). `404` when the
-        generation or vacancy does not exist, including a generation older than 32 hours.
+        not finish within 90 seconds (starting a new generation may help), `503` when the AI
+        provider refused the request in a way a retry will not fix (AI generation is unavailable
+        until we fix it; the user can write the description manually). `404` when the generation
+        or vacancy does not exist, including a generation older than 32 hours.
       responses:
         '200':
           description: Current generation status, `PENDING` or `COMPLETED`.
@@ -226,6 +228,8 @@ paths:
           $ref: '#/components/responses/UnprocessableContent'
         '500':
           $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
   /vacancy/{id}:
     parameters:
@@ -575,6 +579,13 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemDetails'
+    ServiceUnavailable:
+      description: >
+        A service the request depends on is unavailable; retrying right away will not help.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
 
   schemas:
     VacancyId:
@@ -596,8 +607,8 @@ components:
 
     Language:
       type: string
-      description: ISO 639-1 language code of the vacancy texts.
-      enum: [nl, en, de, fr]
+      description: ISO 639-1 language code of the vacancy texts, upper case like the country code.
+      enum: [NL, EN, DE, FR]
 
     VacancyStatus:
       type: string

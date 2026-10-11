@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Applies the content rules for vacancy text to the three answers before they reach a use case.
- * Length limits come from the contract (bean validation). This is the first line of defence against
- * prompt injection: markup and control characters never reach the model.
+ * Presence and length come from the contract (bean validation, which runs first). This is the first
+ * line of defence against prompt injection: markup and control characters never reach the model.
  */
 @Component
 public class GenerateVacancyDescriptionRequestValidator {
@@ -26,9 +26,6 @@ public class GenerateVacancyDescriptionRequestValidator {
   }
 
   private void validateField(String fieldName, String value) {
-    if (value == null) {
-      return;
-    }
     if (TextContentRules.containsRawTag(value)) {
       throw new InvalidGenerationRequestException(
           fieldName, fieldName + " must not contain raw HTML or script-like tags");

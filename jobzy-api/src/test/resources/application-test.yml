@@ -11,13 +11,18 @@ spring:
 
   ai:
     mistralai:
-      # Tests never call Mistral: the generator is mocked in integration tests and the adapter test
-      # points this at WireMock. An unreachable default makes an accidental real call fail fast.
+      # Tests never call Mistral: integration and adapter tests point this at WireMock (MistralStub).
+      # An unreachable default makes an accidental real call fail fast.
       # The chat client has its own base URL that defaults to api.mistral.ai and wins over
       # spring.ai.mistralai.base-url, so it is the one to override.
       api-key: test-key
       chat:
         base-url: http://localhost:1
+    # Same number of attempts as in production, without waiting seconds between them.
+    retry:
+      backoff:
+        initial-interval: 10ms
+        max-interval: 20ms
 
 jobzy:
   scheduling:

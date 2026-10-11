@@ -3,8 +3,9 @@ package app.jobzy.api.application.port.out;
 import app.jobzy.api.domain.generation.valueobject.GeneratedDraft;
 import app.jobzy.api.domain.generation.valueobject.GenerationFailureReason;
 
-/** Outcome of one {@link VacancyDescriptionGenerator#generate} call. */
-public sealed interface GenerationResult {
+/** Outcome of one {@link VacancyDescriptionGenerator#generate} call: a draft or a rejection. */
+public sealed interface GenerationResult
+    permits GenerationResult.Drafted, GenerationResult.Rejected {
 
   /**
    * The model produced a draft.
