@@ -1,0 +1,100 @@
+# Public mail domains: an address on one of these says nothing about the company someone works for,
+# so it cannot be used to register (ADR 0003). One domain per line, lower case. An entry ending in
+# ".*" matches the name under every top-level domain (hotmail.* matches hotmail.com and hotmail.co.uk).
+
+# Google
+gmail.com
+googlemail.com
+
+# Microsoft
+outlook.*
+hotmail.*
+live.*
+msn.com
+windowslive.com
+
+# Yahoo / AOL
+yahoo.*
+ymail.com
+rocketmail.com
+aol.*
+
+# Apple
+icloud.com
+me.com
+mac.com
+
+# Privacy-focused providers
+proton.me
+protonmail.com
+protonmail.ch
+pm.me
+tutanota.com
+tutanota.de
+tuta.io
+tuta.com
+mailbox.org
+posteo.de
+posteo.net
+fastmail.com
+hey.com
+
+# Other international providers
+gmx.*
+mail.com
+email.com
+zoho.com
+yandex.*
+mail.ru
+qq.com
+163.com
+
+# The Netherlands
+ziggo.nl
+kpnmail.nl
+kpnplanet.nl
+planet.nl
+home.nl
+hetnet.nl
+xs4all.nl
+casema.nl
+chello.nl
+upcmail.nl
+quicknet.nl
+online.nl
+tele2.nl
+freeler.nl
+zonnet.nl
+telfort.nl
+caiway.nl
+solcon.nl
+
+# Belgium
+telenet.be
+skynet.be
+proximus.be
+
+# Germany, Austria, Switzerland
+web.de
+t-online.de
+freenet.de
+arcor.de
+bluewin.ch
+
+# France
+orange.fr
+wanadoo.fr
+free.fr
+laposte.net
+sfr.fr
+
+# Italy, Spain, Poland, Czech Republic
+libero.it
+virgilio.it
+tiscali.it
+telefonica.net
+wp.pl
+o2.pl
+onet.pl
+interia.pl
+seznam.cz

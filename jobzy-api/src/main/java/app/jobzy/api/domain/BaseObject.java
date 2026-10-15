@@ -1,11 +1,12 @@
 package app.jobzy.api.domain;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public abstract class BaseObject {
   private final LocalDateTime createdAt;
   private LocalDateTime lastModifiedAt;
-  private String modifiedBy;
+  private UUID lastModifiedBy;
 
   protected BaseObject(LocalDateTime createdAt) {
     this.createdAt = createdAt;
@@ -24,11 +25,15 @@ public abstract class BaseObject {
     this.lastModifiedAt = lastModifiedAt;
   }
 
-  public String getModifiedBy() {
-    return modifiedBy;
+  /**
+   * The id of the user who last created or changed this object, or {@code null} when that is not
+   * tracked yet. An id, never a name, so the audit trail holds no personal data.
+   */
+  public UUID getLastModifiedBy() {
+    return lastModifiedBy;
   }
 
-  public void setModifiedBy(String modifiedBy) {
-    this.modifiedBy = modifiedBy;
+  public void setLastModifiedBy(UUID lastModifiedBy) {
+    this.lastModifiedBy = lastModifiedBy;
   }
 }

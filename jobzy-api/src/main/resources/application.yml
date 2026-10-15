@@ -58,6 +58,12 @@ spring:
 jobzy:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+  identity:
+    # Frontend page the verification mail links to; the token is appended as ?token=...
+    confirmation-url: ${IDENTITY_CONFIRMATION_URL:https://jobzy.app/registration/confirm}
+    # How long a verification link stays valid before the unconfirmed registration is purged.
+    unconfirmed-retention: ${IDENTITY_UNCONFIRMED_RETENTION:PT48H}
+    purge-interval: ${IDENTITY_PURGE_INTERVAL:PT1H}
   generation:
     # How long a description generation (and its draft) is kept before the clean-up deletes it.
     retention: PT32H

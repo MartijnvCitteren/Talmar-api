@@ -18,6 +18,7 @@
 	<properties>
 		<antlr4.version>4.13.2</antlr4.version>
 		<arch-unit.version>1.5.1</arch-unit.version>
+		<bouncycastle.version>1.86</bouncycastle.version>
 		<error-prone.version>2.50.0</error-prone.version>
 		<findsecbugs.version>1.14.0</findsecbugs.version>
 		<java.version>25</java.version>
@@ -43,8 +44,8 @@
 		<test.order.seed>${maven.build.timestamp}</test.order.seed>
 		<!-- Security overrides of Spring Boot managed versions. Remove each one as soon as the Spring Boot
 		     version above manages an equal or newer version. -->
-		<jackson-bom.override.version>3.2.3</jackson-bom.override.version> <!-- GHSA-cxp5-3px4-pw24, GHSA-7hhh-6rmp-j9qf, ... -->
-		<tomcat.override.version>11.0.26</tomcat.override.version> <!-- GHSA-9xv2-5v5q-p794, GHSA-gcx9-497g-6cp6, GHSA-h3x4-894j-xpx5 -->
+		<jackson-bom.override.version>3.2.3</jackson-bom.override.version>
+		<tomcat.override.version>11.0.26</tomcat.override.version>
 	</properties>
 
 	<dependencyManagement>
@@ -101,6 +102,11 @@
 				<groupId>org.antlr</groupId>
 				<artifactId>antlr4-runtime</artifactId>
 				<version>${antlr4.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcprov-jdk18on</artifactId>
+				<version>${bouncycastle.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.fasterxml.uuid</groupId>

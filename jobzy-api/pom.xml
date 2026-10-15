@@ -19,6 +19,8 @@
     <openapi-generator.version>7.25.0</openapi-generator.version>
     <vacancy-api.spec>${project.basedir}/../jobzy-contracts/src/main/java/app/jobzy/contracts/VacancyApi.yml
     </vacancy-api.spec>
+    <identity-api.spec>${project.basedir}/../jobzy-contracts/src/main/java/app/jobzy/contracts/IdentityApi.yml
+    </identity-api.spec>
   </properties>
 
   <dependencies>
@@ -43,6 +45,10 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-validation</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
 
     <!--	==AI==	 -->
     <dependency>
@@ -58,6 +64,11 @@
     <dependency>
       <groupId>com.fasterxml.uuid</groupId>
       <artifactId>java-uuid-generator</artifactId>
+    </dependency>
+    <!-- Argon2 implementation behind Spring Security's Argon2PasswordEncoder. -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk18on</artifactId>
     </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>
@@ -199,6 +210,39 @@
                 <!-- One interface per OpenAPI tag (VacancyApi, GenerationApi) instead of per first path
                      segment, so each aggregate gets its own controller (ADR 0002). -->
                 <useTags>true</useTags>
+              </configOptions>
+            </configuration>
+          </execution>
+          <execution>
+            <id>generate-identity-api</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${identity-api.spec}</inputSpec>
+              <generatorName>spring</generatorName>
+              <output>${project.build.directory}/generated-sources/openapi</output>
+              <modelPackage>app.jobzy.api.identity.adapter.in.web.contract</modelPackage>
+              <apiPackage>app.jobzy.api.identity.adapter.in.rest</apiPackage>
+              <!-- Reuse the problem model generated from VacancyApi.yml: same schema, and GlobalExceptionHandler
+                   already answers every controller with it. -->
+              <schemaMappings>ProblemDetails=app.jobzy.api.vacancy.adapter.in.web.contract.ProblemDetails</schemaMappings>
+              <generateApis>true</generateApis>
+              <!-- Off: the supporting files (ApiUtil, EnumConverterConfiguration, ...) share their path with the
+                   vacancy execution's and would overwrite them. -->
+              <generateSupportingFiles>false</generateSupportingFiles>
+              <generateApiTests>false</generateApiTests>
+              <generateModelTests>false</generateModelTests>
+              <generateApiDocumentation>false</generateApiDocumentation>
+              <generateModelDocumentation>false</generateModelDocumentation>
+              <configOptions>
+                <useSpringBoot3>true</useSpringBoot3>
+                <useJspecify>true</useJspecify>
+                <useJakartaEe>true</useJakartaEe>
+                <dateLibrary>java8</dateLibrary>
+                <openApiNullable>false</openApiNullable>
+                <interfaceOnly>true</interfaceOnly>
+                <skipDefaultInterface>true</skipDefaultInterface>
               </configOptions>
             </configuration>
           </execution>

@@ -28,7 +28,7 @@ public interface VacancyDescriptionGenerationJpaMapper {
   @Mapping(target = "draftTasks", source = "draft.tasks")
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "lastModifiedAt", ignore = true)
-  @Mapping(target = "modifiedBy", ignore = true)
+  @Mapping(target = "lastModifiedBy", ignore = true)
   VacancyDescriptionGenerationJpaEntity toJpaEntity(VacancyDescriptionGeneration generation);
 
   @Mapping(target = "input", source = ".")
