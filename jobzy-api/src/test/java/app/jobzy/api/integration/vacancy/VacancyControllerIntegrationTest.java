@@ -10,6 +10,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import app.jobzy.api.adapter.out.persistence.vacancy.VacancyJpaRepository;
 import app.jobzy.api.integration.BaseIntegrationTest;
+import app.jobzy.api.vacancy.adapter.in.web.contract.Language;
 import app.jobzy.api.vacancy.adapter.in.web.contract.ProblemDetails;
 import app.jobzy.api.vacancy.adapter.in.web.contract.ProblemDetailsErrorsInner;
 import app.jobzy.api.vacancy.adapter.in.web.contract.VacancyResponse;
@@ -43,6 +44,7 @@ class VacancyControllerIntegrationTest extends BaseIntegrationTest {
   private static final Map<String, String> VALID_CORE_REQUEST =
       Map.ofEntries(
           Map.entry("jobTitle", "\"Sales Manager\""),
+          Map.entry("language", "\"NL\""),
           Map.entry("category", "\"SALES\""),
           Map.entry("location", "{\"country\": \"NL\", \"city\": \"Amsterdam\"}"),
           Map.entry("workplaceType", "\"HYBRID\""),
@@ -66,6 +68,7 @@ class VacancyControllerIntegrationTest extends BaseIntegrationTest {
     assertInstanceOf(UUID.class, result.getId());
     assertEquals(VacancyStatus.DRAFT, result.getStatus());
     assertEquals("Sales Manager", result.getJobTitle());
+    assertEquals(Language.NL, result.getLanguage());
     assertEquals("NL", result.getLocation().getCountry());
     assertEquals("Amsterdam", result.getLocation().getCity());
     assertEquals(BigDecimal.valueOf(32), result.getMinHoursPerWeek());
@@ -101,6 +104,7 @@ class VacancyControllerIntegrationTest extends BaseIntegrationTest {
     return Stream.of(
         arguments("jobTitle is missing", "jobTitle", "jobTitle", "null"),
         arguments("jobTitle exceeds 200 characters", "jobTitle", "jobTitle", TOO_LONG),
+        arguments("language is missing", "language", "language", "null"),
         arguments("category is missing", "category", "category", "null"),
         arguments("location is missing", "location", "location", "null"),
         arguments(
@@ -127,6 +131,29 @@ class VacancyControllerIntegrationTest extends BaseIntegrationTest {
         arguments(
             "maxHoursPerWeek is not greater than 1", "maxHoursPerWeek", "maxHoursPerWeek", "1"),
         arguments("maxHoursPerWeek exceeds 60", "maxHoursPerWeek", "maxHoursPerWeek", "61"));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("unreadableRequests")
+  @DisplayName(
+      "given a core request with a value outside an enum, when create vacancy, then it is rejected"
+          + " with 400")
+  void givenValueOutsideEnumWhenCreateVacancyThenRejectedWith400(
+      String violation, String jsonField, String jsonValue) {
+    var problemDetails =
+        makeRequestAndExpectedStatus(
+            requestBody(Map.of(jsonField, jsonValue)),
+            HttpStatus.BAD_REQUEST,
+            ProblemDetails.class);
+
+    assertEquals("Validation failed", problemDetails.getTitle());
+    assertEquals(0, vacancyJpaRepository.count());
+  }
+
+  private static Stream<Arguments> unreadableRequests() {
+    return Stream.of(
+        arguments("language in lower case", "language", "\"nl\""),
+        arguments("unknown category", "category", "\"ASTRONAUT\""));
   }
 
   private String requestBody(Map<String, String> overrides) {

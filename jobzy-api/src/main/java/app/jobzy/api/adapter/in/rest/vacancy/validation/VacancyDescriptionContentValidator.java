@@ -1,8 +1,8 @@
 package app.jobzy.api.adapter.in.rest.vacancy.validation;
 
 import app.jobzy.api.adapter.in.rest.vacancy.InvalidVacancyDescriptionRequestException;
+import app.jobzy.api.shared.validation.TextContentRules;
 import app.jobzy.api.vacancy.adapter.in.web.contract.VacancyDescriptionRequest;
-import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 
 /**
@@ -13,10 +13,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class VacancyDescriptionContentValidator {
-
-  private static final Pattern RAW_TAG = Pattern.compile("</?[a-zA-Z!][^>]*>?");
-  private static final Pattern DISALLOWED_CONTROL_CHARACTER =
-      Pattern.compile("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F-\\x9F]");
 
   /**
    * Validates each field in the request, throwing if any contains raw HTML-like tags or control
@@ -38,11 +34,11 @@ public class VacancyDescriptionContentValidator {
     if (value == null) {
       return;
     }
-    if (RAW_TAG.matcher(value).find()) {
+    if (TextContentRules.containsRawTag(value)) {
       throw new InvalidVacancyDescriptionRequestException(
           fieldName, fieldName + " must not contain raw HTML or script-like tags");
     }
-    if (DISALLOWED_CONTROL_CHARACTER.matcher(value).find()) {
+    if (TextContentRules.containsDisallowedControlCharacter(value)) {
       throw new InvalidVacancyDescriptionRequestException(
           fieldName, fieldName + " must not contain disallowed control characters");
     }

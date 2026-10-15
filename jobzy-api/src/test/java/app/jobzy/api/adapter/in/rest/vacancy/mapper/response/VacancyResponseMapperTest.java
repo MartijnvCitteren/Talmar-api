@@ -29,6 +29,7 @@ class VacancyResponseMapperTest {
     assertEquals(vacancy.getId(), result.getId());
     assertEquals(vacancy.getStatus().name(), result.getStatus().getValue());
     assertEquals(vacancy.getJobTitle(), result.getJobTitle());
+    assertEquals(vacancy.getLanguage().name(), result.getLanguage().name());
     assertEquals(vacancy.getCategory().name(), result.getCategory().getValue());
     assertEquals(vacancy.getLocation().country(), result.getLocation().getCountry());
     assertEquals(vacancy.getLocation().city(), result.getLocation().getCity());

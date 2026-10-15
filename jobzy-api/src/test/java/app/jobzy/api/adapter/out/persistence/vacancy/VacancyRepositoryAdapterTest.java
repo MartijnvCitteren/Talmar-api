@@ -118,4 +118,27 @@ class VacancyRepositoryAdapterTest {
     assertNull(reloaded.getDescription());
     assertTrue(descriptionJpaRepository.findByVacancyId(vacancy.getId()).isEmpty());
   }
+
+  @Test
+  @DisplayName(
+      "given a description with every text at its contract maximum length, when saved and"
+          + " reloaded then every text round-trips unchanged")
+  void givenDescriptionAtMaximumLengthsWhenSavedAndReloadedThenEveryTextRoundTrips() {
+    var description =
+        new VacancyDescription(
+            "s".repeat(1000),
+            "j".repeat(5000),
+            "t".repeat(5000),
+            "w".repeat(2500),
+            "a".repeat(2500),
+            VacancyDescriptionSource.MANUAL);
+    var vacancy = VacancyFactory.getFilledCoreVacancy().description(description).build();
+
+    vacancyRepositoryAdapter.save(vacancy);
+    entityManager.flush();
+    entityManager.clear();
+
+    var reloaded = vacancyRepositoryAdapter.findById(vacancy.getId()).orElseThrow();
+    assertEquals(description, reloaded.getDescription());
+  }
 }

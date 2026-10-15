@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import app.jobzy.api.application.port.in.command.CreateCoreVacancyCommand;
 import app.jobzy.api.domain.vacancy.valueobject.HoursPerWeek;
+import app.jobzy.api.vacancy.adapter.in.web.contract.Language;
 import app.jobzy.api.vacancy.adapter.in.web.contract.Location;
 import app.jobzy.api.vacancy.adapter.in.web.contract.VacancyCategory;
 import app.jobzy.api.vacancy.adapter.in.web.contract.VacancyCoreRequest;
@@ -32,6 +33,7 @@ class VacancyCoreRequestMapperTest {
     var request =
         new VacancyCoreRequest(
             "Backend Engineer",
+            Language.EN,
             VacancyCategory.ENGINEERING,
             new Location("NL", "Leiden"),
             WorkplaceType.HYBRID,
@@ -41,6 +43,7 @@ class VacancyCoreRequestMapperTest {
     var expected =
         CreateCoreVacancyCommand.builder()
             .jobTitle("Backend Engineer")
+            .language(app.jobzy.api.domain.vacancy.valueobject.Language.EN)
             .category(app.jobzy.api.domain.vacancy.valueobject.VacancyCategory.ENGINEERING)
             .location(new app.jobzy.api.domain.vacancy.valueobject.Location("NL", "Leiden"))
             .workplaceType(app.jobzy.api.domain.vacancy.valueobject.WorkplaceType.HYBRID)
@@ -50,6 +53,7 @@ class VacancyCoreRequestMapperTest {
     CreateCoreVacancyCommand result = mapper.toCommand(request);
 
     assertEquals(expected.jobTitle(), result.jobTitle());
+    assertEquals(expected.language(), result.language());
     assertEquals(expected.category(), result.category());
     assertEquals(expected.location(), result.location());
     assertEquals(expected.workplaceType(), result.workplaceType());

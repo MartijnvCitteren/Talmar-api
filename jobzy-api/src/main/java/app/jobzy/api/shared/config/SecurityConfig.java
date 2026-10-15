@@ -1,5 +1,6 @@
 package app.jobzy.api.shared.config;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -17,8 +18,12 @@ import org.springframework.security.web.SecurityFilterChain;
  * <p>CSRF protection, form login, HTTP basic and logout are disabled because the API is stateless
  * and will authenticate with bearer tokens, not cookies or sessions. CORS defers to the Spring MVC
  * configuration in {@link WebConfig}.
+ *
+ * <p>Only in a servlet web application: a filter chain has nothing to filter without one, and a
+ * test that starts the context without a web environment has no {@code HttpSecurity} to build it.
  */
 @Configuration
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 public class SecurityConfig {
 
   @Bean

@@ -1,9 +1,9 @@
 ---
 name: unit-testing
-description: Unit testing conventions for Java/Spring Boot classes in this project — JUnit 5 with Mockito for services, @DataJpaTest for repositories, Gherkin-style test naming with @DisplayName, parameterized tests, and an 85% coverage target for classes where it's meaningful. Use this whenever writing, reviewing, or reasoning about unit tests.
+description: Testing conventions for Java/Spring Boot classes in this project — JUnit 5 with Mockito for services, @DataJpaTest for repositories, RestAssured integration tests through the controller only with external systems on WireMock, Gherkin-style test naming with @DisplayName, parameterized tests, no assertions on mocked values, and an 85% coverage target for classes where it's meaningful. Use this whenever writing, reviewing, or reasoning about unit or integration tests.
 ---
 
-# Unit Testing
+# Testing
 
 ## Which tool for which layer
 
@@ -15,6 +15,44 @@ description: Unit testing conventions for Java/Spring Boot classes in this proje
   class under test (`@InjectMocks`), and run under
   `@ExtendWith(MockitoExtension.class)`. Do not boot a Spring context for a service
   test — if you find yourself reaching for `@SpringBootTest` here, that's a smell.
+
+## Only verify real behaviour (maintainer rule)
+
+A check that only repeats what the test itself set up proves nothing and misleads the reader. Remove it.
+
+- **Never assert a value a mock returned.** If the repository mock returns `3` and the service returns it, asserting
+  `3` tests Mockito. Verify the interaction instead: `verify(generationRepository).deleteRequestedBefore(cutoff)`.
+- Likewise, don't assert that a mocked draft or failure reason ended up on the object under test; `verify(...).save(...)`
+  is what the service does. Assert a value only when the class under test computed it (e.g. a timestamp from the
+  injected `Clock`, or the failure reason the service chose itself when the generator threw).
+- Use the specific assertion: `assertNull(x)`, not `assertEquals(null, x)`.
+- A lambda in `assertThrows` contains exactly one call that can throw (SonarQube): prepare ids, drafts and other
+  arguments in local variables before it.
+
+## Service tests: Mockito setup
+
+- Use `@InjectMocks`, not a hand-written constructor call in `@BeforeEach`.
+- Fixed values are `private static final` constants. A collaborator that is a value, such as a `Clock` or a properties
+  record, goes in as `@Spy private Clock clock = CLOCK;` so `@InjectMocks` can use it. Error Prone flags a field that is
+  never read: read the spy in the test where the class under test uses it (`LocalDateTime.now(clock)`), or fall back to
+  the constructor when the test has no reason to read it.
+- Name variables after what they hold (`userPrompt`, `pendingGeneration`), and test doubles after what they replace
+  (`MISTRAL_WIREMOCK`).
+
+## Integration tests (`integration/`, RestAssured)
+
+- **Only through the API.** A test sends HTTP requests and asserts on HTTP responses. It never inserts, reads or
+  verifies through a repository, a use case or another class halfway the process, and never starts halfway a flow (e.g.
+  by saving a domain object directly). State that the API cannot reach in a test (e.g. a timeout after 90 seconds) is
+  covered by unit tests instead.
+- **Replace only what is outside the application.** External systems (Mistral) run on WireMock (`testSupport/MistralStub`);
+  never `@MockitoBean` one of our own ports. What the external system received is an observable effect you may verify.
+- **Fixtures as SQL.** Data a test needs to exist beforehand (e.g. a vacancy to generate a description for) is seeded
+  with an `@Sql` script under `src/test/resources/sql/`, which first clears the tables it touches. Don't create it
+  through another endpoint in every test.
+- One test class per endpoint or flow (e.g. starting a generation, polling it), each with happy and unhappy flows.
+- `@Async` work runs on `SynchronousAsyncConfig`'s executor, which finishes it before the request returns: no sleeping
+  or polling.
 
 ## Coverage target: 85%, but only where it's meaningful
 
@@ -123,6 +161,6 @@ class VacancyRepositoryTest {
 void givenForbiddenCharacterWhenValidateThenRejected(String forbiddenChar) {
     boolean result = vacancyValidator.isValid("Backend Engineer" + forbiddenChar);
 
-    assertEquals(false, result);
+    assertFalse(result);
 }
 ```

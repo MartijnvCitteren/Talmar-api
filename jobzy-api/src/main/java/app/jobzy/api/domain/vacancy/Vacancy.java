@@ -3,6 +3,7 @@ package app.jobzy.api.domain.vacancy;
 import app.jobzy.api.domain.BaseObject;
 import app.jobzy.api.domain.UuidV7Generator;
 import app.jobzy.api.domain.vacancy.valueobject.HoursPerWeek;
+import app.jobzy.api.domain.vacancy.valueobject.Language;
 import app.jobzy.api.domain.vacancy.valueobject.Location;
 import app.jobzy.api.domain.vacancy.valueobject.VacancyCategory;
 import app.jobzy.api.domain.vacancy.valueobject.VacancyDescription;
@@ -16,6 +17,7 @@ public class Vacancy extends BaseObject {
 
   private final UUID id;
   private String jobTitle;
+  private Language language;
   private VacancyCategory category;
   private Location location;
   private WorkplaceType workplaceType;
@@ -26,6 +28,7 @@ public class Vacancy extends BaseObject {
   private Vacancy(
       UUID id,
       String jobTitle,
+      Language language,
       VacancyCategory category,
       Location location,
       WorkplaceType workplaceType,
@@ -36,6 +39,7 @@ public class Vacancy extends BaseObject {
     super(createdAt);
     this.id = id;
     this.jobTitle = jobTitle;
+    this.language = language;
     this.category = category;
     this.location = location;
     this.workplaceType = workplaceType;
@@ -54,6 +58,14 @@ public class Vacancy extends BaseObject {
 
   public void setJobTitle(String jobTitle) {
     this.jobTitle = jobTitle;
+  }
+
+  public Language getLanguage() {
+    return language;
+  }
+
+  public void setLanguage(Language language) {
+    this.language = language;
   }
 
   public VacancyCategory getCategory() {
@@ -129,6 +141,8 @@ public class Vacancy extends BaseObject {
         + ", jobTitle='"
         + jobTitle
         + '\''
+        + ", language="
+        + language
         + ", category="
         + category
         + ", location="
@@ -145,6 +159,7 @@ public class Vacancy extends BaseObject {
   public static class Builder {
     private UUID explicitId;
     private String jobTitle;
+    private Language language;
     private VacancyCategory category;
     private Location location;
     private WorkplaceType workplaceType;
@@ -162,6 +177,11 @@ public class Vacancy extends BaseObject {
 
     public Builder jobTitle(String jobTitle) {
       this.jobTitle = jobTitle;
+      return this;
+    }
+
+    public Builder language(Language language) {
+      this.language = language;
       return this;
     }
 
@@ -205,6 +225,7 @@ public class Vacancy extends BaseObject {
       return new Vacancy(
           id,
           Objects.requireNonNull(jobTitle, "jobTitle is required"),
+          Objects.requireNonNull(language, "language is required"),
           Objects.requireNonNull(category, "category is required"),
           Objects.requireNonNull(location, "location is required"),
           Objects.requireNonNull(workplaceType, "workplaceType is required"),

@@ -9,10 +9,8 @@ import app.jobzy.api.adapter.in.rest.vacancy.validation.VacancyDescriptionConten
 import app.jobzy.api.application.port.in.CreateVacancyUseCase;
 import app.jobzy.api.application.port.in.ManualVacancyDescriptionUseCase;
 import app.jobzy.api.vacancy.adapter.in.rest.VacancyApi;
-import app.jobzy.api.vacancy.adapter.in.web.contract.GenerateVacancyDescriptionRequest;
 import app.jobzy.api.vacancy.adapter.in.web.contract.VacancyCategory;
 import app.jobzy.api.vacancy.adapter.in.web.contract.VacancyCoreRequest;
-import app.jobzy.api.vacancy.adapter.in.web.contract.VacancyDescriptionGeneration;
 import app.jobzy.api.vacancy.adapter.in.web.contract.VacancyDescriptionRequest;
 import app.jobzy.api.vacancy.adapter.in.web.contract.VacancyDescriptionResponse;
 import app.jobzy.api.vacancy.adapter.in.web.contract.VacancyListResponse;
@@ -30,7 +28,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Only {@link #createVacancy} and {@link #manualVacancyDescription} are wired up so far. The
+ * Only {@link #createVacancy} and {@link #manualVacancyDescription} are wired up so far; the
+ * description-generation operations live in {@code VacancyDescriptionGenerationController}. The
  * generated {@link VacancyApi} has no default methods ({@code skipDefaultInterface}), so every
  * other operation throws {@link EndpointNotImplementedException}, which responds with 501 Not
  * Implemented.
@@ -72,20 +71,8 @@ public class VacancyController implements VacancyApi {
   }
 
   @Override
-  public ResponseEntity<VacancyDescriptionGeneration> generateVacancyDescription(
-      UUID id, GenerateVacancyDescriptionRequest generateVacancyDescriptionRequest) {
-    throw new EndpointNotImplementedException("generateVacancyDescription");
-  }
-
-  @Override
   public ResponseEntity<VacancyResponse> getVacancy(UUID id) {
     throw new EndpointNotImplementedException("getVacancy");
-  }
-
-  @Override
-  public ResponseEntity<VacancyDescriptionGeneration> getVacancyDescriptionGeneration(
-      UUID id, UUID generationId) {
-    throw new EndpointNotImplementedException("getVacancyDescriptionGeneration");
   }
 
   @Override

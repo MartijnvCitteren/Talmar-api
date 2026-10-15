@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import app.jobzy.api.domain.vacancy.valueobject.HoursPerWeek;
+import app.jobzy.api.domain.vacancy.valueobject.Language;
 import app.jobzy.api.domain.vacancy.valueobject.Location;
 import app.jobzy.api.domain.vacancy.valueobject.VacancyCategory;
 import app.jobzy.api.domain.vacancy.valueobject.VacancyDescription;
@@ -57,6 +58,7 @@ class VacancyTest {
     var vacancy =
         Vacancy.builder()
             .jobTitle("Backend Engineer")
+            .language(Language.EN)
             .category(VacancyCategory.ENGINEERING)
             .location(new Location("The Netherlands", "Leiden"))
             .workplaceType(WorkplaceType.REMOTE)
@@ -76,6 +78,7 @@ class VacancyTest {
     var vacancy =
         Vacancy.builder()
             .jobTitle("Sales Manager")
+            .language(Language.NL)
             .category(VacancyCategory.SALES)
             .location(location)
             .workplaceType(WorkplaceType.HYBRID)
@@ -85,6 +88,7 @@ class VacancyTest {
             .build();
 
     assertEquals("Sales Manager", vacancy.getJobTitle());
+    assertEquals(Language.NL, vacancy.getLanguage());
     assertEquals(VacancyCategory.SALES, vacancy.getCategory());
     assertEquals(location, vacancy.getLocation());
     assertEquals(WorkplaceType.HYBRID, vacancy.getWorkplaceType());
@@ -99,6 +103,7 @@ class VacancyTest {
     var builder =
         Vacancy.builder()
             .jobTitle("Backend Engineer")
+            .language(Language.EN)
             .category(VacancyCategory.ENGINEERING)
             .location(new Location("The Netherlands", "Leiden"))
             .workplaceType(WorkplaceType.REMOTE)

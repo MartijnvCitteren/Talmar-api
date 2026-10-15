@@ -173,7 +173,9 @@ them. When a review adds a new preference, add it here in the same PR.
 - Prefer `application.yml` over a Java `@Configuration` class when Spring Boot can configure it through properties.
 - `toString` contains ids and process data only: no personal data, and no large text fields that flood the logs.
 - Fix static-analysis and SonarQube hints instead of ignoring them (e.g. use a record pattern in a `switch`).
-- Versions of prompts and similar artifacts follow semver: `V1.0.0`.
+- Versions of prompts and similar artifacts follow semver: `V1.0.0`. A prompt file starts with a template comment
+  holding its version and a changelog (newest first) that the model never sees; bump the version with every change.
+- Name query aliases and lambda parameters after what they are (`generation`, not `g`).
 
 **Security and data**
 - Don't settle for the minimum on security. Choose the strong recommended setting, name the cost (memory, latency,
@@ -181,6 +183,8 @@ them. When a review adds a new preference, add it here in the same PR.
 - Audit columns reference the user by `app_user` id (`lastModifiedBy`), never by name or e-mail address.
 - Relations between tables are real foreign keys in JPA (e.g. `@ManyToOne`), even when the domain references another
   aggregate by id only.
+- Classify a field as personal data only when it can identify a specific person. Free text that describes a job or a
+  team (e.g. the answers for AI vacancy text) is process data.
 
 **Tests**
 - Every assertion and every `verify` checks behaviour that matters. Remove checks that test nothing; they confuse
@@ -188,6 +192,8 @@ them. When a review adds a new preference, add it here in the same PR.
 - Assert against the input you passed in (`assertEquals(request.summary(), result.summary())`), not against literals
   typed out a second time.
 - Contract validation is tested where it happens: through the REST adapter (integration test), not in domain tests.
+- More test rules (mocks, integration tests, Sonar hints) are in the `unit-testing` skill
+  (`.claude/skills/unit-testing/SKILL.md`); read it before writing or changing tests.
 
 **Processing a review**
 - Reply to every review comment in its thread: what changed and in which commit, or why it did not change. Answer a

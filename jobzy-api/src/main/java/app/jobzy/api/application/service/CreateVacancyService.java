@@ -23,6 +23,7 @@ public class CreateVacancyService implements CreateVacancyUseCase {
     var vacancy =
         Vacancy.builder()
             .jobTitle(command.jobTitle())
+            .language(command.language())
             .location(command.location())
             .category(command.category())
             .status(VacancyStatus.DRAFT)

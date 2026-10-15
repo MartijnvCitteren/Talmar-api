@@ -3,6 +3,7 @@ package app.jobzy.api.testSupport;
 import app.jobzy.api.application.port.in.command.CreateCoreVacancyCommand;
 import app.jobzy.api.domain.vacancy.Vacancy;
 import app.jobzy.api.domain.vacancy.valueobject.HoursPerWeek;
+import app.jobzy.api.domain.vacancy.valueobject.Language;
 import app.jobzy.api.domain.vacancy.valueobject.Location;
 import app.jobzy.api.domain.vacancy.valueobject.VacancyCategory;
 import app.jobzy.api.domain.vacancy.valueobject.VacancyStatus;
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 
 public class VacancyFactory {
   public static final String JOB_TITLE = "Sales Manager";
+  public static final Language LANGUAGE = Language.NL;
   public static final VacancyCategory CATEGORY = VacancyCategory.SALES;
   public static final BigDecimal MIN_HOURS_PER_WEEK = BigDecimal.valueOf(32);
   public static final BigDecimal MAX_HOURS_PER_WEEK = BigDecimal.valueOf(40);
@@ -24,6 +26,7 @@ public class VacancyFactory {
   public static Vacancy.Builder getFilledCoreVacancy() {
     return Vacancy.builder()
         .jobTitle(JOB_TITLE)
+        .language(LANGUAGE)
         .category(CATEGORY)
         .hoursPerWeek(new HoursPerWeek(MIN_HOURS_PER_WEEK, MAX_HOURS_PER_WEEK))
         .location(new Location(COUNTRY, CITY))
@@ -36,6 +39,7 @@ public class VacancyFactory {
       getFilledCreateCoreVacancyCommand() {
     return CreateCoreVacancyCommand.builder()
         .jobTitle(JOB_TITLE)
+        .language(LANGUAGE)
         .category(CATEGORY)
         .location(new Location(COUNTRY, CITY))
         .workplaceType(WORKPLACE_TYPE)

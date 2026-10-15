@@ -12,6 +12,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -83,6 +84,25 @@ public class GlobalExceptionHandler {
     problemDetails.setDetail(ex.getMessage());
     problemDetails.setInstance(URI.create(request.getRequestURI()));
     return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(problemDetails);
+  }
+
+  /**
+   * Turns a body that cannot be read into the request type (malformed JSON, or a value outside an
+   * enum such as a lower-case {@code language}) into an RFC 9457 400 problem response. Without this
+   * the catch-all below would answer a client mistake with a 500. The parser's message is not
+   * echoed: it can repeat the rejected input.
+   */
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  ResponseEntity<ProblemDetails> handleHttpMessageNotReadableException(
+      HttpMessageNotReadableException ex, HttpServletRequest request) {
+    log.warn("Unreadable request body: {}", ex.getClass().getSimpleName());
+    var problemDetails =
+        new ProblemDetails(Constants.VALIDATION_FAILED_TITLE, HttpStatus.BAD_REQUEST.value());
+    problemDetails.setDetail(Constants.UNREADABLE_REQUEST_DETAIL);
+    problemDetails.setInstance(URI.create(request.getRequestURI()));
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(problemDetails);
   }

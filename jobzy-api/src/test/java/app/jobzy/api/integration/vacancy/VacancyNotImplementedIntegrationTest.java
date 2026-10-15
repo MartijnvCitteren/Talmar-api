@@ -23,7 +23,6 @@ import org.springframework.http.HttpStatus;
 class VacancyNotImplementedIntegrationTest extends BaseIntegrationTest {
 
   private static final String PROBLEM_JSON = "application/problem+json";
-  private static final String JSON = "application/json";
   private static final String MERGE_PATCH_JSON = "application/merge-patch+json";
   private static final String VACANCY = "/vacancy/" + UUID.randomUUID();
 
@@ -64,18 +63,6 @@ class VacancyNotImplementedIntegrationTest extends BaseIntegrationTest {
         arguments("publishVacancy", Method.POST, VACANCY + "/publish", null, null),
         arguments("fillVacancy", Method.POST, VACANCY + "/fill", null, null),
         arguments("closeVacancy", Method.POST, VACANCY + "/close", null, null),
-        arguments(
-            "generateVacancyDescription",
-            Method.POST,
-            VACANCY + "/generate-description",
-            JSON,
-            "{\"mostImportantTasks\": \"Cook\", \"team\": \"Kitchen\", \"whyNiceJob\": \"Fun\"}"),
-        arguments("listVacancies", Method.GET, VACANCY + "/generate-description", null, null),
-        arguments(
-            "getVacancyDescriptionGeneration",
-            Method.GET,
-            VACANCY + "/generate-description/" + UUID.randomUUID(),
-            null,
-            null));
+        arguments("listVacancies", Method.GET, VACANCY + "/generate-description", null, null));
   }
 }
