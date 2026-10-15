@@ -16,7 +16,7 @@
   <description>Jobzy - making recruitment easy</description>
 
   <properties>
-    <openapi-generator.version>7.25.0</openapi-generator.version>
+    <openapi-generator.version>7.26.0</openapi-generator.version>
     <vacancy-api.spec>${project.basedir}/../jobzy-contracts/src/main/java/app/jobzy/contracts/VacancyApi.yml
     </vacancy-api.spec>
     <identity-api.spec>${project.basedir}/../jobzy-contracts/src/main/java/app/jobzy/contracts/IdentityApi.yml
