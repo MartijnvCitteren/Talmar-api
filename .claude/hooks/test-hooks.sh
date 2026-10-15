@@ -67,12 +67,31 @@ expect_bash ask 'python3 - <<EOF
 open(".claude/CLAUDE.md", "w").write("x")
 EOF'
 expect_bash ask 'chmod -x .githooks/pre-commit'
+expect_bash ask 'cd jobzy-api && rm ../.claude/hooks/guard-bash.sh'
+expect_bash ask 'ls && mv .github/workflows/ci.yml /tmp/'
 expect_bash ask "sed -i '' 's/assert/x/' jobzy-api/src/test/java/app/jobzy/api/archunit/ArchitectureTest.java"
 expect_bash ask 'cat > config/spotbugs-exclude.xml <<EOF
 <FindBugsFilter/>
 EOF'
 expect_bash allow "sed -i '' 's/x/y/' jobzy-api/src/main/java/app/jobzy/api/shared/config/WebConfig.java"
 expect_bash ask "rm \"$CLAUDE_PROJECT_DIR/.claude/hooks/verify-on-stop.sh\""
+
+# --- guard-bash: running the Maven Wrapper is not a write to it
+expect_bash allow './mvnw -pl jobzy-api test > /tmp/test.log'
+expect_bash allow './mvnw verify 2>&1 | tee /tmp/verify.log'
+expect_bash allow "sed -i '' 's/a/b/' jobzy-api/src/test/java/app/jobzy/api/FooTest.java && ./mvnw -pl jobzy-api test"
+expect_bash allow 'git checkout -b fix/x && ./mvnw verify'
+expect_bash allow "cd jobzy-api && \"$CLAUDE_PROJECT_DIR/mvnw\" test > /tmp/test.log"
+expect_bash ask 'cp /tmp/mvnw mvnw'
+expect_bash ask 'echo x > mvnw'
+expect_bash ask './mvnw verify && chmod -x mvnw'
+expect_bash ask './mvnw verify > .mvn/wrapper/maven-wrapper.properties'
+
+# --- guard-bash: a worktree under .claude/worktrees/ is judged relative to that worktree
+expect_bash allow "sed -i '' 's/a/b/' $CLAUDE_PROJECT_DIR/.claude/worktrees/agent-1/jobzy-api/src/test/java/FooTest.java"
+expect_bash allow "cd .claude/worktrees/agent-1 && sed -i '' 's/a/b/' jobzy-api/src/test/java/FooTest.java"
+expect_bash ask "sed -i '' 's/x/y/' .claude/worktrees/agent-1/.claude/settings.json"
+expect_bash ask 'rm -rf .claude/worktrees/../hooks'
 
 # --- guard-bash: patterns stay within one command segment
 expect_bash allow 'git push -u origin fix/add-harness && gh pr create --base main --title x --body-file /tmp/b.md'
@@ -123,5 +142,26 @@ expect_path allow "$p/jobzy-api/src/main/java/app/jobzy/api/domain/vacancy/Vacan
 expect_path allow "$p/jobzy-contracts/src/main/java/app/jobzy/contracts/VacancyApi.yml"
 expect_path allow "$p/docs/adr/0002-something.md"
 expect_path allow "$HOME/.claude/projects/x/memory/MEMORY.md"
+
+# --- guard-paths: files are judged relative to the worktree of this repository they belong to
+nested="$p/.claude/worktrees/hook-test-$$"
+sibling_parent=$(cd "$(mktemp -d)" && pwd -P)
+sibling="$sibling_parent/sibling"
+cleanup() {
+  git -C "$p" worktree remove --force "$nested" 2>/dev/null
+  git -C "$p" worktree remove --force "$sibling" 2>/dev/null
+  rmdir "$sibling_parent" "$p/.claude/worktrees" 2>/dev/null
+}
+trap cleanup EXIT
+git -C "$p" worktree add -q --detach --no-checkout "$nested"
+git -C "$p" worktree add -q --detach --no-checkout "$sibling"
+expect_path allow "$nested/jobzy-api/src/test/java/app/jobzy/api/FooTest.java"
+expect_path ask "$nested/.claude/settings.json"
+expect_path ask "$nested/jobzy-api/src/test/java/app/jobzy/api/archunit/ArchitectureTest.java"
+expect_path deny "$nested/jobzy-api/target/classes/application.yml"
+expect_path allow "$sibling/jobzy-api/src/test/java/app/jobzy/api/FooTest.java"
+expect_path ask "$sibling/.github/workflows/ci.yml"
+expect_path ask "$p/.claude/worktrees/../hooks/guard-bash.sh"
+expect_path allow "$sibling_parent/other-repo/.claude/settings.json"
 
 if [ "$failures" -eq 0 ]; then echo "All hook tests passed."; else echo "$failures hook test(s) failed."; exit 1; fi
