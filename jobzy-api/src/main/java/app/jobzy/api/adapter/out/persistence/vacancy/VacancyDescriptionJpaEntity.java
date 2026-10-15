@@ -3,6 +3,7 @@ package app.jobzy.api.adapter.out.persistence.vacancy;
 import app.jobzy.api.adapter.out.persistence.BaseJpaEntity;
 import app.jobzy.api.domain.vacancy.valueobject.VacancyDescriptionSource;
 import app.jobzy.api.shared.gdpr.ProcessData;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -30,11 +31,27 @@ public class VacancyDescriptionJpaEntity extends BaseJpaEntity {
   @JoinColumn(name = "vacancy_id")
   private VacancyJpaEntity vacancy;
 
-  @ProcessData private String summary;
-  @ProcessData private String jobDescription;
-  @ProcessData private String tasks;
-  @ProcessData private String whatWeOffer;
-  @ProcessData private String aboutUs;
+  // Lengths match the contract's VacancyDescriptionRequest; without them every text would be
+  // capped at the 255-character default.
+  @ProcessData
+  @Column(length = 1000)
+  private String summary;
+
+  @ProcessData
+  @Column(length = 5000)
+  private String jobDescription;
+
+  @ProcessData
+  @Column(length = 5000)
+  private String tasks;
+
+  @ProcessData
+  @Column(length = 2500)
+  private String whatWeOffer;
+
+  @ProcessData
+  @Column(length = 2500)
+  private String aboutUs;
 
   @ProcessData
   @Enumerated(EnumType.STRING)

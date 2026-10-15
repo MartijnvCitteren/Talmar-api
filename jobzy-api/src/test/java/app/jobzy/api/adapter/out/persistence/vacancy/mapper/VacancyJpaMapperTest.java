@@ -34,6 +34,7 @@ class VacancyJpaMapperTest {
 
     assertInstanceOf(UUID.class, result.getId());
     assertEquals(vacancy.getJobTitle(), result.getJobTitle());
+    assertEquals(vacancy.getLanguage(), result.getLanguage());
     assertEquals(vacancy.getCategory(), result.getCategory());
     assertEquals(vacancy.getLocation(), result.getLocation());
     assertEquals(vacancy.getWorkplaceType(), result.getWorkplaceType());
@@ -70,6 +71,7 @@ class VacancyJpaMapperTest {
 
     assertEquals(vacancyEntity.getId(), result.getId());
     assertEquals(vacancyEntity.getJobTitle(), result.getJobTitle());
+    assertEquals(vacancyEntity.getLanguage(), result.getLanguage());
     assertEquals(vacancyEntity.getCategory(), result.getCategory());
     assertEquals(vacancyEntity.getLocation(), result.getLocation());
     assertEquals(vacancyEntity.getWorkplaceType(), result.getWorkplaceType());

@@ -1,0 +1,5 @@
+# Verified false positives only: one fingerprint per finding, each with the reason. Never add a real secret here;
+# rotate it instead.
+
+# Made-up example confirmation token in an OpenAPI request example (PR #95); replaced by a placeholder in a later commit.
+611ba562ff9d94407c4dfad957c36205f9a02d36:jobzy-contracts/src/main/java/app/jobzy/contracts/IdentityApi.yml:generic-api-key:92

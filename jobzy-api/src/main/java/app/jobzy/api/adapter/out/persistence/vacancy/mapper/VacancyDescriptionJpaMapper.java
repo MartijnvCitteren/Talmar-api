@@ -33,6 +33,6 @@ public interface VacancyDescriptionJpaMapper {
   @Mapping(target = "vacancy", ignore = true)
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "lastModifiedAt", ignore = true)
-  @Mapping(target = "modifiedBy", ignore = true)
+  @Mapping(target = "lastModifiedBy", ignore = true)
   VacancyDescriptionJpaEntity toJpaEntity(VacancyDescription description);
 }

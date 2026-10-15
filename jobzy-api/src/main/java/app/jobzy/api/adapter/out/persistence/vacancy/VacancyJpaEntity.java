@@ -2,12 +2,14 @@ package app.jobzy.api.adapter.out.persistence.vacancy;
 
 import app.jobzy.api.adapter.out.persistence.BaseJpaEntity;
 import app.jobzy.api.domain.vacancy.valueobject.HoursPerWeek;
+import app.jobzy.api.domain.vacancy.valueobject.Language;
 import app.jobzy.api.domain.vacancy.valueobject.Location;
 import app.jobzy.api.domain.vacancy.valueobject.VacancyCategory;
 import app.jobzy.api.domain.vacancy.valueobject.VacancyStatus;
 import app.jobzy.api.domain.vacancy.valueobject.WorkplaceType;
 import app.jobzy.api.shared.gdpr.ProcessData;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -31,6 +33,11 @@ import lombok.Setter;
 public class VacancyJpaEntity extends BaseJpaEntity {
   @Id private UUID id;
   @ProcessData private String jobTitle;
+
+  @ProcessData
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 2)
+  private Language language;
 
   @OneToOne(
       mappedBy = "vacancy",

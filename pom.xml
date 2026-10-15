@@ -16,7 +16,9 @@
 	</modules>
 
 	<properties>
+		<antlr4.version>4.13.2</antlr4.version>
 		<arch-unit.version>1.5.1</arch-unit.version>
+		<bouncycastle.version>1.86</bouncycastle.version>
 		<error-prone.version>2.50.0</error-prone.version>
 		<findsecbugs.version>1.14.0</findsecbugs.version>
 		<java.version>25</java.version>
@@ -31,17 +33,19 @@
 		<rest-assured.version>6.0.1</rest-assured.version>
 		<spotbugs-maven-plugin.version>4.10.4.1</spotbugs-maven-plugin.version>
 		<spotless.version>3.10.3</spotless.version>
+		<spring-ai.version>2.0.1</spring-ai.version>
 		<spring-boot.version>4.1.1</spring-boot.version>
 		<swagger-annotations.version>2.2.55</swagger-annotations.version>
 		<uuid-generator.version>5.2.0</uuid-generator.version>
+		<wiremock.version>3.13.2</wiremock.version>
 		<!-- Seed for the random test order. Varies per build; reproduce a failing order with -Dtest.order.seed=<seed>
 		     (the seed is printed at the start of the test run). -->
 		<maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
 		<test.order.seed>${maven.build.timestamp}</test.order.seed>
 		<!-- Security overrides of Spring Boot managed versions. Remove each one as soon as the Spring Boot
 		     version above manages an equal or newer version. -->
-		<jackson-bom.override.version>3.2.3</jackson-bom.override.version> <!-- GHSA-cxp5-3px4-pw24, GHSA-7hhh-6rmp-j9qf, ... -->
-		<tomcat.override.version>11.0.26</tomcat.override.version> <!-- GHSA-9xv2-5v5q-p794, GHSA-gcx9-497g-6cp6, GHSA-h3x4-894j-xpx5 -->
+		<jackson-bom.override.version>3.2.3</jackson-bom.override.version>
+		<tomcat.override.version>11.0.26</tomcat.override.version>
 	</properties>
 
 	<dependencyManagement>
@@ -83,8 +87,27 @@
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 			<version>${spring-boot.version}</version>
 			</dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-bom</artifactId>
+				<version>${spring-ai.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
 
 		<!-- OTHER			-->
+			<!-- Dependency convergence: Hibernate and Spring Data JPA use 4.13.2, Spring AI's StringTemplate
+			     renderer still asks for 4.13.1. Remove once Spring AI aligns. -->
+			<dependency>
+				<groupId>org.antlr</groupId>
+				<artifactId>antlr4-runtime</artifactId>
+				<version>${antlr4.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.bouncycastle</groupId>
+				<artifactId>bcprov-jdk18on</artifactId>
+				<version>${bouncycastle.version}</version>
+			</dependency>
 			<dependency>
 				<groupId>com.fasterxml.uuid</groupId>
 				<artifactId>java-uuid-generator</artifactId>
@@ -122,6 +145,12 @@
 				<groupId>com.tngtech.archunit</groupId>
 				<artifactId>archunit-junit5</artifactId>
 				<version>${arch-unit.version}</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.wiremock</groupId>
+				<artifactId>wiremock-standalone</artifactId>
+				<version>${wiremock.version}</version>
 				<scope>test</scope>
 			</dependency>
 

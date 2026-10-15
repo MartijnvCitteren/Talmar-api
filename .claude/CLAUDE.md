@@ -125,6 +125,80 @@ Root modules (`pom.xml` `<modules>`): **`jobzy-contracts`** and **`jobzy-api`**.
   entity, mapped superclass or embeddable carries exactly one of `@PersonalData` or `@ProcessData`; `@Id`, `@Version`,
   `@Transient` and associations are exempt (the entity they point to classifies its own columns).
 
+## Code conventions (maintainer preferences)
+
+These come from the maintainer's PR reviews. Follow them from the first commit; a reviewer should not have to repeat
+them. When a review adds a new preference, add it here in the same PR.
+
+**Validation: fail fast at the edge**
+- Input validation (presence, length, format, allowed characters, enums) is part of the API contract and happens in
+  the adapter, before the application layer runs: as constraints in the OpenAPI YAML (bean validation on the generated
+  model), or in an adapter validator (`adapter/in/rest/<aggregate>/validation/`) when YAML cannot express it. The same
+  goes for data from an outbound adapter (e.g. an LLM response): validate it in that adapter.
+- The domain and application layers do not validate again. No null, blank, length or format checks in value objects
+  or services for values the adapter has already checked. A null that slips through anyway is our bug and may surface
+  as a 500.
+- A rule the API promises is a contract rule, also when it needs a list the YAML cannot hold (e.g. "work e-mail
+  addresses only" against a block list): it goes in an adapter validator, so a change to the API requirement only
+  touches the adapter.
+- The domain holds the business rules only: state transitions, expiry, derived values, membership. A business rule
+  that needs a port lives in the use case.
+- Contract fields get tight, realistic limits and a whitelist of allowed characters where free text is not needed
+  (names: 35 characters of letters, spaces, `-`, `'`, `.`; e-mail: 75 characters). Every request body gets realistic
+  `examples`, so Swagger UI does not generate gibberish from the patterns.
+- Don't ask the user for what can be derived (e.g. the company name from the e-mail domain). Let them correct it later.
+
+**Errors and exceptions**
+- Exception handlers stay dumb: no logic, no branching on message or cause. Throw a specific exception for each
+  response from the start, so changing a response never means changing handler logic. One exception handler per
+  aggregate, next to its controller; shared constants live in a separate class (e.g. `shared.Constants`).
+- Error responses only contain what the contract promises. Never show the user what exactly failed inside; log the
+  detail at `error` level.
+- Use the HTTP status for what it means. `401` is only for missing or expired authentication, never for an invalid
+  token in a request body.
+- No `serialVersionUID`/`@Serial` on exceptions: we never Java-serialize them.
+- External calls distinguish retryable from non-retryable failures. When retrying cannot help, tell the user at once
+  that the service is unavailable.
+
+**Naming and structure**
+- A name says exactly what happens. A method named `start…`, `generate…` or `send…` must do that. A method that only
+  builds and returns an object is named like a factory or mapper. Name use-case fields after the use case
+  (`startGenerationUseCase`, not `starter`).
+- Keep methods small: extract each step into a private method named after the step (`getGeneration`,
+  `validateResponse`, `processResponse`).
+- Make visibility as narrow as possible. Fields that never change, such as ids, are `final`.
+- Outside `domain`, use Lombok: `@Getter` and `@RequiredArgsConstructor`, no hand-written getters or constructors.
+  Inside `domain`: no external dependencies at all (no Lombok, no JSpecify), so getters are written by hand.
+- A sealed type lists its subtypes explicitly with `permits`.
+- Prefer `application.yml` over a Java `@Configuration` class when Spring Boot can configure it through properties.
+- `toString` contains ids and process data only: no personal data, and no large text fields that flood the logs.
+- Fix static-analysis and SonarQube hints instead of ignoring them (e.g. use a record pattern in a `switch`).
+- Versions of prompts and similar artifacts follow semver: `V1.0.0`. A prompt file starts with a template comment
+  holding its version and a changelog (newest first) that the model never sees; bump the version with every change.
+- Name query aliases and lambda parameters after what they are (`generation`, not `g`).
+
+**Security and data**
+- Don't settle for the minimum on security. Choose the strong recommended setting, name the cost (memory, latency,
+  money) and record it (e.g. Argon2id with RFC 9106 parameters, not the OWASP baseline).
+- Audit columns reference the user by `app_user` id (`lastModifiedBy`), never by name or e-mail address.
+- Relations between tables are real foreign keys in JPA (e.g. `@ManyToOne`), even when the domain references another
+  aggregate by id only.
+- Classify a field as personal data only when it can identify a specific person. Free text that describes a job or a
+  team (e.g. the answers for AI vacancy text) is process data.
+
+**Tests**
+- Every assertion and every `verify` checks behaviour that matters. Remove checks that test nothing; they confuse
+  more than they protect.
+- Assert against the input you passed in (`assertEquals(request.summary(), result.summary())`), not against literals
+  typed out a second time.
+- Contract validation is tested where it happens: through the REST adapter (integration test), not in domain tests.
+- More test rules (mocks, integration tests, Sonar hints) are in the `unit-testing` skill
+  (`.claude/skills/unit-testing/SKILL.md`); read it before writing or changing tests.
+
+**Processing a review**
+- Reply to every review comment in its thread: what changed and in which commit, or why it did not change. Answer a
+  question with reasoning. If you disagree, say so and explain why; the maintainer decides.
+
 ## Application docs
 
 `docs/application/` describes how the application works *as it is on `main`*: `overview.md` for the module layout,
@@ -160,8 +234,10 @@ Always use the wrapper (`./mvnw`), never a globally installed `mvn`.
   `application..`. Everything there is non-null unless annotated `org.jspecify.annotations.@Nullable`. A new package
   under `application` gets a `package-info.java` with `@NullMarked`; adopt it in adapters package by package. Never fix
   a NullAway error with a blanket `@Nullable` — decide whether the value can really be absent. **`domain` stays free of
-  JSpecify** (maintainer decision: zero external dependencies there, `ArchitectureTest` enforces it); guard against
-  null in domain code itself (e.g. `Objects.requireNonNull` in builders/constructors).
+  JSpecify** (maintainer decision: zero external dependencies there, `ArchitectureTest` enforces it). The maintainer
+  accepts the risk of a null there instead: the domain does not re-check request input the adapter has validated (see
+  "Code conventions"). `Objects.requireNonNull` in an aggregate builder is only for state the aggregate itself must
+  always have.
 - **SpotBugs + FindSecBugs** run in `verify`. Generated code is excluded in `config/spotbugs-exclude.xml`, which is a
   guardrail file: fix a finding instead of adding an exclusion.
 - **Maven Enforcer** requires Maven 3.9+ and Java 25+, dependency convergence, and bans Jackson 2
@@ -229,8 +305,9 @@ roadmap of guardrails are in `docs/adr/0001-agentic-development-guardrails.md`.
   does not change the verdict on that PR. After changing it, run `.github/scripts/test-guardrail-diff.sh` and extend it
   with a case for the change.
 - **Known vulnerability**: upgrade the dependency. If Spring Boot doesn't manage a fixed version yet, pin it under
-  "security overrides" in the root `pom.xml` (ahead of the Spring Boot BOM) with the advisory IDs, and remove the pin
-  once Spring Boot catches up. Never ignore a vulnerability without the human.
+  "security overrides" in the root `pom.xml` (ahead of the Spring Boot BOM), name the advisory IDs in the commit
+  message (not in the pom), and remove the pin once Spring Boot catches up. A dependency Spring Boot does not manage
+  at all gets a plain `<name>.version` property, not an override. Never ignore a vulnerability without the human.
 - **Breaking contract change**: make it backwards compatible (e.g. add optional fields, deprecate before removing). An
   intended break is the human's decision.
 - Actions are pinned by commit SHA, downloaded tools by SHA-256 (`env` in `ci.yml`). Bump version and hash together.
