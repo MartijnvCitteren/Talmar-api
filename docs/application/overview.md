@@ -44,11 +44,12 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 - **Application** (`app.jobzy.api.application`): one service per use case, `@NullMarked`. Inbound ports are use-case
   interfaces with command records; outbound ports are repository interfaces. `@Transactional` is only allowed here.
 - **Inbound REST adapter** (`adapter.in.rest`): controllers implement the generated `*Api` interfaces. MapStruct
-  mappers per direction (`mapper/request`, `mapper/response`).
+  mappers per direction (`mapper/request`, `mapper/response`); validators for contract rules the YAML cannot express
+  (`validation`, e.g. the public mail domain block list).
 - **Inbound scheduling adapter** (`adapter.in.scheduling`): `@Scheduled` jobs that call a use case, like a controller
   does for HTTP.
-- **Other outbound adapters**: `adapter.out.mail` (mail port, logging stand-in), `adapter.out.security` (password
-  hashing) and `adapter.out.emaildomain` (public mail domain block list).
+- **Other outbound adapters**: `adapter.out.mail` (mail port, logging stand-in) and `adapter.out.security` (password
+  hashing).
 - **Outbound persistence adapter** (`adapter.out.persistence`): JPA entities separate from domain objects, MapStruct
   mappers in between. `BaseJpaEntity` carries the audit columns, filled by Spring Data JPA auditing.
 - **Shared** (`app.jobzy.api.shared`): config (`Clock`, CORS, security filter chain, scheduling, identity

@@ -3,13 +3,10 @@ package app.jobzy.api.application.service;
 import app.jobzy.api.application.port.in.RegisterUserUseCase;
 import app.jobzy.api.application.port.in.command.RegisterUserCommand;
 import app.jobzy.api.application.port.out.CompanyRepository;
-import app.jobzy.api.application.port.out.PublicEmailDomains;
 import app.jobzy.api.application.port.out.RegistrationMailer;
 import app.jobzy.api.application.port.out.UserRepository;
 import app.jobzy.api.domain.identity.Company;
-import app.jobzy.api.domain.identity.InvalidEmailAddressException;
 import app.jobzy.api.domain.identity.User;
-import app.jobzy.api.domain.identity.valueobject.EmailAddress;
 import app.jobzy.api.domain.identity.valueobject.Registrant;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -30,8 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
  * the account exists. The details of a repeated registration (name, job role) are ignored; the
  * first registration stands.
  *
- * <p>The request is already validated against the contract by the REST adapter; this service only
- * applies the business rules.
+ * <p>The request is already validated against the contract by the REST adapter, including the rule
+ * that public mail domains are not accepted; this service only applies the business rules.
  */
 @Service
 @Log4j2
@@ -39,7 +36,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class RegisterUserService implements RegisterUserUseCase {
   private final UserRepository userRepository;
   private final CompanyRepository companyRepository;
-  private final PublicEmailDomains publicEmailDomains;
   private final VerificationTokenIssuer verificationTokenIssuer;
   private final RegistrationMailer registrationMailer;
   private final Clock clock;
@@ -47,24 +43,12 @@ public class RegisterUserService implements RegisterUserUseCase {
   @Override
   @Transactional
   public void register(RegisterUserCommand command) {
-    rejectPublicEmailDomain(command.email());
     var now = LocalDateTime.now(clock);
 
     userRepository
         .findByEmail(command.email())
         .ifPresentOrElse(
             existingUser -> registerAgain(existingUser, now), () -> registerNewUser(command, now));
-  }
-
-  /**
-   * A work e-mail address is a business rule, not a contract rule: the domain decides the company,
-   * and a public mail domain belongs to no company.
-   */
-  private void rejectPublicEmailDomain(EmailAddress email) {
-    if (publicEmailDomains.isPublic(email.domain())) {
-      throw new InvalidEmailAddressException(
-          "Use your work e-mail address; public mail domains are not accepted");
-    }
   }
 
   private void registerNewUser(RegisterUserCommand command, LocalDateTime now) {

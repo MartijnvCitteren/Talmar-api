@@ -57,7 +57,9 @@ personal data and secrets do not reach the logs.
      apostrophes (`'` and `’`) and periods; at least one letter; no leading, trailing or double spaces.
    - `email`: at most 75 characters, `@Email`, and a pattern for one `@` and a domain with a dot.
    - `jobRole`: one of the enum values.
-2. In the use case, a public mail domain (`PublicEmailDomains` port) is rejected with `400` on `email`.
+2. Still in the REST adapter, `WorkEmailAddressValidator` rejects an address on a public mail domain with `400` on
+   `email`. "Work addresses only" is part of the contract (see the `email` description); only the block list lives
+   outside the YAML.
 3. Address unknown: the domain's company is looked up. If there is none, `Company.found` creates it with a derived
    name and the new user's id as `lastModifiedBy`, and the user becomes `OWNER`. Otherwise the user joins as
    `MEMBER`. A token is issued, the company (if new) and the user are saved and
@@ -101,8 +103,8 @@ renews the token, retention runs from the latest verification mail. Tests call t
 - **Password hashing**: `Argon2PasswordHasher` uses Spring Security's `Argon2PasswordEncoder` with RFC 9106's second
   recommended option: 64 MiB memory, 3 iterations, parallelism 4, 16-byte salt, 32-byte hash. About 200 ms and
   64 MiB per hash on a developer machine, so concurrent confirmations (and later logins) cost server memory. Argon2 needs BouncyCastle
-  (`bcprov-jdk18on`), which Spring Boot does not manage; its version is pinned under the security overrides in the root `pom.xml`.
-- **Block list**: `ClasspathPublicEmailDomains` reads `identity/public-email-domains.txt` once at startup. It has
+  (`bcprov-jdk18on`), which Spring Boot does not manage; its version is `bouncycastle.version` in the root `pom.xml`.
+- **Block list**: `WorkEmailAddressValidator` (REST adapter) reads `identity/public-email-domains.txt` once at startup. It has
   one domain per line and `#` comments. An entry like `hotmail.*` matches the name under any top-level domain. Extend
   the file to block more domains, no code needed.
 

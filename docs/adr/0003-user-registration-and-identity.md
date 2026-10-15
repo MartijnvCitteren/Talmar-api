@@ -84,7 +84,8 @@ Rules the aggregates own:
      of letters, spaces, hyphens, apostrophes and periods; `email` at most 75 characters with a domain that contains
      a dot → otherwise `400` on that field.
    - The domain of `email` must not be on the public-domain block list (`identity/public-email-domains.txt` on the
-     classpath; extendable without code) → otherwise `400` on `email`. A business rule, so it lives in the use case.
+     classpath; extendable without code) → otherwise `400` on `email`. A contract rule, so the REST adapter checks
+     it, before the use case runs.
    - Domain unknown → create `Company(name derived from the domain, emailDomain, lastModifiedBy = the new user's
      id)`, user becomes `OWNER`.
    - Domain known → user joins that company as `MEMBER`.
@@ -145,8 +146,7 @@ Changed on 2026-10-11 after the maintainer's review of the first PR. The superse
 - **Validation in the domain → validation at the adapter.** The first version checked null, blank, length, e-mail
   shape and the password policy in the value objects (`EmailAddress`, `Password`, `Registrant`). Those are contract
   rules: they belong in `IdentityApi.yml`, where bean validation rejects a bad request before the application layer
-  runs and the frontend sees the same rules. The domain keeps the business rules (public mail domains, membership,
-  token expiry).
+  runs and the frontend sees the same rules. The domain keeps the business rules (membership, token expiry).
 - **Free-text names (1–100, any non-blank text) → 1–35 characters from a whitelist.** 35 is the length the UK
   Government Data Standards Catalogue uses for given and family names. There is no international standard for the
   characters in a name (ICAO 9303 only covers the transliterated passport zone); following the W3C guidance on
@@ -164,6 +164,11 @@ Changed on 2026-10-11 after the maintainer's review of the first PR. The superse
   no foreign key on purpose: the purge deletes unconfirmed users, including a founder whose colleague already joined,
   and a foreign key would block that delete or force the audit reference to be rewritten. An id without personal
   data also survives anonymization, like the rest of the audit trail.
+- **Public mail domain check in the use case → in the REST adapter** (2026-10-15, second review). The first
+  revision kept it in `RegisterUserService` behind a `PublicEmailDomains` port, arguing "work addresses only" is a
+  business rule. It is an API requirement instead: the contract already promises it, and when it changes, the
+  adapter should be the only place to change. `WorkEmailAddressValidator` now reads the block list and rejects the
+  request before the use case runs; the port is gone.
 - **`401` for an expired confirmation token was considered and rejected.** The token is not an authentication
   credential, `401` requires a `WWW-Authenticate` challenge, and once login exists the frontend will treat `401` as
   "access token expired". The frontend gets `400` with an error on `token` and offers to register again, which mails

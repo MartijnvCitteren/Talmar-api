@@ -138,8 +138,11 @@ them. When a review adds a new preference, add it here in the same PR.
 - The domain and application layers do not validate again. No null, blank, length or format checks in value objects
   or services for values the adapter has already checked. A null that slips through anyway is our bug and may surface
   as a 500.
-- The domain holds the business rules only: state transitions, expiry, derived values, policies such as "work e-mail
-  addresses only". A business rule that needs a port (e.g. a block list) lives in the use case.
+- A rule the API promises is a contract rule, also when it needs a list the YAML cannot hold (e.g. "work e-mail
+  addresses only" against a block list): it goes in an adapter validator, so a change to the API requirement only
+  touches the adapter.
+- The domain holds the business rules only: state transitions, expiry, derived values, membership. A business rule
+  that needs a port lives in the use case.
 - Contract fields get tight, realistic limits and a whitelist of allowed characters where free text is not needed
   (names: 35 characters of letters, spaces, `-`, `'`, `.`; e-mail: 75 characters). Every request body gets realistic
   `examples`, so Swagger UI does not generate gibberish from the patterns.
@@ -296,8 +299,9 @@ roadmap of guardrails are in `docs/adr/0001-agentic-development-guardrails.md`.
   does not change the verdict on that PR. After changing it, run `.github/scripts/test-guardrail-diff.sh` and extend it
   with a case for the change.
 - **Known vulnerability**: upgrade the dependency. If Spring Boot doesn't manage a fixed version yet, pin it under
-  "security overrides" in the root `pom.xml` (ahead of the Spring Boot BOM) with the advisory IDs, and remove the pin
-  once Spring Boot catches up. Never ignore a vulnerability without the human.
+  "security overrides" in the root `pom.xml` (ahead of the Spring Boot BOM), name the advisory IDs in the commit
+  message (not in the pom), and remove the pin once Spring Boot catches up. A dependency Spring Boot does not manage
+  at all gets a plain `<name>.version` property, not an override. Never ignore a vulnerability without the human.
 - **Breaking contract change**: make it backwards compatible (e.g. add optional fields, deprecate before removing). An
   intended break is the human's decision.
 - Actions are pinned by commit SHA, downloaded tools by SHA-256 (`env` in `ci.yml`). Bump version and hash together.

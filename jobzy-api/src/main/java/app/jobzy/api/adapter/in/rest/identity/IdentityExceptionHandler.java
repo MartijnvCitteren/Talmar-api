@@ -1,6 +1,5 @@
 package app.jobzy.api.adapter.in.rest.identity;
 
-import app.jobzy.api.domain.identity.InvalidEmailAddressException;
 import app.jobzy.api.domain.identity.InvalidVerificationTokenException;
 import app.jobzy.api.shared.Constants;
 import app.jobzy.api.vacancy.adapter.in.web.contract.ProblemDetails;
@@ -29,9 +28,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class IdentityExceptionHandler {
 
-  @ExceptionHandler(InvalidEmailAddressException.class)
-  ResponseEntity<ProblemDetails> handleInvalidEmailAddressException(
-      InvalidEmailAddressException ex, HttpServletRequest request) {
+  @ExceptionHandler(PublicEmailDomainException.class)
+  ResponseEntity<ProblemDetails> handlePublicEmailDomainException(
+      PublicEmailDomainException ex, HttpServletRequest request) {
     return badRequest("email", ex.getMessage(), request);
   }
 

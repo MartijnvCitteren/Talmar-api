@@ -8,7 +8,6 @@ import static app.jobzy.api.testSupport.IdentityFactory.LAST_NAME;
 import static app.jobzy.api.testSupport.IdentityFactory.NOW;
 import static app.jobzy.api.testSupport.IdentityFactory.TOKEN_EXPIRES_AT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
@@ -18,12 +17,10 @@ import static org.mockito.Mockito.when;
 
 import app.jobzy.api.application.port.in.command.RegisterUserCommand;
 import app.jobzy.api.application.port.out.CompanyRepository;
-import app.jobzy.api.application.port.out.PublicEmailDomains;
 import app.jobzy.api.application.port.out.RegistrationMailer;
 import app.jobzy.api.application.port.out.UserRepository;
 import app.jobzy.api.application.service.VerificationTokenIssuer.IssuedVerificationToken;
 import app.jobzy.api.domain.identity.Company;
-import app.jobzy.api.domain.identity.InvalidEmailAddressException;
 import app.jobzy.api.domain.identity.User;
 import app.jobzy.api.domain.identity.valueobject.EmailAddress;
 import app.jobzy.api.domain.identity.valueobject.Membership;
@@ -55,7 +52,6 @@ class RegisterUserServiceTest {
 
   @Mock private UserRepository userRepository;
   @Mock private CompanyRepository companyRepository;
-  @Mock private PublicEmailDomains publicEmailDomains;
   @Mock private VerificationTokenIssuer verificationTokenIssuer;
   @Mock private RegistrationMailer registrationMailer;
 
@@ -65,12 +61,7 @@ class RegisterUserServiceTest {
   void setUp() {
     service =
         new RegisterUserService(
-            userRepository,
-            companyRepository,
-            publicEmailDomains,
-            verificationTokenIssuer,
-            registrationMailer,
-            CLOCK);
+            userRepository, companyRepository, verificationTokenIssuer, registrationMailer, CLOCK);
   }
 
   @Test
@@ -120,19 +111,6 @@ class RegisterUserServiceTest {
     assertEquals(existingCompany.getId(), user.getCompanyId());
     assertEquals(Membership.MEMBER, user.getMembership());
     verify(registrationMailer).sendVerificationMail(user, NEW_RAW_TOKEN);
-  }
-
-  @Test
-  @DisplayName(
-      "given an address on a public mail domain, when register then it is rejected and nothing is"
-          + " saved or sent")
-  void givenAddressOnPublicMailDomainWhenRegisterThenRejectedAndNothingSavedOrSent() {
-    when(publicEmailDomains.isPublic("gmail.com")).thenReturn(true);
-    var command = command("jane@gmail.com");
-
-    assertThrows(InvalidEmailAddressException.class, () -> service.register(command));
-
-    verifyNoInteractions(userRepository, companyRepository, registrationMailer);
   }
 
   @Test

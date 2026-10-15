@@ -3,6 +3,7 @@ package app.jobzy.api.adapter.in.rest.identity;
 import app.jobzy.api.adapter.in.rest.identity.mapper.request.RegistrationConfirmationRequestMapper;
 import app.jobzy.api.adapter.in.rest.identity.mapper.request.RegistrationRequestMapper;
 import app.jobzy.api.adapter.in.rest.identity.mapper.response.RegistrationConfirmationResponseMapper;
+import app.jobzy.api.adapter.in.rest.identity.validation.WorkEmailAddressValidator;
 import app.jobzy.api.application.port.in.ConfirmRegistrationUseCase;
 import app.jobzy.api.application.port.in.RegisterUserUseCase;
 import app.jobzy.api.identity.adapter.in.rest.RegistrationApi;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 public class RegistrationController implements RegistrationApi {
+  private final WorkEmailAddressValidator workEmailAddressValidator;
   private final RegistrationRequestMapper registrationRequestMapper;
   private final RegistrationConfirmationRequestMapper confirmationRequestMapper;
   private final RegistrationConfirmationResponseMapper confirmationResponseMapper;
@@ -29,6 +31,7 @@ public class RegistrationController implements RegistrationApi {
   /** Always 202 for a valid request, whether or not the address was registered before. */
   @Override
   public ResponseEntity<Void> register(RegistrationRequest registrationRequest) {
+    workEmailAddressValidator.validate(registrationRequest);
     registerUserUseCase.register(registrationRequestMapper.toCommand(registrationRequest));
     return ResponseEntity.accepted().build();
   }
