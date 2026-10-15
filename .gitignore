@@ -32,6 +32,7 @@
 .claude/adr
 .claude/planning
 .claude/team-learnings.md
+.claude/worktrees/
 
 # Environment files (secrets)
 .env

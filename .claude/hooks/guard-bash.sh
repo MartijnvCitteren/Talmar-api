@@ -67,11 +67,18 @@ has "${GH}(workflow${S}+disable|repo${S}+(edit|delete|rename|archive))" &&
 
 # --- Shell writes to guardrail files: ask the human ----------------------------------------------
 proj="${CLAUDE_PROJECT_DIR:-$PWD}"
-guard_paths="(^|[[:space:]'\"=(:])(\./|${proj}/)?(\.claude/|\.githooks/|\.git/hooks|\.github/|\.agents/|\.mvn/|config/|skills-lock\.json|mvnw|[^[:space:]]*ArchitectureTest\.java)"
+# Normalise the command before looking for guardrail paths, so normal work does not need approval:
+# - a path in a worktree under .claude/worktrees/<name>/ is judged relative to that worktree (a name starting with
+#   '.' is kept, so '.claude/worktrees/../hooks' still counts as .claude/);
+# - running the Maven Wrapper (mvnw in command position) is not a write to it; `cp x mvnw` or `> mvnw` still is.
+scan=$(sed -E \
+  -e "s#(${proj}/)?\.claude/worktrees/[^./[:space:]'\"][^/[:space:]'\"]*/?##g" \
+  -e "s#(^|[;&|(])([[:space:]]*)[\"']?(\./|${proj}/)?mvnw(\.cmd)?[\"']?([[:space:]]|\$)#\1\2\5#g" <<<"$cmd")
+guard_paths="(^|[[:space:]'\"=(:])((\.\.?/)+|${proj}/)?(\.claude/|\.githooks/|\.git/hooks|\.github/|\.agents/|\.mvn/|config/|skills-lock\.json|mvnw|[^[:space:]]*ArchitectureTest\.java)"
 # Ignore harmless redirections like 2>/dev/null or 2>&1 before looking for writes.
-stripped=$(sed -E 's#[0-9]*>{1,2}[[:space:]]*/dev/null##g; s#[0-9]*>&[0-9]##g' <<<"$cmd")
-writes="(sed${S}+(-[[:alpha:]]*${S}+)*-i|perl${S}+-[[:alpha:]]*i|>|tee${S}|(^|[;&|(${S}])(mv|cp|rm|chmod|ln|truncate|touch)${S}|python|node${S}|git${S}+(checkout|restore|rm|mv|apply))"
-if grep -Eq -- "$guard_paths" <<<"$cmd" && grep -Eq -- "$writes" <<<"$stripped"; then
+stripped=$(sed -E 's#[0-9]*>{1,2}[[:space:]]*/dev/null##g; s#[0-9]*>&[0-9]##g' <<<"$scan")
+writes="(sed${S}+(-[[:alpha:]]*${S}+)*-i|perl${S}+-[[:alpha:]]*i|>|tee${S}|(^|[;&|([:space:]])(mv|cp|rm|chmod|ln|truncate|touch)${S}|python|node${S}|git${S}+(checkout|restore|rm|mv|apply))"
+if grep -Eq -- "$guard_paths" <<<"$scan" &&grep -Eq -- "$writes" <<<"$stripped"; then
   ask "this shell command may modify guardrail files (.claude/, .github/, .githooks/, .agents/, .mvn/, config/, mvnw, skills-lock.json or ArchitectureTest)."
 fi
 
