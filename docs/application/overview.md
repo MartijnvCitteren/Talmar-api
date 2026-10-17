@@ -106,7 +106,7 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 
   | Property | Env variable | Default |
   |----------|--------------|---------|
-  | `talmar.identity.confirmation-url` | `IDENTITY_CONFIRMATION_URL` | `https://talmar.app/registration/confirm` (`local`: `http://localhost:5173/registration/confirm`) |
+  | `talmar.identity.confirmation-url` | `IDENTITY_CONFIRMATION_URL` | `https://talmar.eu/registration/confirm` (`local`: `http://localhost:5173/registration/confirm`) |
   | `talmar.identity.unconfirmed-retention` | `IDENTITY_UNCONFIRMED_RETENTION` | `PT48H` (verification link validity and purge age) |
   | `talmar.identity.purge-interval` | `IDENTITY_PURGE_INTERVAL` | `PT1H` |
 - Profiles: `local` (SQL Server from `docker-compose.yaml`, CORS for the Vite dev server on `localhost:5173`), `dev`

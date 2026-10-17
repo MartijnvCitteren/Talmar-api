@@ -18,10 +18,10 @@ class LoggingRegistrationMailerTest {
     var mailer =
         new LoggingRegistrationMailer(
             new IdentityProperties(
-                URI.create("https://talmar.app/registration/confirm"), Duration.ofDays(2)));
+                URI.create("https://talmar.eu/registration/confirm"), Duration.ofDays(2)));
 
     var link = mailer.confirmationLink("abc_DEF-123");
 
-    assertEquals(URI.create("https://talmar.app/registration/confirm?token=abc_DEF-123"), link);
+    assertEquals(URI.create("https://talmar.eu/registration/confirm?token=abc_DEF-123"), link);
   }
 }

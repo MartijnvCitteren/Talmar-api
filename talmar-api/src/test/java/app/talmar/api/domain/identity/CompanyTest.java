@@ -38,7 +38,7 @@ class CompanyTest {
     "acme.co.uk, Acme",
     "acme.com.au, Acme",
     "acme-logistics.nl, Acme-logistics",
-    "talmar.app, Talmar"
+    "talmar.eu, Talmar"
   })
   @DisplayName(
       "given an e-mail domain, when founded then the name is its registrable label, capitalised")

@@ -20,7 +20,7 @@ class VerificationTokenIssuerTest {
   private static final Clock CLOCK =
       Clock.fixed(Instant.parse("2026-10-09T12:00:00Z"), ZoneOffset.UTC);
   private static final IdentityProperties PROPERTIES =
-      new IdentityProperties(URI.create("https://talmar.app/confirm"), Duration.ofDays(2));
+      new IdentityProperties(URI.create("https://talmar.eu/confirm"), Duration.ofDays(2));
 
   private final VerificationTokenIssuer issuer = new VerificationTokenIssuer(CLOCK, PROPERTIES);
 

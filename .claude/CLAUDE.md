@@ -69,7 +69,7 @@ domain model, not a layer bolted onto a finished ATS. That does not change the b
 - **Error Prone + NullAway** (JSpecify mode) in the compiler, **SpotBugs + FindSecBugs** and **Maven Enforcer** in
   `verify` — see "Static analysis" below.
 - **Hosting: European provider, EU only — a hard requirement.** Not AWS or Azure, not even their EU regions: they remain
-  under US jurisdiction. The provider itself is not decided yet; custom domain talmar.app. Keep the application
+  under US jurisdiction. The provider itself is not decided yet; custom domain talmar.eu. Keep the application
   cloud-agnostic: configuration through Spring properties / environment variables, a standard container image, and no
   cloud SDK outside an adapter behind a port. Flag any change that would tie the code to one provider or send data
   outside the EU.

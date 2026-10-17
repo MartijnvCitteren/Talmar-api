@@ -42,7 +42,7 @@ class WorkEmailAddressValidatorTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"acme.nl", "talmar.app", "sub.gmail.com.acme.nl", "mygmail.com"})
+  @ValueSource(strings = {"acme.nl", "talmar.eu", "sub.gmail.com.acme.nl", "mygmail.com"})
   @DisplayName("given a company domain, when validated against the shipped list then accepted")
   void givenCompanyDomainWhenValidatedAgainstShippedListThenAccepted(String domain) {
     var request = registration("jane@" + domain);
