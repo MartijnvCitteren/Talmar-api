@@ -1,0 +1,223 @@
+openapi: 3.1.1
+info:
+  title: Talmar Identity API
+  description: >
+    API for accounts in Talmar. This version covers registration: a recruiter registers with their work e-mail address,
+    confirms it through the link in the verification mail and sets a password. Login and token issuing follow in a
+    later version.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+
+tags:
+  - name: Registration
+    description: >
+      Self-service registration with a work e-mail address. The e-mail domain decides the company: the first
+      registrant of a domain creates the company and becomes its owner, later registrants join it after the owner
+      approves them. The company starts with a name derived from the e-mail domain (`acme-logistics.nl` becomes
+      `Acme-logistics`); its users can correct the name later.
+
+paths:
+  /registration:
+    post:
+      operationId: register
+      tags: [Registration]
+      summary: Register with a work e-mail address
+      description: >
+        Starts a registration and sends a verification mail with a confirmation link. Always responds `202` for a
+        valid request, also when the e-mail address is already registered, so the response never reveals whether an
+        address exists: an unconfirmed registration gets a fresh link, a confirmed account gets a mail inviting to log
+        in. Treat `202` as "check your mail".
+
+
+        An e-mail address on a public mail domain (gmail, googlemail, outlook, hotmail, live, msn, yahoo, aol,
+        icloud, proton, gmx, ...) is rejected with `400` on `email`. When the e-mail domain already belongs to a
+        company, the user joins that company; otherwise a company is created for the domain.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrationRequest'
+            examples:
+              recruiter:
+                summary: A recruiter registers with their work e-mail address
+                value:
+                  firstName: Sanne
+                  lastName: van den Berg
+                  email: sanne.vandenberg@acme-logistics.nl
+                  jobRole: RECRUITER
+              hiringManager:
+                summary: A hiring manager with an apostrophe and accents in their name
+                value:
+                  firstName: José
+                  lastName: "'t Hooft"
+                  email: jose.thooft@acme-logistics.nl
+                  jobRole: HIRING_MANAGER
+      responses:
+        '202':
+          description: Registration accepted; a mail is on its way.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /registration/confirm:
+    post:
+      operationId: confirmRegistration
+      tags: [Registration]
+      summary: Confirm the e-mail address and set a password
+      description: >
+        Confirms the e-mail address with the token from the verification mail and sets the password. The token is
+        single-use and expires. The resulting account status tells the frontend what to show: `ACTIVE` for the owner
+        of a new company, `PENDING_APPROVAL` for a user who joined an existing company and waits for its owner.
+
+
+        An unknown, already used or expired token is rejected with `400` and an error on `token`; the three cases are
+        deliberately indistinguishable. The frontend shows that the link is invalid or expired and offers to register
+        again with the same address, which mails a fresh link. This is not a `401`: the token is not an
+        authentication credential, and `401` is reserved for missing or expired access tokens once login exists.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrationConfirmationRequest'
+            examples:
+              confirmation:
+                summary: The token from the confirmation link and the chosen password
+                value:
+                  token: "<43-character token from the confirmation link>"
+                  password: correct horse battery staple
+      responses:
+        '200':
+          description: E-mail address confirmed and password set.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationConfirmationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  responses:
+    BadRequest:
+      description: The request was malformed or failed validation.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    InternalServerError:
+      description: An unexpected error occurred while processing the request.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+  schemas:
+    JobRole:
+      type: string
+      description: The registrant's role, from the registration dropdown. A profile field, not a right.
+      enum: [RECRUITER, HIRING_MANAGER, HR, FOUNDER_OR_DIRECTOR, OTHER]
+
+    AccountStatus:
+      type: string
+      description: >
+        `ACTIVE`: the account can be used. `PENDING_APPROVAL`: the user joined an existing company and waits for its
+        owner to approve them.
+      enum: [ACTIVE, PENDING_APPROVAL]
+
+    RegistrationRequest:
+      type: object
+      required: [firstName, lastName, email, jobRole]
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 35
+          pattern: '^(?=.*\p{L})[\p{L}\p{M}''’.-]+( [\p{L}\p{M}''’.-]+)*$'
+          description: >
+            1 to 35 characters, the length the UK Government Data Standards Catalogue uses for given and family
+            names. Letters of any script (with their accents and other combining marks), spaces, hyphens,
+            apostrophes and periods, with at least one letter: `José`, `Anne-Marie`, `'t Hooft`, `O’Brien`,
+            `St. John`. Digits and symbols such as `_ @ # $ % & * ( ) [ ] { } ! / | \ ~` are rejected. No leading,
+            trailing or double spaces.
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 35
+          pattern: '^(?=.*\p{L})[\p{L}\p{M}''’.-]+( [\p{L}\p{M}''’.-]+)*$'
+          description: >
+            1 to 35 characters, the length the UK Government Data Standards Catalogue uses for given and family
+            names. Letters of any script (with their accents and other combining marks), spaces, hyphens,
+            apostrophes and periods, with at least one letter: `José`, `Anne-Marie`, `'t Hooft`, `O’Brien`,
+            `St. John`. Digits and symbols such as `_ @ # $ % & * ( ) [ ] { } ! / | \ ~` are rejected. No leading,
+            trailing or double spaces.
+        email:
+          type: string
+          format: email
+          maxLength: 75
+          pattern: '^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$'
+          description: >
+            Work e-mail address, at most 75 characters, with a domain that contains a dot. Its domain decides the
+            company; public mail domains are rejected. Compared case-insensitively.
+        jobRole:
+          $ref: '#/components/schemas/JobRole'
+
+    RegistrationConfirmationRequest:
+      type: object
+      required: [token, password]
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: The token from the confirmation link in the verification mail.
+        password:
+          type: string
+          format: password
+          writeOnly: true
+          minLength: 12
+          maxLength: 128
+          description: 12 to 128 characters, no composition rules.
+
+    RegistrationConfirmationResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+
+    ProblemDetails:
+      type: object
+      description: RFC 9457 Problem Details for HTTP APIs.
+      required: [title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+          default: about:blank
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
+        errors:
+          type: array
+          description: Extension member listing field-level validation failures, when applicable.
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+              message:
+                type: string
