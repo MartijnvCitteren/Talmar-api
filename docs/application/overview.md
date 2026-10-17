@@ -8,7 +8,7 @@ This describes what is on `main` — plans and roadmap live in `.claude/CLAUDE.m
 | Module | Role |
 |--------|------|
 | `talmar-contracts` | OpenAPI specs, the source of truth for the HTTP API: `VacancyApi.yml` and `IdentityApi.yml`. Consumed by the frontend team. |
-| `talmar-api` | The Spring Boot application. Generates the API interfaces and models from each contract at build time, one generator execution per contract (`app.talmar.api.vacancy.adapter…`, `app.talmar.api.identity.adapter…`). The vacancy contract gets one interface per OpenAPI tag (`VacancyApi`, `GenerationApi`). |
+| `talmar-api` | The Spring Boot application. Generates the API interfaces and models from each contract at build time, one generator execution per contract (`eu.talmar.api.vacancy.adapter…`, `eu.talmar.api.identity.adapter…`). The vacancy contract gets one interface per OpenAPI tag (`VacancyApi`, `GenerationApi`). |
 
 Aggregates and their pages: [vacancy](vacancy.md) (the vacancy and its manual description), [generation](generation.md)
 (AI-drafted vacancy descriptions) and [identity](identity.md) (company and user, registration).
@@ -39,10 +39,10 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 
 ## Layers and what lives where
 
-- **Domain** (`app.talmar.api.domain`): plain Java, no framework or JSpecify. Aggregates guard their own invariants
+- **Domain** (`eu.talmar.api.domain`): plain Java, no framework or JSpecify. Aggregates guard their own invariants
   with `Objects.requireNonNull` in builders and checks in value-object constructors. Timestamps are passed in; the
   domain never reads a clock. IDs are UUIDv7 (`UuidV7Generator`), time-ordered so they index well.
-- **Application** (`app.talmar.api.application`): one service per use case, `@NullMarked`. Inbound ports are use-case
+- **Application** (`eu.talmar.api.application`): one service per use case, `@NullMarked`. Inbound ports are use-case
   interfaces with command records; outbound ports are repository interfaces. `@Transactional` is only allowed here.
 - **Inbound REST adapter** (`adapter.in.rest`): controllers implement the generated `*Api` interfaces. MapStruct
   mappers per direction (`mapper/request`, `mapper/response`); validators for contract rules the YAML cannot express
@@ -54,7 +54,7 @@ The response goes back up the same way: domain object ─▶ response mapper ─
   hashing).
 - **Outbound persistence adapter** (`adapter.out.persistence`): JPA entities separate from domain objects, MapStruct
   mappers in between. `BaseJpaEntity` carries the audit columns, filled by Spring Data JPA auditing.
-- **Shared** (`app.talmar.api.shared`): config (`Clock`, CORS, async, scheduling, security filter chain, identity
+- **Shared** (`eu.talmar.api.shared`): config (`Clock`, CORS, async, scheduling, security filter chain, identity
   properties), `BaseException`, the GDPR annotations, `Constants` and `TextContentRules` (the no-markup,
   no-control-character rules for vacancy text, shared by request validators and the check on AI drafts).
 

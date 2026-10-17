@@ -78,22 +78,22 @@ domain model, not a layer bolted onto a finished ATS. That does not change the b
 ## Repository structure (multi-module)
 
 Root modules (`pom.xml` `<modules>`): **`talmar-contracts`** and **`talmar-api`**. Root package for both:
-`app.talmar`.
+`eu.talmar`.
 
 - **`talmar-contracts`** — the API contract as source of truth. Contains the OpenAPI/YAML spec(s) (e.g.
-  `src/main/java/app/talmar/contracts/VacancyApi.yml`); shared models and API interfaces are generated from these via
+  `src/main/java/eu/talmar/contracts/VacancyApi.yml`); shared models and API interfaces are generated from these via
   `openapi-generator-maven-plugin`.
     - **Never** hand-edit generated classes. Changes always go through the YAML.
     - Contract changes are breaking-change-sensitive: the frontend team consumes them today, and the multiposting
       aggregator and future integrations will later — treat the YAML as a published API.
     - Codegen is configured in `talmar-api/pom.xml` (`openapi-generator-maven-plugin`, bound to `generate-sources`, output
       in `talmar-api/target/generated-sources/openapi`). Generated code lands at the adapter edge, never under `domain`:
-      models in `app.talmar.api.vacancy.adapter.in.web.contract`, API interfaces in `app.talmar.api.vacancy.adapter.in.rest`.
+      models in `eu.talmar.api.vacancy.adapter.in.web.contract`, API interfaces in `eu.talmar.api.vacancy.adapter.in.rest`.
       A generated model landing under a `domain` package is a bug, not a style nit.
-    - Note: generated packages are aggregate-first (`app.talmar.api.vacancy.adapter...`), hand-written code is layer-first
+    - Note: generated packages are aggregate-first (`eu.talmar.api.vacancy.adapter...`), hand-written code is layer-first
       (see below). Don't "fix" this inconsistency as a side effect of another change.
 - **`talmar-api`** — the application core, built following **DDD + Hexagonal (Ports & Adapters)**. Hand-written code is
-  organised layer-first under `app.talmar.api`:
+  organised layer-first under `eu.talmar.api`:
     - `domain/<aggregate>/` — entities, value objects (`domain/<aggregate>/valueobject/`), domain services, domain
       events. Shared domain base types (`BaseObject`, `UuidV7Generator`) live directly in `domain/`. **Zero** framework
       dependencies, no Spring annotations.

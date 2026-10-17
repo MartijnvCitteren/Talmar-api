@@ -15,4 +15,4 @@ talmar:
 
 logging:
   level:
-    app.talmar: DEBUG
+    eu.talmar: DEBUG

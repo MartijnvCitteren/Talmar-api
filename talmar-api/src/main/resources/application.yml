@@ -71,6 +71,6 @@ talmar:
 
 logging:
   level:
-    app.talmar: ${LOGGING_LEVEL_APP:DEBUG}
+    eu.talmar: ${LOGGING_LEVEL_APP:DEBUG}
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

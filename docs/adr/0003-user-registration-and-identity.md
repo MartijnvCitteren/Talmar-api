@@ -115,7 +115,7 @@ then `oauth2Login()` configuration; per-customer enterprise SSO is the trigger t
 
 ### 5. Contract
 
-A separate `IdentityApi.yml` next to `VacancyApi.yml`, generated into `app.talmar.api.identity.adapter...` by a
+A separate `IdentityApi.yml` next to `VacancyApi.yml`, generated into `eu.talmar.api.identity.adapter...` by a
 second execution of the generator plugin. Identity has a different consumer lifecycle and, soon, different security
 than the vacancy API. The existing `bearerAuth` scheme in `VacancyApi.yml` stays as it is.
 

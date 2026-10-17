@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>app.talmar</groupId>
+    <groupId>eu.talmar</groupId>
     <artifactId>talmar</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
@@ -17,16 +17,16 @@
 
   <properties>
     <openapi-generator.version>7.26.0</openapi-generator.version>
-    <vacancy-api.spec>${project.basedir}/../talmar-contracts/src/main/java/app/talmar/contracts/VacancyApi.yml
+    <vacancy-api.spec>${project.basedir}/../talmar-contracts/src/main/java/eu/talmar/contracts/VacancyApi.yml
     </vacancy-api.spec>
-    <identity-api.spec>${project.basedir}/../talmar-contracts/src/main/java/app/talmar/contracts/IdentityApi.yml
+    <identity-api.spec>${project.basedir}/../talmar-contracts/src/main/java/eu/talmar/contracts/IdentityApi.yml
     </identity-api.spec>
   </properties>
 
   <dependencies>
     <!--	==TALMAR==	 -->
     <dependency>
-      <groupId>app.talmar</groupId>
+      <groupId>eu.talmar</groupId>
       <artifactId>talmar-contracts</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -191,8 +191,8 @@
               <inputSpec>${vacancy-api.spec}</inputSpec>
               <generatorName>spring</generatorName>
               <output>${project.build.directory}/generated-sources/openapi</output>
-              <modelPackage>app.talmar.api.vacancy.adapter.in.web.contract</modelPackage>
-              <apiPackage>app.talmar.api.vacancy.adapter.in.rest</apiPackage>
+              <modelPackage>eu.talmar.api.vacancy.adapter.in.web.contract</modelPackage>
+              <apiPackage>eu.talmar.api.vacancy.adapter.in.rest</apiPackage>
               <generateApis>true</generateApis>
               <generateSupportingFiles>true</generateSupportingFiles>
               <generateApiTests>false</generateApiTests>
@@ -222,11 +222,11 @@
               <inputSpec>${identity-api.spec}</inputSpec>
               <generatorName>spring</generatorName>
               <output>${project.build.directory}/generated-sources/openapi</output>
-              <modelPackage>app.talmar.api.identity.adapter.in.web.contract</modelPackage>
-              <apiPackage>app.talmar.api.identity.adapter.in.rest</apiPackage>
+              <modelPackage>eu.talmar.api.identity.adapter.in.web.contract</modelPackage>
+              <apiPackage>eu.talmar.api.identity.adapter.in.rest</apiPackage>
               <!-- Reuse the problem model generated from VacancyApi.yml: same schema, and GlobalExceptionHandler
                    already answers every controller with it. -->
-              <schemaMappings>ProblemDetails=app.talmar.api.vacancy.adapter.in.web.contract.ProblemDetails</schemaMappings>
+              <schemaMappings>ProblemDetails=eu.talmar.api.vacancy.adapter.in.web.contract.ProblemDetails</schemaMappings>
               <generateApis>true</generateApis>
               <!-- Off: the supporting files (ApiUtil, EnumConverterConfiguration, ...) share their path with the
                    vacancy execution's and would overwrite them. -->

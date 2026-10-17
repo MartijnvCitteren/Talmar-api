@@ -69,17 +69,17 @@ EOF'
 expect_bash ask 'chmod -x .githooks/pre-commit'
 expect_bash ask 'cd talmar-api && rm ../.claude/hooks/guard-bash.sh'
 expect_bash ask 'ls && mv .github/workflows/ci.yml /tmp/'
-expect_bash ask "sed -i '' 's/assert/x/' talmar-api/src/test/java/app/talmar/api/archunit/ArchitectureTest.java"
+expect_bash ask "sed -i '' 's/assert/x/' talmar-api/src/test/java/eu/talmar/api/archunit/ArchitectureTest.java"
 expect_bash ask 'cat > config/spotbugs-exclude.xml <<EOF
 <FindBugsFilter/>
 EOF'
-expect_bash allow "sed -i '' 's/x/y/' talmar-api/src/main/java/app/talmar/api/shared/config/WebConfig.java"
+expect_bash allow "sed -i '' 's/x/y/' talmar-api/src/main/java/eu/talmar/api/shared/config/WebConfig.java"
 expect_bash ask "rm \"$CLAUDE_PROJECT_DIR/.claude/hooks/verify-on-stop.sh\""
 
 # --- guard-bash: running the Maven Wrapper is not a write to it
 expect_bash allow './mvnw -pl talmar-api test > /tmp/test.log'
 expect_bash allow './mvnw verify 2>&1 | tee /tmp/verify.log'
-expect_bash allow "sed -i '' 's/a/b/' talmar-api/src/test/java/app/talmar/api/FooTest.java && ./mvnw -pl talmar-api test"
+expect_bash allow "sed -i '' 's/a/b/' talmar-api/src/test/java/eu/talmar/api/FooTest.java && ./mvnw -pl talmar-api test"
 expect_bash allow 'git checkout -b fix/x && ./mvnw verify'
 expect_bash allow "cd talmar-api && \"$CLAUDE_PROJECT_DIR/mvnw\" test > /tmp/test.log"
 expect_bash ask 'cp /tmp/mvnw mvnw'
@@ -134,12 +134,12 @@ expect_path ask "$p/.mvn/wrapper/maven-wrapper.properties"
 expect_path ask "$p/config/spotbugs-exclude.xml"
 expect_path ask "$p/skills-lock.json"
 expect_path ask "$p/mvnw"
-expect_path ask "$p/talmar-api/src/test/java/app/talmar/api/archunit/ArchitectureTest.java"
+expect_path ask "$p/talmar-api/src/test/java/eu/talmar/api/archunit/ArchitectureTest.java"
 expect_path ask "$p/talmar-api/../.claude/settings.json"
 expect_path allow "$p/pom.xml"
-expect_path allow "$p/talmar-api/src/main/java/app/talmar/api/shared/config/WebConfig.java"
-expect_path allow "$p/talmar-api/src/main/java/app/talmar/api/domain/vacancy/Vacancy.java"
-expect_path allow "$p/talmar-contracts/src/main/java/app/talmar/contracts/VacancyApi.yml"
+expect_path allow "$p/talmar-api/src/main/java/eu/talmar/api/shared/config/WebConfig.java"
+expect_path allow "$p/talmar-api/src/main/java/eu/talmar/api/domain/vacancy/Vacancy.java"
+expect_path allow "$p/talmar-contracts/src/main/java/eu/talmar/contracts/VacancyApi.yml"
 expect_path allow "$p/docs/adr/0002-something.md"
 expect_path allow "$HOME/.claude/projects/x/memory/MEMORY.md"
 
@@ -155,11 +155,11 @@ cleanup() {
 trap cleanup EXIT
 git -C "$p" worktree add -q --detach --no-checkout "$nested"
 git -C "$p" worktree add -q --detach --no-checkout "$sibling"
-expect_path allow "$nested/talmar-api/src/test/java/app/talmar/api/FooTest.java"
+expect_path allow "$nested/talmar-api/src/test/java/eu/talmar/api/FooTest.java"
 expect_path ask "$nested/.claude/settings.json"
-expect_path ask "$nested/talmar-api/src/test/java/app/talmar/api/archunit/ArchitectureTest.java"
+expect_path ask "$nested/talmar-api/src/test/java/eu/talmar/api/archunit/ArchitectureTest.java"
 expect_path deny "$nested/talmar-api/target/classes/application.yml"
-expect_path allow "$sibling/talmar-api/src/test/java/app/talmar/api/FooTest.java"
+expect_path allow "$sibling/talmar-api/src/test/java/eu/talmar/api/FooTest.java"
 expect_path ask "$sibling/.github/workflows/ci.yml"
 expect_path ask "$p/.claude/worktrees/../hooks/guard-bash.sh"
 expect_path allow "$sibling_parent/other-repo/.claude/settings.json"
