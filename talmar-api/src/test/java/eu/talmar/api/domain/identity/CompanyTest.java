@@ -15,18 +15,18 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 class CompanyTest {
   private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 9, 12, 0);
-  private static final UUID FOUNDER_ID = UUID.randomUUID();
+  private static final UUID CREATOR_ID = UUID.randomUUID();
 
   @Test
   @DisplayName(
-      "given an e-mail domain and a founder, when founded then the company has that domain, records"
-          + " the founder as last modifier and gets an id")
-  void givenEmailDomainAndFounderWhenFoundedThenCompanyRecordsFounderAsLastModifier() {
-    var company = Company.found("acme.nl", FOUNDER_ID, NOW);
+      "given an e-mail domain and a creator, when created then the company has that domain, records"
+          + " the creator as last modifier and gets an id")
+  void givenEmailDomainAndCreatorWhenCreatedThenCompanyRecordsCreatorAsLastModifier() {
+    var company = Company.create("acme.nl", CREATOR_ID, NOW);
 
     assertNotNull(company.getId());
     assertEquals("acme.nl", company.getEmailDomain());
-    assertEquals(FOUNDER_ID, company.getLastModifiedBy());
+    assertEquals(CREATOR_ID, company.getLastModifiedBy());
     assertEquals(NOW, company.getCreatedAt());
     assertEquals(NOW, company.getLastModifiedAt());
   }
@@ -41,10 +41,10 @@ class CompanyTest {
     "talmar.eu, Talmar"
   })
   @DisplayName(
-      "given an e-mail domain, when founded then the name is its registrable label, capitalised")
-  void givenEmailDomainWhenFoundedThenNameIsItsRegistrableLabelCapitalised(
+      "given an e-mail domain, when created then the name is its registrable label, capitalised")
+  void givenEmailDomainWhenCreatedThenNameIsItsRegistrableLabelCapitalised(
       String emailDomain, String expectedName) {
-    assertEquals(expectedName, Company.found(emailDomain, FOUNDER_ID, NOW).getName());
+    assertEquals(expectedName, Company.create(emailDomain, CREATOR_ID, NOW).getName());
   }
 
   @Test
@@ -67,7 +67,7 @@ class CompanyTest {
             .id(id)
             .name("Acme")
             .emailDomain("acme.nl")
-            .lastModifiedBy(FOUNDER_ID)
+            .lastModifiedBy(CREATOR_ID)
             .createdAt(NOW)
             .build();
 
@@ -83,12 +83,12 @@ class CompanyTest {
             .id(id)
             .name("Acme")
             .emailDomain("acme.nl")
-            .lastModifiedBy(FOUNDER_ID)
+            .lastModifiedBy(CREATOR_ID)
             .createdAt(NOW);
 
     assertEquals(company.build(), company.build());
     assertEquals(company.build().hashCode(), company.build().hashCode());
     assertNotEquals(
-        Company.found("acme.nl", FOUNDER_ID, NOW), Company.found("acme.nl", FOUNDER_ID, NOW));
+        Company.create("acme.nl", CREATOR_ID, NOW), Company.create("acme.nl", CREATOR_ID, NOW));
   }
 }

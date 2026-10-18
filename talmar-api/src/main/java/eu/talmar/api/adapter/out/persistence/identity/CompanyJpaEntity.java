@@ -12,12 +12,12 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * JPA entity for companies. The e-mail domain is unique: it is how a registrant is matched to their
+ * JPA entity for companies. The e-mail domain is unique: it is how a user is matched to their
  * company, so two companies on one domain would make that match ambiguous.
  *
  * <p>{@code last_modified_by} is required here: every change to a company is traced to the {@code
- * app_user} who made it. It holds the user id without a foreign key, so deleting a user (the purge
- * of unconfirmed registrations) never fails on, or rewrites, the audit trail of a company.
+ * app_user} who made it. It holds the user id without a foreign key, so deleting a user never fails
+ * on, or rewrites, the audit trail of a company.
  */
 @Getter
 @Setter

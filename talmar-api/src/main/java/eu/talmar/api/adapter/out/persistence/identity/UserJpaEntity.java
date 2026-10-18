@@ -6,7 +6,6 @@ import eu.talmar.api.domain.identity.valueobject.Membership;
 import eu.talmar.api.domain.identity.valueobject.UserStatus;
 import eu.talmar.api.shared.gdpr.PersonalData;
 import eu.talmar.api.shared.gdpr.ProcessData;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -17,9 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,19 +26,13 @@ import lombok.Setter;
  * Server. A company has many users: {@code company_id} is a foreign key to {@code company}, mapped
  * as a lazy {@code @ManyToOne} so the database guards the relation. The domain still references the
  * company by id only, because company and user are separate aggregates.
- *
- * <p>The verification token hash gets a plain index, not a unique constraint: SQL Server allows
- * only one {@code NULL} in a unique column, and every confirmed user has none.
  */
 @Getter
 @Setter
 @Entity
 @Table(
     name = "app_user",
-    indexes = {
-      @Index(name = "ix_app_user_company_id", columnList = "company_id"),
-      @Index(name = "ix_app_user_verification_token_hash", columnList = "verification_token_hash")
-    })
+    indexes = {@Index(name = "ix_app_user_company_id", columnList = "company_id")})
 public class UserJpaEntity extends BaseJpaEntity {
   @Id private UUID id;
 
@@ -78,17 +69,4 @@ public class UserJpaEntity extends BaseJpaEntity {
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
   private UserStatus status;
-
-  @ProcessData
-  @Column(name = "verification_token_hash")
-  private String verificationTokenHash;
-
-  @ProcessData private LocalDateTime verificationTokenExpiresAt;
-
-  @OneToOne(
-      mappedBy = "user",
-      cascade = CascadeType.ALL,
-      orphanRemoval = true,
-      fetch = FetchType.EAGER)
-  private UserCredentialsJpaEntity credentials;
 }

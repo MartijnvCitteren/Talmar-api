@@ -85,10 +85,9 @@ class KeycloakRealmTest {
   }
 
   /**
-   * The pattern an address must match to be accepted: same reading of the list as {@code
-   * WorkEmailAddressValidator}, an exact domain or, for an entry ending in {@code .*}, the name
-   * under any top-level domain. {@code [.]} instead of {@code \.} keeps the pattern free of
-   * backslashes, so it can be pasted into the JSON string as it is.
+   * The pattern an address must match to be accepted: an exact domain or, for an entry ending in
+   * {@code .*}, the name under any top-level domain. {@code [.]} instead of {@code \.} keeps the
+   * pattern free of backslashes, so it can be pasted into the JSON string as it is.
    */
   private static String emailPatternFrom(List<String> entries) {
     var exactDomains =
