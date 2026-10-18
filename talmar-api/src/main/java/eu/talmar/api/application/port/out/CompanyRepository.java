@@ -2,7 +2,6 @@ package eu.talmar.api.application.port.out;
 
 import eu.talmar.api.domain.identity.Company;
 import java.util.Optional;
-import java.util.UUID;
 
 public interface CompanyRepository {
   void save(Company company);
@@ -13,6 +12,4 @@ public interface CompanyRepository {
    * @param emailDomain the e-mail domain in lower case
    */
   Optional<Company> findByEmailDomain(String emailDomain);
-
-  void deleteById(UUID id);
 }

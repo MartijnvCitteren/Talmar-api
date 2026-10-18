@@ -50,19 +50,6 @@ class CompanyRepositoryAdapterTest {
   }
 
   @Test
-  @DisplayName("given a saved company, when deleted by id then the row is gone")
-  void givenSavedCompanyWhenDeletedByIdThenTheRowIsGone() {
-    var company = IdentityFactory.company();
-    adapter.save(company);
-    flushAndClear();
-
-    adapter.deleteById(company.getId());
-    flushAndClear();
-
-    assertEquals(0, companyJpaRepository.count());
-  }
-
-  @Test
   @DisplayName(
       "given a company for a domain, when a second company for the same domain is saved then"
           + " rejected")

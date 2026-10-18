@@ -4,7 +4,6 @@ import eu.talmar.api.adapter.out.persistence.identity.mapper.CompanyJpaMapper;
 import eu.talmar.api.application.port.out.CompanyRepository;
 import eu.talmar.api.domain.identity.Company;
 import java.util.Optional;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -23,10 +22,5 @@ public class CompanyRepositoryAdapter implements CompanyRepository {
   @Override
   public Optional<Company> findByEmailDomain(String emailDomain) {
     return jpaRepository.findByEmailDomain(emailDomain).map(jpaMapper::toDomain);
-  }
-
-  @Override
-  public void deleteById(UUID id) {
-    jpaRepository.deleteById(id);
   }
 }

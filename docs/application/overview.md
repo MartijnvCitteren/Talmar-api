@@ -11,7 +11,7 @@ This describes what is on `main` — plans and roadmap live in `.claude/CLAUDE.m
 | `talmar-api` | The Spring Boot application. Generates the API interfaces and models from each contract at build time, one generator execution per contract (`eu.talmar.api.vacancy.adapter…`, `eu.talmar.api.identity.adapter…`). The vacancy contract gets one interface per OpenAPI tag (`VacancyApi`, `GenerationApi`). |
 
 Aggregates and their pages: [vacancy](vacancy.md) (the vacancy and its manual description), [generation](generation.md)
-(AI-drafted vacancy descriptions) and [identity](identity.md) (company and user, registration).
+(AI-drafted vacancy descriptions) and [identity](identity.md) (company and user).
 
 ## Request flow
 
@@ -46,16 +46,13 @@ The response goes back up the same way: domain object ─▶ response mapper ─
   interfaces with command records; outbound ports are repository interfaces. `@Transactional` is only allowed here.
 - **Inbound REST adapter** (`adapter.in.rest`): controllers implement the generated `*Api` interfaces. MapStruct
   mappers per direction (`mapper/request`, `mapper/response`); validators for contract rules the YAML cannot express
-  (`validation`, e.g. the public mail domain block list).
+  (`validation`, e.g. the no-markup rule for vacancy text).
 - **Inbound scheduling adapter** (`adapter.in.scheduling`): `@Scheduled` jobs that only trigger a use case, like a
   controller does for HTTP.
 - **Outbound AI adapter** (`adapter.out.ai`): LLM providers behind an application port; Spring AI is only used here.
-- **Other outbound adapters**: `adapter.out.mail` (mail port, logging stand-in) and `adapter.out.security` (password
-  hashing).
 - **Outbound persistence adapter** (`adapter.out.persistence`): JPA entities separate from domain objects, MapStruct
   mappers in between. `BaseJpaEntity` carries the audit columns, filled by Spring Data JPA auditing.
-- **Shared** (`eu.talmar.api.shared`): config (`Clock`, CORS, async, scheduling, security filter chain, identity
-  properties), `BaseException`, the GDPR annotations, `Constants` and `TextContentRules` (the no-markup,
+- **Shared** (`eu.talmar.api.shared`): config (`Clock`, CORS, async, scheduling, security filter chain), `BaseException`, the GDPR annotations, `Constants` and `TextContentRules` (the no-markup,
   no-control-character rules for vacancy text, shared by request validators and the check on AI drafts).
 
 ## Cross-cutting behaviour
@@ -93,8 +90,8 @@ The response goes back up the same way: domain object ─▶ response mapper ─
   `SecurityConfig` only loads in a servlet web application, so a test that starts the context without a web
   environment (`WebEnvironment.NONE`, e.g. the Mistral adapter test) still starts.
 - **Scheduling**: `@EnableScheduling` (`SchedulingConfig`). Every instance runs every job, so a job must be safe to
-  run on several instances at once. Today there is one job: the purge of unconfirmed registrations (see
-  [identity](identity.md)).
+  run on several instances at once. Today there is one job: the generation clean-up (see
+  [generation](generation.md)).
 
 ## Configuration and running locally
 
@@ -102,13 +99,6 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 - Environment: `MISTRAL_API_KEY` is required; the application does not start without it. It is the only AI secret.
 - `talmar.generation.retention` (default `PT32H`) and `talmar.generation.purge-interval` (default `PT1H`) control the
   generation clean-up.
-- Identity settings (`IdentityProperties`):
-
-  | Property | Env variable | Default |
-  |----------|--------------|---------|
-  | `talmar.identity.confirmation-url` | `IDENTITY_CONFIRMATION_URL` | `https://talmar.eu/registration/confirm` (`local`: `http://localhost:5173/registration/confirm`) |
-  | `talmar.identity.unconfirmed-retention` | `IDENTITY_UNCONFIRMED_RETENTION` | `PT48H` (verification link validity and purge age) |
-  | `talmar.identity.purge-interval` | `IDENTITY_PURGE_INTERVAL` | `PT1H` |
 - Profiles: `local` (SQL Server from `docker-compose.yaml`, CORS for the Vite dev server on `localhost:5173`), `dev`
   (datasource from `SPRING_DATASOURCE_*` environment variables), `test` (in-memory H2).
 - **Local stack** (`docker compose up`, no manual steps):
@@ -133,5 +123,5 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 Open issues an agent should know about before building on top of them. Remove an entry in the PR that fixes it.
 
 - Javadoc and code comments refer to ADR 0004 and ADR 0005, which are not in `docs/adr/`.
-- `BaseJpaEntity.lastModifiedBy` (an `app_user` id) is filled only for companies, by the registration use case.
-  For vacancies it stays empty until login exists: there is no `AuditorAware`, because nobody is authenticated yet.
+- `BaseJpaEntity.lastModifiedBy` (an `app_user` id) is filled only for companies. Nothing creates a company
+  yet; for vacancies it stays empty until login exists: there is no `AuditorAware`, because nobody is authenticated yet.
