@@ -114,7 +114,7 @@ also covers accounts created by an administrator, invited organization members a
 **Layer 2 — onboarding.** `OnboardUserService` checks the e-mail domain of the verified profile against the same list
 through a port (`PublicEmailDomains`) and answers `403`; nothing is saved. ADR 0003's revision of 2026-10-15 moved
 this check from the use case to the REST adapter because the address was request input. It no longer is: it comes
-from the identity provider, and "only work domains found or join a company" is now a rule of the onboarding use case.
+from the identity provider, and "only work domains create or join a company" is now a rule of the onboarding use case.
 The port returns, implemented by an adapter that reads the same file.
 
 **Other ways in, closed:**
