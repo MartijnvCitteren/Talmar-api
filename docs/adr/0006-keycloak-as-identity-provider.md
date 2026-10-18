@@ -24,7 +24,7 @@ Constraints that shaped this decision:
 
 - **EU only, self-hosted.** No US-owned identity service, not even in an EU region (`.claude/CLAUDE.md`, hosting).
 - **The business rules stay in Talmar**: the company comes from the e-mail domain, the first registrant of a domain
-  founds it and becomes `OWNER`/`ACTIVE`, later registrants join as `MEMBER`/`PENDING_APPROVAL`. The identity
+  creates it and becomes `OWNER`/`ACTIVE`, later registrants join as `MEMBER`/`PENDING_APPROVAL`. The identity
   provider stores accounts; it does not decide who belongs to which company.
 - **No public mail domain ever gets an account** (maintainer requirement, 2026-10-18). Not "no Talmar user": no
   login at all, so nobody with a gmail address can authenticate against anything of ours.

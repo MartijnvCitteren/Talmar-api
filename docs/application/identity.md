@@ -18,9 +18,9 @@ Two aggregates in `domain/identity`, linked by id only in the domain (a user hol
 | Field | Notes |
 |-------|-------|
 | `id` | UUIDv7. |
-| `name` | Derived from the e-mail domain when the company is founded: the registrable label, capitalised (`acme.nl` and `sales.acme.co.uk` → "Acme"; `co`, `com`, `org`, `net`, `ac`, `gov`, `edu` before the top-level domain are skipped). There is no endpoint to correct it yet. |
+| `name` | Derived from the e-mail domain when the company is created: the registrable label, capitalised (`acme.nl` and `sales.acme.co.uk` → "Acme"; `co`, `com`, `org`, `net`, `ac`, `gov`, `edu` before the top-level domain are skipped). There is no endpoint to correct it yet. |
 | `emailDomain` | Lower case, unique. The key for "same company". |
-| `lastModifiedBy` | Required. The `app_user` id of whoever last created or changed the company: the founder, since nothing changes a company yet. |
+| `lastModifiedBy` | Required. The `app_user` id of whoever last created or changed the company: the user who created it, since nothing changes a company yet. |
 
 `User`
 
@@ -37,7 +37,7 @@ Two aggregates in `domain/identity`, linked by id only in the domain (a user hol
 Rules the `User` aggregate owns:
 
 - `create` decides membership and status from whether the company already existed. It takes an id generated up
-  front (`User.newId()`), so a company founded by the same user can record the founder as `lastModifiedBy` before
+  front (`User.newId()`), so a company created by the same user can record that user as `lastModifiedBy` before
   either is saved.
 
 Input validation is not in the domain: the values come from an adapter that has validated them. `toString` of
