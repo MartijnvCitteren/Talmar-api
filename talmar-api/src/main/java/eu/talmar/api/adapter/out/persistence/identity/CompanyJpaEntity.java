@@ -18,6 +18,11 @@ import lombok.Setter;
  * <p>{@code last_modified_by} is required here: every change to a company is traced to the {@code
  * app_user} who made it. It holds the user id without a foreign key, so deleting a user never fails
  * on, or rewrites, the audit trail of a company.
+ *
+ * <p>{@code keycloak_organization_id} is {@code NULL} until the company is linked to its Keycloak
+ * organization (ADR 0006, section 7). It has no unique constraint: SQL Server allows only one
+ * {@code NULL} in a unique column, so two unlinked companies would block each other. Keycloak keeps
+ * the ids unique.
  */
 @Getter
 @Setter
@@ -34,4 +39,8 @@ public class CompanyJpaEntity extends BaseJpaEntity {
   @ProcessData
   @Column(nullable = false, unique = true)
   private String emailDomain;
+
+  @ProcessData
+  @Column(name = "keycloak_organization_id", length = 36)
+  private String organizationId;
 }

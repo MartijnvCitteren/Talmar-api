@@ -20,12 +20,20 @@ import jakarta.persistence.Table;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 /**
  * JPA entity for users, in table {@code app_user} because {@code user} is a reserved word in SQL
  * Server. A company has many users: {@code company_id} is a foreign key to {@code company}, mapped
  * as a lazy {@code @ManyToOne} so the database guards the relation. The domain still references the
  * company by id only, because company and user are separate aggregates.
+ *
+ * <p>The names are {@code nvarchar}: Keycloak accepts names in any script ({@code Łukasz}, {@code
+ * 李}), and SQL Server's default {@code varchar} collation would silently replace what Latin-1
+ * cannot hold. H2 in the tests is Unicode either way, so only this annotation guards it.
+ *
+ * <p>{@code keycloak_subject} links the row to the Keycloak account (ADR 0006): a random id that
+ * identifies nobody without Keycloak, so process data.
  */
 @Getter
 @Setter
@@ -36,11 +44,17 @@ import lombok.Setter;
 public class UserJpaEntity extends BaseJpaEntity {
   @Id private UUID id;
 
+  @ProcessData
+  @Column(name = "keycloak_subject", nullable = false, unique = true, length = 36)
+  private String subject;
+
   @PersonalData
+  @Nationalized
   @Column(nullable = false)
   private String firstName;
 
   @PersonalData
+  @Nationalized
   @Column(nullable = false)
   private String lastName;
 
@@ -69,4 +83,8 @@ public class UserJpaEntity extends BaseJpaEntity {
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
   private UserStatus status;
+
+  @ProcessData
+  @Column(nullable = false)
+  private boolean organizationMember;
 }

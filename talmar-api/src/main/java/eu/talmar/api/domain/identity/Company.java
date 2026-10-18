@@ -15,6 +15,11 @@ import java.util.UUID;
  * address on that domain belongs to it, which is why the domain is unique and stored in lower case.
  * The first user of a domain creates the company.
  *
+ * <p>Each company gets an organization at the identity provider, which scopes access to its data
+ * and will carry its SSO settings (ADR 0006, section 4). It is created after the company is saved,
+ * because the identity provider cannot join our transaction, so a company can briefly exist without
+ * one; {@link #isLinkedToOrganization()} tells an interrupted onboarding to finish the link.
+ *
  * <p>A company always records which user last created or changed it ({@link #getLastModifiedBy()}),
  * so every change can be traced back to a person by their user id.
  */
@@ -30,12 +35,14 @@ public class Company extends BaseObject {
   private final UUID id;
   private final String name;
   private final String emailDomain;
+  private String organizationId;
 
   private Company(Builder builder, UUID id) {
     super(builder.createdAt);
     this.id = id;
     this.name = builder.name;
     this.emailDomain = builder.emailDomain;
+    this.organizationId = builder.organizationId;
     setLastModifiedBy(builder.lastModifiedBy);
   }
 
@@ -73,6 +80,21 @@ public class Company extends BaseObject {
     return label.substring(0, 1).toUpperCase(Locale.ROOT) + label.substring(1);
   }
 
+  public boolean isLinkedToOrganization() {
+    return organizationId != null;
+  }
+
+  /**
+   * Links the company to its organization at the identity provider.
+   *
+   * @param linkedBy the id of the user whose onboarding created or found the organization
+   */
+  public void linkOrganization(String organizationId, UUID linkedBy, LocalDateTime linkedAt) {
+    this.organizationId = organizationId;
+    setLastModifiedBy(linkedBy);
+    setLastModifiedAt(linkedAt);
+  }
+
   public UUID getId() {
     return id;
   }
@@ -83,6 +105,11 @@ public class Company extends BaseObject {
 
   public String getEmailDomain() {
     return emailDomain;
+  }
+
+  /** The organization's id at the identity provider, or {@code null} until it is linked. */
+  public String getOrganizationId() {
+    return organizationId;
   }
 
   public static Builder builder() {
@@ -112,6 +139,7 @@ public class Company extends BaseObject {
     private UUID explicitId;
     private String name;
     private String emailDomain;
+    private String organizationId;
     private UUID lastModifiedBy;
     private LocalDateTime createdAt;
 
@@ -129,6 +157,11 @@ public class Company extends BaseObject {
 
     public Builder emailDomain(String emailDomain) {
       this.emailDomain = emailDomain;
+      return this;
+    }
+
+    public Builder organizationId(String organizationId) {
+      this.organizationId = organizationId;
       return this;
     }
 

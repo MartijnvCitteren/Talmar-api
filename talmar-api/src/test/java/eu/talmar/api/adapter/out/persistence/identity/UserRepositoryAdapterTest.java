@@ -3,6 +3,7 @@ package eu.talmar.api.adapter.out.persistence.identity;
 import static eu.talmar.api.testSupport.IdentityFactory.EMAIL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.talmar.api.adapter.out.persistence.identity.mapper.CompanyJpaMapperImpl;
 import eu.talmar.api.adapter.out.persistence.identity.mapper.UserJpaMapperImpl;
@@ -59,6 +60,35 @@ class UserRepositoryAdapterTest {
     assertEquals(companyId, reloaded.getCompanyId());
     assertEquals(user.getMembership(), reloaded.getMembership());
     assertEquals(user.getStatus(), reloaded.getStatus());
+    assertEquals(user.getSubject(), reloaded.getSubject());
+    assertEquals(user.isOrganizationMember(), reloaded.isOrganizationMember());
+  }
+
+  @Test
+  @DisplayName(
+      "given an owner marked as organization member, when saved again and found by subject then"
+          + " the membership is stored")
+  void givenOwnerMarkedAsOrganizationMemberWhenSavedAgainAndFoundBySubjectThenMembershipIsStored() {
+    var user = IdentityFactory.owner(companyId);
+    adapter.save(user);
+    flushAndClear();
+    user.markOrganizationMember(IdentityFactory.NOW);
+
+    adapter.save(user);
+    flushAndClear();
+
+    var reloaded = adapter.findBySubject(user.getSubject()).orElseThrow();
+    assertEquals(user, reloaded);
+    assertTrue(reloaded.isOrganizationMember());
+  }
+
+  @Test
+  @DisplayName("given an unknown subject, when found then empty")
+  void givenUnknownSubjectWhenFoundThenEmpty() {
+    adapter.save(IdentityFactory.owner(companyId));
+    flushAndClear();
+
+    assertTrue(adapter.findBySubject(UUID.randomUUID().toString()).isEmpty());
   }
 
   @Test

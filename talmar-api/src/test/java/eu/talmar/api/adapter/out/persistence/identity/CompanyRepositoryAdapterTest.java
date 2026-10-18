@@ -41,6 +41,36 @@ class CompanyRepositoryAdapterTest {
     assertEquals(company.getName(), reloaded.getName());
     assertEquals(company.getEmailDomain(), reloaded.getEmailDomain());
     assertEquals(company.getLastModifiedBy(), reloaded.getLastModifiedBy());
+    assertEquals(company.getOrganizationId(), reloaded.getOrganizationId());
+  }
+
+  @Test
+  @DisplayName(
+      "given a company linked to its organization, when saved again and found by id then the link"
+          + " is stored")
+  void givenCompanyLinkedToOrganizationWhenSavedAgainAndFoundByIdThenLinkIsStored() {
+    var company = IdentityFactory.company();
+    adapter.save(company);
+    flushAndClear();
+    company.linkOrganization(IdentityFactory.ORGANIZATION_ID, CREATOR_ID, NOW);
+
+    adapter.save(company);
+    flushAndClear();
+
+    assertEquals(
+        IdentityFactory.ORGANIZATION_ID,
+        adapter.findById(company.getId()).orElseThrow().getOrganizationId());
+  }
+
+  @Test
+  @DisplayName(
+      "given two companies not linked to an organization yet, when saved then both are stored")
+  void givenTwoCompaniesNotLinkedYetWhenSavedThenBothAreStored() {
+    adapter.save(IdentityFactory.company());
+    adapter.save(Company.create("globex.com", CREATOR_ID, NOW));
+    flushAndClear();
+
+    assertEquals(2, companyJpaRepository.count());
   }
 
   @Test
