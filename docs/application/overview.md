@@ -111,6 +111,18 @@ The response goes back up the same way: domain object ─▶ response mapper ─
   | `talmar.identity.purge-interval` | `IDENTITY_PURGE_INTERVAL` | `PT1H` |
 - Profiles: `local` (SQL Server from `docker-compose.yaml`, CORS for the Vite dev server on `localhost:5173`), `dev`
   (datasource from `SPRING_DATASOURCE_*` environment variables), `test` (in-memory H2).
+- **Local stack** (`docker compose up`, no manual steps):
+
+  | Service | Port | Role |
+  |---------|------|------|
+  | `sqlserver` (+ one-shot `sqlserver-init`) | 1433 | Databases `talmar_db` (the application, `local` profile) and `keycloak_db` (UTF-8 collation). |
+  | `keycloak` | 8080 | Identity provider (ADR 0006), admin console with `admin`/`admin`. Realm `talmar` with clients `talmar-web` and `talmar-backend`, imported from `docker/keycloak/talmar-realm.json`. The backend does not use it yet. |
+  | `keycloak-config` (one-shot) | – | Applies the realm settings the import cannot express (`docker/keycloak/configure-realm.sh`). |
+  | `mailpit` | 8025 | Catches the mails Keycloak sends; web UI on `http://localhost:8025`. |
+
+  Keycloak imports the realm on its first start only. After changing the realm file, delete the realm in the admin
+  console and restart Keycloak, or reset everything with `docker compose down -v`. Its e-mail pattern must match
+  `identity/public-email-domains.txt`; `KeycloakRealmTest` fails and prints the new pattern when it does not.
 - **Schema management is `ddl-auto: update`**: Hibernate changes the schema from the entities on startup. There are no
   migrations. Any entity change is therefore a schema change and is flagged by `guardrail-diff` (`schema-change`).
   `update` never alters existing columns: a new `NOT NULL` column on a table with rows (such as `vacancy.language`) or a
@@ -121,6 +133,5 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 Open issues an agent should know about before building on top of them. Remove an entry in the PR that fixes it.
 
 - Javadoc and code comments refer to ADR 0004 and ADR 0005, which are not in `docs/adr/`.
-- `application-local.yml` connects to database `talmar`, while `docker-compose.yaml` creates `talmar_db`.
 - `BaseJpaEntity.lastModifiedBy` (an `app_user` id) is filled only for companies, by the registration use case.
   For vacancies it stays empty until login exists: there is no `AuditorAware`, because nobody is authenticated yet.

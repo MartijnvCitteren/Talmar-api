@@ -1,6 +1,8 @@
 # ADR 0003 — User registration and identity in the backend
 
-- **Status:** Accepted, revised 2026-10-11 after PR review (see "Revisions")
+- **Status:** Accepted, revised 2026-10-11 after PR review (see "Revisions"). Partly superseded by
+  [ADR 0006](0006-keycloak-as-identity-provider.md) (decisions 1 and 3, and the credentials, verification and token
+  parts of decisions 2 and 4).
 - **Date:** 2026-10-09
 
 ## Context
@@ -28,6 +30,8 @@ Requirements and constraints:
 ## Decision
 
 ### 1. Build identity in Spring, not with a third-party auth framework
+
+> Superseded by ADR 0006: Keycloak owns accounts and credentials.
 
 **Better Auth was considered and rejected.** It is a TypeScript framework: it owns the `user`, `account`, `session`
 and `verification` tables in a Node application, which would put identity with the frontend team and leave the
@@ -79,6 +83,8 @@ Rules the aggregates own:
 
 ### 3. Registration flow
 
+> Superseded by ADR 0006: registration happens in Keycloak, followed by `POST /onboarding`.
+
 1. `POST /registration` with `firstName`, `lastName`, `email`, `jobRole`.
    - The REST adapter validates the request against the contract before anything else runs: names 1–35 characters
      of letters, spaces, hyphens, apostrophes and periods; `email` at most 75 characters with a domain that contains
@@ -107,6 +113,8 @@ The mail adapter for now is `LoggingRegistrationMailer` (writes the link to the 
 the same port later; that is the point where recurring cost starts.
 
 ### 4. Security configuration
+
+> Partly superseded by ADR 0006: Keycloak issues the tokens; the backend only validates them.
 
 Nothing is secured in this slice; every endpoint stays open, as today. The login slice adds `SecurityFilterChain`
 with `oauth2ResourceServer().jwt()`, backend-issued JWTs (short-lived access token with `sub`, `org`, `roles`; refresh

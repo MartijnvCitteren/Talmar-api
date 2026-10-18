@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=talmar;trustServerCertificate=true
+    url: jdbc:sqlserver://localhost:1433;databaseName=talmar_db;trustServerCertificate=true
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
     properties:
       hibernate.dialect: org.hibernate.dialect.SQLServerDialect
