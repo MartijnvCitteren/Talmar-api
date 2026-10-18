@@ -1,0 +1,94 @@
+{
+  "realm": "talmar",
+  "displayName": "Talmar",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "verifyEmail": true,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "rememberMe": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "maxDeltaTimeSeconds": 43200,
+  "organizationsEnabled": true,
+  "passwordPolicy": "length(12) and maxLength(128) and notEmail(undefined)",
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "no-reply@talmar.local",
+    "fromDisplayName": "Talmar"
+  },
+  "localizationTexts": {
+    "en": {
+      "publicEmailDomainNotAllowed": "Please use your work e-mail address. Addresses from public mail providers cannot be used.",
+      "invalidPersonName": "Use letters, spaces, hyphens, apostrophes and periods only."
+    }
+  },
+  "clients": [
+    {
+      "clientId": "talmar-web",
+      "name": "Talmar web app",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5173/*"
+      }
+    },
+    {
+      "clientId": "talmar-backend",
+      "name": "Talmar backend",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${TALMAR_BACKEND_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-talmar-backend",
+      "enabled": true,
+      "serviceAccountClientId": "talmar-backend",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "manage-organizations"
+        ]
+      }
+    }
+  ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\": [{\"name\": \"username\", \"displayName\": \"${username}\", \"validations\": {\"length\": {\"min\": 3, \"max\": 255}, \"username-prohibited-characters\": {}, \"up-username-not-idn-homograph\": {}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"email\", \"displayName\": \"${email}\", \"validations\": {\"email\": {}, \"length\": {\"max\": 75}, \"pattern\": {\"pattern\": \"(?i)^[^@]+@(?!(?:gmail[.]com|googlemail[.]com|msn[.]com|windowslive[.]com|ymail[.]com|rocketmail[.]com|icloud[.]com|me[.]com|mac[.]com|proton[.]me|protonmail[.]com|protonmail[.]ch|pm[.]me|tutanota[.]com|tutanota[.]de|tuta[.]io|tuta[.]com|mailbox[.]org|posteo[.]de|posteo[.]net|fastmail[.]com|hey[.]com|mail[.]com|email[.]com|zoho[.]com|mail[.]ru|qq[.]com|163[.]com|ziggo[.]nl|kpnmail[.]nl|kpnplanet[.]nl|planet[.]nl|home[.]nl|hetnet[.]nl|xs4all[.]nl|casema[.]nl|chello[.]nl|upcmail[.]nl|quicknet[.]nl|online[.]nl|tele2[.]nl|freeler[.]nl|zonnet[.]nl|telfort[.]nl|caiway[.]nl|solcon[.]nl|telenet[.]be|skynet[.]be|proximus[.]be|web[.]de|t-online[.]de|freenet[.]de|arcor[.]de|bluewin[.]ch|orange[.]fr|wanadoo[.]fr|free[.]fr|laposte[.]net|sfr[.]fr|libero[.]it|virgilio[.]it|tiscali[.]it|telefonica[.]net|wp[.]pl|o2[.]pl|onet[.]pl|interia[.]pl|seznam[.]cz)$)(?!(?:outlook|hotmail|live|yahoo|aol|gmx|yandex)[.]).+$\", \"error-message\": \"publicEmailDomainNotAllowed\"}}, \"required\": {\"roles\": [\"admin\", \"user\"]}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"firstName\", \"displayName\": \"${firstName}\", \"validations\": {\"length\": {\"min\": 1, \"max\": 35}, \"pattern\": {\"pattern\": \"^(?=.*\\\\p{L})[\\\\p{L}\\\\p{M}'’.-]+( [\\\\p{L}\\\\p{M}'’.-]+)*$\", \"error-message\": \"invalidPersonName\"}}, \"required\": {\"roles\": [\"admin\", \"user\"]}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"lastName\", \"displayName\": \"${lastName}\", \"validations\": {\"length\": {\"min\": 1, \"max\": 35}, \"pattern\": {\"pattern\": \"^(?=.*\\\\p{L})[\\\\p{L}\\\\p{M}'’.-]+( [\\\\p{L}\\\\p{M}'’.-]+)*$\", \"error-message\": \"invalidPersonName\"}}, \"required\": {\"roles\": [\"admin\", \"user\"]}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}], \"groups\": [{\"name\": \"user-metadata\", \"displayHeader\": \"User metadata\", \"displayDescription\": \"Attributes, which refer to user metadata\"}]}"
+          ]
+        }
+      }
+    ]
+  }
+}

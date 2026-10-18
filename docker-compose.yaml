@@ -18,6 +18,8 @@ services:
       retries: 10
       start_period: 20s
 
+  # Creates the application database and Keycloak's database. Keycloak needs a UTF-8 collation (names may use any
+  # script) and recommends READ_COMMITTED_SNAPSHOT, which needs exclusive access, so it is set before Keycloak connects.
   sqlserver-init:
     image: mcr.microsoft.com/mssql/server:2025-latest
     depends_on:
@@ -27,9 +29,69 @@ services:
       MSSQL_SA_PASSWORD: "Super_secret-123"
     entrypoint: [ "/bin/bash", "-c" ]
     command: >
-      "/opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q
-      \"IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'talmar_db') CREATE DATABASE talmar_db\""
+      "/opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -b -Q
+      \"IF DB_ID('talmar_db') IS NULL CREATE DATABASE talmar_db;
+      IF DB_ID('keycloak_db') IS NULL CREATE DATABASE keycloak_db COLLATE Latin1_General_100_CI_AS_SC_UTF8;
+      ALTER DATABASE keycloak_db SET READ_COMMITTED_SNAPSHOT ON;\""
     restart: "no"
+
+  # Identity provider (ADR 0006), development mode. The realm in docker/keycloak/ is imported on the first start
+  # only; after changing it, remove the realm in the admin console or reset the volumes (docker compose down -v).
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    container_name: keycloak
+    command: [ "start-dev", "--import-realm" ]
+    depends_on:
+      sqlserver-init:
+        condition: service_completed_successfully
+      mailpit:
+        condition: service_started
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_DB: mssql
+      KC_DB_URL: "jdbc:sqlserver://sqlserver:1433;databaseName=keycloak_db;encrypt=true;trustServerCertificate=true"
+      KC_DB_USERNAME: sa
+      KC_DB_PASSWORD: "Super_secret-123"
+      KC_HEALTH_ENABLED: "true"
+      # Read by the realm import (${...} placeholder); the backend gets the same value.
+      TALMAR_BACKEND_CLIENT_SECRET: ${TALMAR_BACKEND_CLIENT_SECRET:-local-only-backend-secret}
+      # RFC 9106's second recommended Argon2id option, as ADR 0003 chose for our own hashes: 64 MiB, 3 iterations,
+      # parallelism 4. Keycloak's default is 7 MiB, 5 iterations, parallelism 1.
+      KC_SPI_PASSWORD_HASHING__ARGON2__MEMORY: "65536"
+      KC_SPI_PASSWORD_HASHING__ARGON2__ITERATIONS: "3"
+      KC_SPI_PASSWORD_HASHING__ARGON2__PARALLELISM: "4"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./docker/keycloak/talmar-realm.json:/opt/keycloak/data/import/talmar-realm.json:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3" ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  # Applies the realm settings the import cannot express (see the script), after every start of Keycloak.
+  keycloak-config:
+    image: quay.io/keycloak/keycloak:26.8.1
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    entrypoint: [ "/bin/bash", "/opt/keycloak/configure-realm.sh" ]
+    volumes:
+      - ./docker/keycloak/configure-realm.sh:/opt/keycloak/configure-realm.sh:ro
+    restart: "no"
+
+  # Local SMTP server for the mails Keycloak sends (verification, password reset). Web UI on http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:v1.31.6
+    container_name: mailpit
+    ports:
+      - "8025:8025"
 
 volumes:
   sqlserverdata:
