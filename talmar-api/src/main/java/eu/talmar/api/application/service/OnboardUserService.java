@@ -22,7 +22,7 @@ import org.springframework.transaction.support.TransactionOperations;
 
 /**
  * Onboards a logged-in account (ADR 0006, sections 2 and 7): the e-mail domain of its verified
- * profile decides the company, the first user of a domain founds it and becomes its owner, later
+ * profile decides the company, the first user of a domain creates it and becomes its owner, later
  * users join as members pending approval.
  *
  * <p>The identity provider and our database cannot share a transaction, so onboarding is built to
@@ -85,7 +85,7 @@ public class OnboardUserService implements OnboardUserUseCase {
     var userId = User.newId();
     var domain = profile.email().domain();
     var existingCompany = companyRepository.findByEmailDomain(domain);
-    var company = existingCompany.orElseGet(() -> Company.found(domain, userId, now));
+    var company = existingCompany.orElseGet(() -> Company.create(domain, userId, now));
     if (existingCompany.isEmpty()) {
       companyRepository.save(company);
     }

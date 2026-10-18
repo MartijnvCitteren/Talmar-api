@@ -213,7 +213,7 @@ class OnboardUserServiceTest {
     when(identityProvider.getProfile(SUBJECT)).thenReturn(profile);
   }
 
-  /** Captures the founded company and serves it from {@code findById}, as the database would. */
+  /** Captures the created company and serves it from {@code findById}, as the database would. */
   private ArgumentCaptor<Company> givenCompanyIsReadBackAfterSave() {
     var savedCompany = ArgumentCaptor.forClass(Company.class);
     doNothing().when(companyRepository).save(savedCompany.capture());

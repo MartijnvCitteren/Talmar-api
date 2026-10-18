@@ -17,10 +17,10 @@ Two aggregates in `domain/identity`, linked by id only in the domain (a user hol
 | Field | Notes |
 |-------|-------|
 | `id` | UUIDv7. |
-| `name` | Derived from the e-mail domain when the company is founded: the registrable label, capitalised (`acme.nl` and `sales.acme.co.uk` → "Acme"; `co`, `com`, `org`, `net`, `ac`, `gov`, `edu` before the top-level domain are skipped). There is no endpoint to correct it yet. |
+| `name` | Derived from the e-mail domain when the company is created: the registrable label, capitalised (`acme.nl` and `sales.acme.co.uk` → "Acme"; `co`, `com`, `org`, `net`, `ac`, `gov`, `edu` before the top-level domain are skipped). There is no endpoint to correct it yet. |
 | `emailDomain` | Lower case, unique. The key for "same company". |
 | `organizationId` | The company's Keycloak organization; `null` until onboarding has linked it (`isLinkedToOrganization`). |
-| `lastModifiedBy` | Required. The `app_user` id of whoever last created or changed the company: the founder, or the user whose onboarding linked the organization. |
+| `lastModifiedBy` | Required. The `app_user` id of whoever last created or changed the company: the user who created it, or the user whose onboarding linked the organization. |
 
 `User`
 
@@ -39,7 +39,7 @@ Two aggregates in `domain/identity`, linked by id only in the domain (a user hol
 Rules the `User` aggregate owns:
 
 - `create` decides membership and status from whether the company already existed. It takes an id generated up
-  front (`User.newId()`), so a company founded by the same user can record the founder as `lastModifiedBy` before
+  front (`User.newId()`), so a company created by the same user can record that user as `lastModifiedBy` before
   either is saved.
 - `needsOrganizationMembership` is true for an owner who is not an organization member yet;
   `markOrganizationMember` records that Keycloak added them.
@@ -60,7 +60,7 @@ Names and e-mail address come from Keycloak, never from the request.
    organization member) → `UserAlreadyOnboardedException`, `409`. Nothing changes.
 2. If there is no user: fetch the profile from Keycloak. An unverified address, or one on a public mail domain
    (`PublicEmailDomains`), → `OnboardingNotAllowedException`, `403`; nothing is saved. Otherwise, in one transaction
-   (`TransactionOperations`): find the company of the domain or found it, and save the user (`ACTIVE` owner or
+   (`TransactionOperations`): find the company of the domain or create it, and save the user (`ACTIVE` owner or
    `PENDING_APPROVAL` member).
 3. If the company is not linked: `findOrCreateOrganization`, then save the link. This belongs to the company: a
    colleague whose onboarding comes first links it for a founder whose onboarding stopped.
