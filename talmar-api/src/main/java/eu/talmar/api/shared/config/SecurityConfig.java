@@ -19,6 +19,9 @@ import org.springframework.security.web.SecurityFilterChain;
  * (#103). A request that does send a token is checked everywhere, so an expired or forged token is
  * a {@code 401} also on an open endpoint.
  *
+ * <p>A {@code 401} carries the bearer challenge of RFC 6750 and nothing more; why the request was
+ * not authenticated goes to the log ({@link BearerChallengeEntryPoint}).
+ *
  * <p>CSRF protection, form login, HTTP basic and logout are disabled because the API is stateless
  * and will authenticate with bearer tokens, not cookies or sessions. CORS defers to the Spring MVC
  * configuration in {@link WebConfig}.
@@ -46,7 +49,11 @@ public class SecurityConfig {
                     .authenticated()
                     .anyRequest()
                     .permitAll())
-        .oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()))
+        .oauth2ResourceServer(
+            resourceServer ->
+                resourceServer
+                    .jwt(Customizer.withDefaults())
+                    .authenticationEntryPoint(new BearerChallengeEntryPoint()))
         .build();
   }
 }

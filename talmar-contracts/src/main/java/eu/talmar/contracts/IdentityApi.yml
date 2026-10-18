@@ -5,7 +5,7 @@ info:
     API for accounts in Talmar. Registration, e-mail verification, login and passwords are handled by the identity
     provider (Keycloak, ADR 0006), not by this API. After the first login, the frontend calls `POST /onboarding` to
     give the account its Talmar user and company. `PATCH /me` changes the user's names.
-  version: 2.2.0
+  version: 1.0.0
 servers:
   - url: /api/v1
 
@@ -62,7 +62,7 @@ paths:
         '403':
           description: >
             The account may not onboard: its e-mail address is not verified, or it is on a public mail domain
-            (gmail, outlook, hotmail, proton, ...). Only work addresses found or join a company. Nothing is saved.
+            (gmail, outlook, hotmail, proton, ...). Only work addresses create or join a company. Nothing is saved.
           content:
             application/problem+json:
               schema:
@@ -148,8 +148,9 @@ components:
   responses:
     Unauthorized:
       description: >
-        No access token, or an expired or invalid one. The body is empty; the `WWW-Authenticate` header says why. Log
-        in again.
+        No access token, or an expired or invalid one. The body is empty. `WWW-Authenticate` is `Bearer` without a
+        token and `Bearer error="invalid_token"` with a rejected one; it does not say why a token was rejected. Log in
+        again.
       headers:
         WWW-Authenticate:
           schema:

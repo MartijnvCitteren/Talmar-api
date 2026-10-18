@@ -18,10 +18,10 @@ Two aggregates in `domain/identity`, linked by id only in the domain (a user hol
 | Field | Notes |
 |-------|-------|
 | `id` | UUIDv7. |
-| `name` | Derived from the e-mail domain when the company is founded: the registrable label, capitalised (`acme.nl` and `sales.acme.co.uk` → "Acme"; `co`, `com`, `org`, `net`, `ac`, `gov`, `edu` before the top-level domain are skipped). There is no endpoint to correct it yet. |
+| `name` | Derived from the e-mail domain when the company is created: the registrable label, capitalised (`acme.nl` and `sales.acme.co.uk` → "Acme"; `co`, `com`, `org`, `net`, `ac`, `gov`, `edu` before the top-level domain are skipped). There is no endpoint to correct it yet. |
 | `emailDomain` | Lower case, unique. The key for "same company". |
 | `organizationId` | The company's Keycloak organization; `null` until onboarding has linked it (`isLinkedToOrganization`). |
-| `lastModifiedBy` | Required. The `app_user` id of whoever last created or changed the company: the founder, or the user whose onboarding linked the organization. |
+| `lastModifiedBy` | Required. The `app_user` id of whoever last created or changed the company: the user who created it, or the user whose onboarding linked the organization. |
 
 `User`
 
@@ -40,7 +40,7 @@ Two aggregates in `domain/identity`, linked by id only in the domain (a user hol
 Rules the `User` aggregate owns:
 
 - `create` decides membership and status from whether the company already existed. It takes an id generated up
-  front (`User.newId()`), so a company founded by the same user can record the founder as `lastModifiedBy` before
+  front (`User.newId()`), so a company created by the same user can record that user as `lastModifiedBy` before
   either is saved.
 - `needsOrganizationMembership` is true for an owner who is not an organization member yet;
   `markOrganizationMember` records that Keycloak added them.
@@ -61,7 +61,7 @@ Names and e-mail address come from Keycloak, never from the request.
    organization member) → `UserAlreadyOnboardedException`, `409`. Nothing changes.
 2. If there is no user: fetch the profile from Keycloak. An unverified address, or one on a public mail domain
    (`PublicEmailDomains`), → `OnboardingNotAllowedException`, `403`; nothing is saved. Otherwise, in one transaction
-   (`TransactionOperations`): find the company of the domain or found it, and save the user (`ACTIVE` owner or
+   (`TransactionOperations`): find the company of the domain or create it, and save the user (`ACTIVE` owner or
    `PENDING_APPROVAL` member).
 3. If the company is not linked: `findOrCreateOrganization`, then save the link. This belongs to the company: a
    colleague whose onboarding comes first links it for a founder whose onboarding stopped.
@@ -74,7 +74,7 @@ failed: a retry after step 2 does not fetch the profile again. A `PENDING_APPROV
 organization; that is for owner approval.
 
 The public-domain check repeats what the realm already enforces (ADR 0006, section 3, layer 2), so one mistake in the
-realm configuration does not let such an address found or join a company.
+realm configuration does not let such an address create or join a company.
 
 ## Change names — `PATCH /me`
 
@@ -102,16 +102,26 @@ file differ. Onboarding checks it again through the `PublicEmailDomains` port, i
 
 ## REST adapter and security
 
-- `OnboardingController` implements the generated `OnboardingApi`, `ProfileController` the generated `MeApi`. `AuthenticatedUser.subject()` reads the `sub` of
-  the validated token from the security context; the request mapper combines it with `jobRole` into the command.
+- `OnboardingController` implements the generated `OnboardingApi`, `ProfileController` the generated `MeApi`.
+  `AuthenticatedUser.subject()` reads the `sub` of the validated token from the security context; the request mapper
+  combines it with `jobRole` into the command.
 - `IdentityExceptionHandler` (highest precedence) maps `OnboardingNotAllowedException` to `403`,
   `UserAlreadyOnboardedException` to `409`, `UserNotOnboardedException` to `404` and
-  `IdentityProviderUnavailableException` to `503`, as problem details with
-  fixed texts. Requests are not logged.
+  `IdentityProviderUnavailableException` to `503`, as problem details with fixed texts. Requests are not logged.
+- What the responses reveal: onboarding and `PATCH /me` only act on the account in the token (`sub`), never on one
+  named in the request, so `403`, `404` and `409` say something about the caller's own account and nothing about
+  other accounts. `ACTIVE` versus `PENDING_APPROVAL` does tell whether the e-mail domain already has a company, but
+  only to an account with a verified address at that domain.
 - The backend is an OAuth2 resource server (`spring-boot-starter-security-oauth2-resource-server`, only `issuer-uri`).
   It checks signature, issuer and expiry with Keycloak's public keys, fetched on the first request and cached, so no
-  call to Keycloak per request. `SecurityConfig` requires a token for `/onboarding` and `/me` only. A missing, expired or
-  forged token is `401` with a `WWW-Authenticate` header and an empty body.
+  call to Keycloak per request. `SecurityConfig` requires a token for `/onboarding` and `/me` only. A missing,
+  expired or forged token is `401` with an empty body and only the RFC 6750 challenge: `WWW-Authenticate: Bearer`, plus
+  `error="invalid_token"` when a token was sent. Spring's default `error_description` (why the token was rejected) and
+  `resource_metadata` link are left out (`BearerChallengeEntryPoint`).
+- Authentication failures are logged with method and path, never the token, other headers, the query string or the
+  client's address: no token at `info`, a rejected token at `warn` with the reason, anything unexpected at `error`
+  with its stack trace. When Keycloak is unreachable while the keys are fetched, Spring Security rethrows the failure:
+  Tomcat logs it at `error` with the cause (e.g. `503` on `.../certs`) and the client gets a bare `500`.
 
 ## Identity provider: Keycloak
 

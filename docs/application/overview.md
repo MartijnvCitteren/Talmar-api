@@ -88,9 +88,9 @@ The response goes back up the same way: domain object ─▶ response mapper ─
   access tokens (ADR 0006): signature, issuer and expiry are checked with the realm's public keys, fetched on the
   first request and cached. Only `/onboarding` and `/me` require a token. The vacancy endpoints are still open although their
   contract declares bearer auth; #103 secures them. A request that sends a token is checked on every endpoint, so an
-  expired or forged token is a `401` everywhere. CSRF, form login, HTTP basic and logout are disabled, sessions are
-  stateless, and CORS defers to `WebConfig`. Spring Security adds its default response headers (e.g.
-  `X-Content-Type-Options: nosniff`).
+  expired or forged token is a `401` everywhere, with a `WWW-Authenticate` challenge that does not say why. CSRF,
+  form login, HTTP basic and logout are disabled, sessions are stateless, and CORS defers to `WebConfig`. Spring
+  Security adds its default response headers (e.g. `X-Content-Type-Options: nosniff`).
   `SecurityConfig` only loads in a servlet web application, so a test that starts the context without a web
   environment (`WebEnvironment.NONE`, e.g. the Mistral adapter test) still starts.
 - **Scheduling**: `@EnableScheduling` (`SchedulingConfig`). Every instance runs every job, so a job must be safe to

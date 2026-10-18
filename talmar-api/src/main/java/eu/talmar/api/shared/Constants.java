@@ -26,7 +26,7 @@ public class Constants {
           + " try again later.";
   public static final String ONBOARDING_NOT_ALLOWED_TITLE = "Onboarding not allowed";
   public static final String ONBOARDING_NOT_ALLOWED_DETAIL =
-      "Only a verified work e-mail address can found or join a company in Talmar.";
+      "Only a verified work e-mail address can create or join a company in Talmar.";
   public static final String ALREADY_ONBOARDED_TITLE = "Already onboarded";
   public static final String ALREADY_ONBOARDED_DETAIL = "This account has already been onboarded.";
   public static final String NOT_ONBOARDED_TITLE = "Not onboarded";
