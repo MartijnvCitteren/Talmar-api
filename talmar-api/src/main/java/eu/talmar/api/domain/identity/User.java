@@ -44,7 +44,7 @@ public class User extends BaseObject {
   /**
    * Creates a user for a person whose e-mail address the identity provider has verified.
    *
-   * @param id the user's id, generated up front with {@link #newId()} so that a company founded by
+   * @param id the user's id, generated up front with {@link #newId()} so that a company created by
    *     this user can record it before the user is saved
    * @param companyId the company the e-mail domain belongs to
    * @param companyAlreadyExisted whether that company existed before; decides whether the user

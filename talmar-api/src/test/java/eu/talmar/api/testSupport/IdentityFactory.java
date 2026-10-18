@@ -14,10 +14,10 @@ public class IdentityFactory {
   public static final String FIRST_NAME = "Jane";
   public static final String LAST_NAME = "Doe";
   public static final JobRole JOB_ROLE = JobRole.RECRUITER;
-  public static final UUID FOUNDER_ID = UUID.fromString("0199c9a0-0000-7000-8000-000000000001");
+  public static final UUID CREATOR_ID = UUID.fromString("0199c9a0-0000-7000-8000-000000000001");
 
   public static Company company() {
-    return Company.found(EMAIL_DOMAIN, FOUNDER_ID, NOW);
+    return Company.create(EMAIL_DOMAIN, CREATOR_ID, NOW);
   }
 
   public static User owner(UUID companyId) {

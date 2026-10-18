@@ -13,7 +13,7 @@ import java.util.UUID;
 /**
  * A company that uses Talmar. Identified by its e-mail domain: everyone who registers with an
  * address on that domain belongs to it, which is why the domain is unique and stored in lower case.
- * The first user of a domain founds the company.
+ * The first user of a domain creates the company.
  *
  * <p>A company always records which user last created or changed it ({@link #getLastModifiedBy()}),
  * so every change can be traced back to a person by their user id.
@@ -45,15 +45,15 @@ public class Company extends BaseObject {
    * which its users can correct later.
    *
    * @param emailDomain the lower-case e-mail domain of the first user
-   * @param foundedBy the id of the first user, recorded as the user who last modified it
-   * @param foundedAt when the first user was created
+   * @param createdBy the id of the first user, recorded as the user who last modified it
+   * @param createdAt when the first user was created
    */
-  public static Company found(String emailDomain, UUID foundedBy, LocalDateTime foundedAt) {
+  public static Company create(String emailDomain, UUID createdBy, LocalDateTime createdAt) {
     return builder()
         .name(nameFrom(emailDomain))
         .emailDomain(emailDomain)
-        .lastModifiedBy(foundedBy)
-        .createdAt(foundedAt)
+        .lastModifiedBy(createdBy)
+        .createdAt(createdAt)
         .build();
   }
 

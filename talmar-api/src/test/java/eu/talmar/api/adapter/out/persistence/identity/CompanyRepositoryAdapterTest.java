@@ -1,7 +1,7 @@
 package eu.talmar.api.adapter.out.persistence.identity;
 
+import static eu.talmar.api.testSupport.IdentityFactory.CREATOR_ID;
 import static eu.talmar.api.testSupport.IdentityFactory.EMAIL_DOMAIN;
-import static eu.talmar.api.testSupport.IdentityFactory.FOUNDER_ID;
 import static eu.talmar.api.testSupport.IdentityFactory.NOW;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -56,7 +56,7 @@ class CompanyRepositoryAdapterTest {
   void givenCompanyForDomainWhenSecondCompanyForSameDomainIsSavedThenRejected() {
     adapter.save(IdentityFactory.company());
     flushAndClear();
-    adapter.save(Company.found(EMAIL_DOMAIN, FOUNDER_ID, NOW));
+    adapter.save(Company.create(EMAIL_DOMAIN, CREATOR_ID, NOW));
 
     assertThrows(DataIntegrityViolationException.class, () -> companyJpaRepository.flush());
   }
