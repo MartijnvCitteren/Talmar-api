@@ -50,6 +50,8 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 - **Inbound scheduling adapter** (`adapter.in.scheduling`): `@Scheduled` jobs that only trigger a use case, like a
   controller does for HTTP.
 - **Outbound AI adapter** (`adapter.out.ai`): LLM providers behind an application port; Spring AI is only used here.
+- **Outbound identity-provider adapter** (`adapter.out.keycloak`): Keycloak's Admin REST API behind the
+  `IdentityProvider` port, see [identity](identity.md).
 - **Outbound persistence adapter** (`adapter.out.persistence`): JPA entities separate from domain objects, MapStruct
   mappers in between. `BaseJpaEntity` carries the audit columns, filled by Spring Data JPA auditing.
 - **Shared** (`eu.talmar.api.shared`): config (`Clock`, CORS, async, scheduling, security filter chain), `BaseException`, the GDPR annotations, `Constants` and `TextContentRules` (the no-markup,
@@ -74,8 +76,8 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 - **Scheduled jobs**: enabled in `SchedulingConfig` unless `talmar.scheduling.enabled=false` (the test profile). Every
   instance runs every job, so jobs must be idempotent. The only job is the generation retention clean-up.
 - **Outbound HTTP**: `spring.http.clients.*` sets a 5 s connect and 15 s read timeout on the JDK HTTP client for every
-  `RestClient` built from Spring Boot's builder. The Mistral adapter is the only user so far; give a new integration
-  its own settings if these do not fit.
+  `RestClient` built from Spring Boot's builder. Users: the Mistral adapter and the Keycloak adapter (both its Admin
+  API client and its token client); give a new integration its own settings if these do not fit.
 - **AI**: Mistral through Spring AI, chat model only (embedding, moderation and OCR auto-configuration are switched off
   with `spring.ai.model.*: none`). Retries are configured explicitly (`spring.ai.retry.*`, 3 attempts, 429 and 5xx
   only); the Spring AI default retries for minutes. Calls to the provider are a recurring cost per generation. Tests
@@ -97,6 +99,11 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 
 - Context path `/api/v1`, port 8090.
 - Environment: `MISTRAL_API_KEY` is required; the application does not start without it. It is the only AI secret.
+- Keycloak (ADR 0006): `KEYCLOAK_BASE_URL` (Keycloak as the backend reaches it) and `KEYCLOAK_CLIENT_SECRET` (the
+  `talmar-backend` service account) are required outside the `local` profile, which defaults them to the Docker
+  Compose values. `KEYCLOAK_REALM` (default `talmar`) and `KEYCLOAK_CLIENT_ID` (default `talmar-backend`) are
+  optional. The secret only comes from the environment; rotate it on suspicion, because the service account can
+  change every user of the realm.
 - `talmar.generation.retention` (default `PT32H`) and `talmar.generation.purge-interval` (default `PT1H`) control the
   generation clean-up.
 - Profiles: `local` (SQL Server from `docker-compose.yaml`, CORS for the Vite dev server on `localhost:5173`), `dev`
@@ -106,7 +113,7 @@ The response goes back up the same way: domain object ─▶ response mapper ─
   | Service | Port | Role |
   |---------|------|------|
   | `sqlserver` (+ one-shot `sqlserver-init`) | 1433 | Databases `talmar_db` (the application, `local` profile) and `keycloak_db` (UTF-8 collation). |
-  | `keycloak` | 8080 | Identity provider (ADR 0006), admin console with `admin`/`admin`. Realm `talmar` with clients `talmar-web` and `talmar-backend`, imported from `docker/keycloak/talmar-realm.json`. The backend does not use it yet. |
+  | `keycloak` | 8080 | Identity provider (ADR 0006), admin console with `admin`/`admin`. Realm `talmar` with clients `talmar-web` and `talmar-backend`, imported from `docker/keycloak/talmar-realm.json`. The backend calls its Admin API as `talmar-backend`. |
   | `keycloak-config` (one-shot) | – | Applies the realm settings the import cannot express (`docker/keycloak/configure-realm.sh`). |
   | `mailpit` | 8025 | Catches the mails Keycloak sends; web UI on `http://localhost:8025`. |
 

@@ -18,8 +18,8 @@ spring:
     virtual:
       enabled: true
 
-  # Outbound HTTP clients. The only one so far is the Mistral adapter: one attempt may take at most
-  # 15 seconds (ADR 0002). The JDK client reports a timeout as HttpTimeoutException, which the adapter
+  # Outbound HTTP clients: the Mistral adapter, where one attempt may take at most 15 seconds
+  # (ADR 0002), and the Keycloak adapter. The JDK client reports a timeout as HttpTimeoutException, which the adapter
   # tells apart from other provider errors.
   http:
     clients:
@@ -27,6 +27,21 @@ spring:
       read-timeout: 15s
       imperative:
         factory: jdk
+
+  # The talmar-backend service account for the Keycloak Admin API (ADR 0006, section 6). The token
+  # URI is set explicitly: with an issuer URI, Spring would call Keycloak at startup to discover it.
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak-admin:
+            provider: keycloak
+            client-id: ${KEYCLOAK_CLIENT_ID:talmar-backend}
+            client-secret: ${KEYCLOAK_CLIENT_SECRET}
+            authorization-grant-type: client_credentials
+        provider:
+          keycloak:
+            token-uri: ${talmar.keycloak.base-url}/realms/${talmar.keycloak.realm}/protocol/openid-connect/token
 
   ai:
     # Only the chat model is used; the Mistral starter would also create embedding, moderation and OCR
@@ -58,6 +73,10 @@ spring:
 talmar:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+  keycloak:
+    # Keycloak as the backend reaches it; the realm that holds Talmar's accounts.
+    base-url: ${KEYCLOAK_BASE_URL}
+    realm: ${KEYCLOAK_REALM:talmar}
   generation:
     # How long a description generation (and its draft) is kept before the clean-up deletes it.
     retention: PT32H

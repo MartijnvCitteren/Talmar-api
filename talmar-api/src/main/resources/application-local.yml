@@ -6,10 +6,19 @@ spring:
       hibernate.dialect: org.hibernate.dialect.SQLServerDialect
     password: Super_secret-123
     username: sa
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak-admin:
+            # The local-only default of docker-compose.yaml (TALMAR_BACKEND_CLIENT_SECRET).
+            client-secret: ${KEYCLOAK_CLIENT_SECRET:local-only-backend-secret}
 
 talmar:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  keycloak:
+    base-url: ${KEYCLOAK_BASE_URL:http://localhost:8080}
 
 logging:
   level:

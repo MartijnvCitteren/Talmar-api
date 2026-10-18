@@ -114,7 +114,7 @@ also covers accounts created by an administrator, invited organization members a
 **Layer 2 — onboarding.** `OnboardUserService` checks the e-mail domain of the verified profile against the same list
 through a port (`PublicEmailDomains`) and answers `403`; nothing is saved. ADR 0003's revision of 2026-10-15 moved
 this check from the use case to the REST adapter because the address was request input. It no longer is: it comes
-from the identity provider, and "only work domains found or join a company" is now a rule of the onboarding use case.
+from the identity provider, and "only work domains create or join a company" is now a rule of the onboarding use case.
 The port returns, implemented by an adapter that reads the same file.
 
 **Other ways in, closed:**
@@ -189,12 +189,12 @@ First name, last name and e-mail address are copied from Keycloak into `app_user
 
 ### 6. Backend integration
 
-- **Resource server:** `spring-boot-starter-oauth2-resource-server` with only `issuer-uri`. The backend validates
+- **Resource server:** `spring-boot-starter-security-oauth2-resource-server` with only `issuer-uri`. The backend validates
   token signatures with Keycloak's public keys and never calls Keycloak per request. In this story only
   `/onboarding` requires a token; securing every endpoint, `GET /me` and the token claims are #103.
 - **Admin API:** outbound port `IdentityProvider` (fetch the verified profile by subject, create an organization,
   find an organization by domain, add a member), implemented in `adapter/out/keycloak` with Spring's `RestClient`.
-  The service-account token comes from `spring-boot-starter-oauth2-client` (`client_credentials`), cached until it
+  The service-account token comes from `spring-boot-starter-security-oauth2-client` (`client_credentials`), cached until it
   expires.
   - **Not `keycloak-admin-client`:** it pulls in RESTEasy and Jackson 2, which the Enforcer bans.
   - The adapter validates what Keycloak returns before it reaches the domain: e-mail address verified, at most 75
@@ -287,7 +287,9 @@ onboards first, the colleague's request creates and links the organization (but 
   nullable until linked). With `ddl-auto: update`, a local database needs a reset.
 - **Breaking contract change**: the registration operations are removed; `oasdiff` flags it, the maintainer accepted
   it (section 2).
-- **New dependencies:** `spring-boot-starter-oauth2-resource-server`, `spring-boot-starter-oauth2-client`.
+- **New dependencies:** `spring-boot-starter-security-oauth2-resource-server`,
+  `spring-boot-starter-security-oauth2-client` (Spring Boot 4 names; the old `spring-boot-starter-oauth2-*` names
+  are deprecated).
 - **New configuration:** issuer URI, Admin API base URL, client id and secret, all from environment variables.
 - **Running cost:** one more container to host and keep patched, roughly 1 GB of memory plus its database, and the
   Argon2 memory per concurrent login. No licence or per-user cost. The image is the standard Keycloak image, so any

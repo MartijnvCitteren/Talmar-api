@@ -3,10 +3,10 @@
 Accounts and companies. Keycloak owns accounts, credentials, e-mail verification and login (ADR 0006); Talmar keeps
 its own `company` and `app_user` and everything that decides access to company data.
 
-This page covers what is built today: the domain model and its persistence. The backend's own registration flow
-(ADR 0003) has been removed. Nothing creates a company or a user yet: onboarding a logged-in Keycloak user
-(`POST /onboarding`), the identity-provider adapter, `GET /me`, owner approval and securing the other endpoints follow
-in the next PRs of ADR 0006.
+This page covers what is built today: the domain model, its persistence and the Keycloak adapter. The backend's own
+registration flow (ADR 0003) has been removed. Nothing creates a company or a user yet, and nothing calls the adapter
+yet: onboarding a logged-in Keycloak user (`POST /onboarding`), `GET /me`, owner approval and securing the other
+endpoints follow in the next PRs of ADR 0006.
 
 ## Domain model
 
@@ -49,6 +49,33 @@ Input validation is not in the domain: the values come from an adapter that has 
 comments; an entry like `hotmail.*` matches the name under any top-level domain. The Keycloak realm enforces it on
 every account (ADR 0006, section 3), and `KeycloakRealmTest` fails and prints the new pattern when the realm and the
 file differ. The backend's own check moves behind a port with onboarding.
+
+## Identity provider: Keycloak
+
+Outbound port `IdentityProvider` (`application/port/out`), implemented by `KeycloakIdentityProvider`
+(`adapter/out/keycloak`) on the realm's Admin REST API with Spring's `RestClient`. Not `keycloak-admin-client`: it pulls
+in RESTEasy and Jackson 2, which the Enforcer bans.
+
+| Operation | Keycloak call | Notes |
+|-----------|---------------|-------|
+| `getProfile(subject)` | `GET /users/{subject}` | Names, lower-cased e-mail address and whether Keycloak verified it. |
+| `findOrCreateOrganization(domain, companyId)` | `POST /organizations`; on `409` `GET /organizations?search={domain}&exact=true` | Name and only domain = the e-mail domain, alias = the company id (ADR 0006, section 4). A `409` means an earlier attempt created it; the one with exactly that domain is returned. |
+| `addOrganizationMember(organizationId, subject)` | `POST /organizations/{id}/members` with the subject as body | `409` (already a member) counts as success. Adds the account as an unmanaged member. |
+
+- **Service-account token**: the `keycloak-admin` client registration (`client_credentials` as `talmar-backend`).
+  `KeycloakAdminClientConfig` adds it to every call through Spring Security's `OAuth2ClientHttpRequestInterceptor`.
+  One token for the whole backend, cached in Spring Boot's `OAuth2AuthorizedClientService` under a fixed principal
+  until it expires; a token Keycloak rejects (`401` with `invalid_token`) is dropped and the next call fetches a new
+  one. The token URI is configured, not discovered, so startup never calls Keycloak.
+- **Timeouts**: the Admin API client and the token client are both built from Spring Boot's `RestClient.Builder`, so
+  `spring.http.clients.*` applies. Spring Security's default token client has no timeout.
+- **Validation** (`KeycloakProfileValidator`): a profile must fit Talmar's columns: names 1–35 characters from the
+  realm's whitelist, e-mail address at most 75 characters with a dotted domain. The realm enforces the same rules;
+  a profile that breaks them means the realm configuration changed.
+- **Failures**: everything becomes `IdentityProviderUnavailableException`, naming the operation only. A timeout,
+  connection error or `5xx` is logged at `warn` (a retry may help), any other unexpected answer, an invalid profile
+  included, at `error`. Logs carry the HTTP status, never a response body: Keycloak may echo names or addresses in it.
+- **Rights**: the service account has `manage-users` and `manage-organizations` (ADR 0006, section 6).
 
 ## Persistence
 
