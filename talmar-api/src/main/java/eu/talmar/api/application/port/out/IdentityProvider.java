@@ -20,6 +20,9 @@ public interface IdentityProvider {
    */
   IdentityProfile getProfile(String subject);
 
+  /** Replaces the first and last name of an account; the rest of its profile stays as it is. */
+  void changeName(String subject, String firstName, String lastName);
+
   /**
    * Returns the provider's organization of a company, and creates it first when it does not exist
    * yet. Its name and its only domain are the company's e-mail domain, its alias the company id.

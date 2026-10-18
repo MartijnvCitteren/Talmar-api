@@ -74,6 +74,18 @@ class UserTest {
   }
 
   @Test
+  @DisplayName("given a user, when the name is changed then both names and the change time are set")
+  void givenUserWhenNameIsChangedThenBothNamesAndChangeTimeAreSet() {
+    var user = IdentityFactory.owner(COMPANY_ID);
+
+    user.changeName("José", "'t Hooft", NOW.plusDays(1));
+
+    assertEquals("José", user.getFirstName());
+    assertEquals("'t Hooft", user.getLastName());
+    assertEquals(NOW.plusDays(1), user.getLastModifiedAt());
+  }
+
+  @Test
   @DisplayName("given a new owner, when asked then they still need the organization membership")
   void givenNewOwnerWhenAskedThenTheyStillNeedTheOrganizationMembership() {
     assertTrue(IdentityFactory.owner(COMPANY_ID).needsOrganizationMembership());

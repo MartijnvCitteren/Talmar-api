@@ -45,6 +45,25 @@ class KeycloakIdentityProvider implements IdentityProvider {
   }
 
   /**
+   * Sends only the two names. Keycloak 26.8 leaves every field that is missing from a {@code PUT}
+   * of a user as it is (checked against a running Keycloak); the realm's user profile validates the
+   * names again.
+   */
+  @Override
+  public void changeName(String subject, String firstName, String lastName) {
+    callKeycloak(
+        "change name",
+        () ->
+            restClient
+                .put()
+                .uri("/users/{id}", subject)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new KeycloakNameChange(firstName, lastName))
+                .retrieve()
+                .toBodilessEntity());
+  }
+
+  /**
    * Creates the organization first, so the usual case is one call. Keycloak answers {@code 409}
    * when an earlier, interrupted attempt already created it; the organization is then looked up by
    * its exact domain, which Keycloak keeps unique across organizations.

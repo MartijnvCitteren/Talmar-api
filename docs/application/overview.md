@@ -19,7 +19,7 @@ A request passes through the hexagon in one direction; each arrow is an explicit
 does not belong to.
 
 ```
-HTTP ─▶ Security filter chain (validates a bearer token when one is sent; only /onboarding requires one)
+HTTP ─▶ Security filter chain (validates a bearer token when one is sent; only /onboarding and /me require one)
           ▼
         Controller (implements generated *Api interface)
           │  1. bean validation on the generated contract model (@Valid from the spec)
@@ -86,7 +86,7 @@ The response goes back up the same way: domain object ─▶ response mapper ─
   mapping at all.
 - **Security**: one `SecurityFilterChain` (`SecurityConfig`). The backend is an OAuth2 resource server for Keycloak's
   access tokens (ADR 0006): signature, issuer and expiry are checked with the realm's public keys, fetched on the
-  first request and cached. Only `/onboarding` requires a token. The vacancy endpoints are still open although their
+  first request and cached. Only `/onboarding` and `/me` require a token. The vacancy endpoints are still open although their
   contract declares bearer auth; #103 secures them. A request that sends a token is checked on every endpoint, so an
   expired or forged token is a `401` everywhere, with a `WWW-Authenticate` challenge that does not say why. CSRF,
   form login, HTTP basic and logout are disabled, sessions are stateless, and CORS defers to `WebConfig`. Spring

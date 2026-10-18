@@ -44,7 +44,11 @@ public class SecurityConfig {
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
             requests ->
-                requests.requestMatchers("/onboarding").authenticated().anyRequest().permitAll())
+                requests
+                    .requestMatchers("/onboarding", "/me")
+                    .authenticated()
+                    .anyRequest()
+                    .permitAll())
         .oauth2ResourceServer(
             resourceServer ->
                 resourceServer
