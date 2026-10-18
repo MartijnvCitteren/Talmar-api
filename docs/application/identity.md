@@ -99,7 +99,11 @@ file differ. Onboarding checks it again through the `PublicEmailDomains` port, i
   call to Keycloak per request. `SecurityConfig` requires a token for `/onboarding` only. A missing, expired or
   forged token is `401` with an empty body and only the RFC 6750 challenge: `WWW-Authenticate: Bearer`, plus
   `error="invalid_token"` when a token was sent. Spring's default `error_description` (why the token was rejected) and
-  `resource_metadata` link are left out; the reason is logged at `warn`.
+  `resource_metadata` link are left out (`BearerChallengeEntryPoint`).
+- Authentication failures are logged with method and path, never the token, other headers, the query string or the
+  client's address: no token at `info`, a rejected token at `warn` with the reason, anything unexpected at `error`
+  with its stack trace. When Keycloak is unreachable while the keys are fetched, Spring Security rethrows the failure:
+  Tomcat logs it at `error` with the cause (e.g. `503` on `.../certs`) and the client gets a bare `500`.
 
 ## Identity provider: Keycloak
 
