@@ -3,15 +3,103 @@ info:
   title: Talmar Identity API
   description: >
     API for accounts in Talmar. Registration, e-mail verification, login and passwords are handled by the identity
-    provider (Keycloak, ADR 0006), not by this API. The onboarding of a logged-in user follows in a later version.
-  version: 2.0.0
+    provider (Keycloak, ADR 0006), not by this API. After the first login, the frontend calls `POST /onboarding` to
+    give the account its Talmar user and company.
+  version: 2.1.0
 servers:
   - url: /api/v1
 
-paths: {}
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Onboarding
+    description: >
+      The first step after the first login. The e-mail domain of the verified account decides the company: the first
+      user of a domain creates the company and becomes its owner, later users join it after the owner approves them.
+      The company starts with a name derived from the e-mail domain (`acme-logistics.nl` becomes `Acme-logistics`);
+      its users can correct the name later.
+
+paths:
+  /onboarding:
+    post:
+      operationId: onboard
+      tags: [Onboarding]
+      summary: Onboard the logged-in account
+      description: >
+        Creates the Talmar user of the logged-in account, and its company when the account is the first of its e-mail
+        domain. Names and e-mail address come from the verified account, not from the request. The resulting status
+        tells the frontend what to show: `ACTIVE` for the owner of a new company, `PENDING_APPROVAL` for a user who
+        joined an existing company and waits for its owner.
+
+
+        Safe to repeat. A `503` means onboarding stopped halfway: call it again, with the same body, until it
+        answers `200`. A call after onboarding has finished answers `409` and changes nothing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardingRequest'
+            examples:
+              recruiter:
+                summary: A recruiter onboards after their first login
+                value:
+                  jobRole: RECRUITER
+      responses:
+        '200':
+          description: Onboarded, or an interrupted onboarding finished.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: >
+            The account may not onboard: its e-mail address is not verified, or it is on a public mail domain
+            (gmail, outlook, hotmail, proton, ...). Only work addresses found or join a company. Nothing is saved.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: The account has already been onboarded; nothing changes.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          description: >
+            The identity provider is unavailable. Onboarding may have stopped halfway; calling it again finishes it.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        An access token from the identity provider (Keycloak realm `talmar`, client `talmar-web`, authorization code
+        with PKCE).
+
   responses:
+    Unauthorized:
+      description: >
+        No access token, or an expired or invalid one. The body is empty; the `WWW-Authenticate` header says why. Log
+        in again.
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
     BadRequest:
       description: The request was malformed or failed validation.
       content:
@@ -30,6 +118,20 @@ components:
       type: string
       description: The user's role, asked when they sign up. A profile field, not a right.
       enum: [RECRUITER, HIRING_MANAGER, HR, FOUNDER_OR_DIRECTOR, OTHER]
+
+    OnboardingRequest:
+      type: object
+      required: [jobRole]
+      properties:
+        jobRole:
+          $ref: '#/components/schemas/JobRole'
+
+    OnboardingResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: '#/components/schemas/AccountStatus'
 
     AccountStatus:
       type: string

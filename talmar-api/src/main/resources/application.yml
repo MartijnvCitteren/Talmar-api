@@ -28,10 +28,16 @@ spring:
       imperative:
         factory: jdk
 
-  # The talmar-backend service account for the Keycloak Admin API (ADR 0006, section 6). The token
+  # Access tokens are validated against the realm's issuer; Spring fetches its keys on the first
+  # request, not at startup. The issuer is the public URL in the tokens, which may differ from the
+  # URL the backend uses for the Admin API.
+  # The talmar-backend service account calls the Keycloak Admin API (ADR 0006, section 6). Its token
   # URI is set explicitly: with an issuer URI, Spring would call Keycloak at startup to discover it.
   security:
     oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:${talmar.keycloak.base-url}/realms/${talmar.keycloak.realm}}
       client:
         registration:
           keycloak-admin:

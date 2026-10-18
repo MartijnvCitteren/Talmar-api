@@ -19,7 +19,7 @@ A request passes through the hexagon in one direction; each arrow is an explicit
 does not belong to.
 
 ```
-HTTP ─▶ Security filter chain (permits everything for now)
+HTTP ─▶ Security filter chain (validates a bearer token when one is sent; only /onboarding requires one)
           ▼
         Controller (implements generated *Api interface)
           │  1. bean validation on the generated contract model (@Valid from the spec)
@@ -84,11 +84,13 @@ The response goes back up the same way: domain object ─▶ response mapper ─
   replace Mistral with WireMock (`MistralStub`), never with a mock of our own port.
 - **CORS**: allowed origins come from `talmar.cors.allowed-origins` (`CORS_ALLOWED_ORIGINS`); empty means no CORS
   mapping at all.
-- **Security**: Spring Security is on the classpath with one `SecurityFilterChain` (`SecurityConfig`) that permits
-  every request. CSRF, form login, HTTP basic and logout are disabled, sessions are stateless, and CORS defers to
-  `WebConfig`. Every endpoint is still open: the vacancy contract declares bearer auth, but nothing checks it yet.
-  Spring Security does add its default response headers (e.g. `X-Content-Type-Options: nosniff`). The login slice
-  (ADR 0003, section 4) tightens this chain.
+- **Security**: one `SecurityFilterChain` (`SecurityConfig`). The backend is an OAuth2 resource server for Keycloak's
+  access tokens (ADR 0006): signature, issuer and expiry are checked with the realm's public keys, fetched on the
+  first request and cached. Only `/onboarding` requires a token. The vacancy endpoints are still open although their
+  contract declares bearer auth; #103 secures them. A request that sends a token is checked on every endpoint, so an
+  expired or forged token is a `401` everywhere. CSRF, form login, HTTP basic and logout are disabled, sessions are
+  stateless, and CORS defers to `WebConfig`. Spring Security adds its default response headers (e.g.
+  `X-Content-Type-Options: nosniff`).
   `SecurityConfig` only loads in a servlet web application, so a test that starts the context without a web
   environment (`WebEnvironment.NONE`, e.g. the Mistral adapter test) still starts.
 - **Scheduling**: `@EnableScheduling` (`SchedulingConfig`). Every instance runs every job, so a job must be safe to
@@ -99,7 +101,9 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 
 - Context path `/api/v1`, port 8090.
 - Environment: `MISTRAL_API_KEY` is required; the application does not start without it. It is the only AI secret.
-- Keycloak (ADR 0006): `KEYCLOAK_BASE_URL` (Keycloak as the backend reaches it) and `KEYCLOAK_CLIENT_SECRET` (the
+- Keycloak (ADR 0006): `KEYCLOAK_ISSUER_URI` (the issuer in the tokens, default
+  `${KEYCLOAK_BASE_URL}/realms/${KEYCLOAK_REALM}`; set it when the public URL differs), `KEYCLOAK_BASE_URL` (Keycloak
+  as the backend reaches it) and `KEYCLOAK_CLIENT_SECRET` (the
   `talmar-backend` service account) are required outside the `local` profile, which defaults them to the Docker
   Compose values. `KEYCLOAK_REALM` (default `talmar`) and `KEYCLOAK_CLIENT_ID` (default `talmar-backend`) are
   optional. The secret only comes from the environment; rotate it on suspicion, because the service account can
