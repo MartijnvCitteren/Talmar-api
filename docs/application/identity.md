@@ -3,10 +3,9 @@
 Accounts and companies. Keycloak owns accounts, credentials, e-mail verification and login (ADR 0006); Talmar keeps
 its own `company` and `app_user` and everything that decides access to company data.
 
-This page covers what is built today: the onboarding use case, the domain model, its persistence and the Keycloak
-adapter. The backend's own registration flow (ADR 0003) has been removed. Nothing calls the use case yet: the
-endpoint `POST /onboarding` and the resource server follow in the next PR. `GET /me`, profile editing, owner approval
-and securing the other endpoints do not exist yet.
+This page covers what is built today: onboarding a logged-in Keycloak account (`POST /onboarding`), the domain
+model, its persistence and the Keycloak adapter. The backend's own registration flow (ADR 0003) has been removed.
+`GET /me`, profile editing, owner approval and securing the other endpoints do not exist yet.
 
 ## Domain model
 
@@ -50,31 +49,31 @@ Rules the `User` aggregate owns:
 Input validation is not in the domain: the values come from an adapter that has validated them. `toString` of
 `EmailAddress` and `User` is redacted, so personal data does not reach the logs.
 
-## Onboarding use case
+## Onboarding — `POST /onboarding`
 
-What will run behind `POST /onboarding`, the first call after the first login (ADR 0006, section 2). The command
-holds the token's `sub` and the `jobRole`; names and e-mail address come from Keycloak, never from the request.
+The first call after the first login (ADR 0006, section 2). Requires an access token; the body only has `jobRole`.
+Names and e-mail address come from Keycloak, never from the request.
 
 `OnboardUserService`, idempotent (ADR 0006, section 7):
 
 1. Look up the user by the token's `sub`. If it exists and onboarding is complete (company linked, and an owner is an
-   organization member) → `UserAlreadyOnboardedException` (to become `409`). Nothing changes.
+   organization member) → `UserAlreadyOnboardedException`, `409`. Nothing changes.
 2. If there is no user: fetch the profile from Keycloak. An unverified address, or one on a public mail domain
-   (`PublicEmailDomains`), → `OnboardingNotAllowedException` (to become `403`); nothing is saved. Otherwise, in one transaction
+   (`PublicEmailDomains`), → `OnboardingNotAllowedException`, `403`; nothing is saved. Otherwise, in one transaction
    (`TransactionOperations`): find the company of the domain or create it, and save the user (`ACTIVE` owner or
    `PENDING_APPROVAL` member).
 3. If the company is not linked: `findOrCreateOrganization`, then save the link. This belongs to the company: a
    colleague whose onboarding comes first links it for a founder whose onboarding stopped.
 4. If the user is an owner without membership: `addOrganizationMember`, then save `organizationMember`.
-5. Return the status.
+5. Return the status, `200`.
 
-No transaction is open during a Keycloak call. A Keycloak failure in any step throws
-`IdentityProviderUnavailableException` (to become `503`). What was saved before it stays, and the next call resumes at the step that
+No transaction is open during a Keycloak call. A Keycloak failure in any step is `503`
+(`IdentityProviderUnavailableException`). What was saved before it stays, and the next call resumes at the step that
 failed: a retry after step 2 does not fetch the profile again. A `PENDING_APPROVAL` member is not added to the
 organization; that is for owner approval.
 
 The public-domain check repeats what the realm already enforces (ADR 0006, section 3, layer 2), so one mistake in the
-realm configuration does not let such an address found or join a company.
+realm configuration does not let such an address create or join a company.
 
 ## Block list
 
@@ -83,6 +82,28 @@ comments; an entry like `hotmail.*` matches the name under any top-level domain.
 every account (ADR 0006, section 3), and `KeycloakRealmTest` fails and prints the new pattern when the realm and the
 file differ. Onboarding checks it again through the `PublicEmailDomains` port, implemented by
 `ClasspathPublicEmailDomains` (`adapter/out/blocklist`), which reads the file once at startup.
+
+## REST adapter and security
+
+- `OnboardingController` implements the generated `OnboardingApi`. `AuthenticatedUser.subject()` reads the `sub` of
+  the validated token from the security context; the request mapper combines it with `jobRole` into the command.
+- `IdentityExceptionHandler` (highest precedence) maps `OnboardingNotAllowedException` to `403`,
+  `UserAlreadyOnboardedException` to `409` and `IdentityProviderUnavailableException` to `503`, as problem details with
+  fixed texts. Requests are not logged.
+- What the responses reveal: onboarding only acts on the account in the token (`sub`), never on one named in the
+  request, so `403` and `409` say something about the caller's own account and nothing about other accounts. `ACTIVE`
+  versus `PENDING_APPROVAL` does tell whether the e-mail domain already has a company, but only to an account with a
+  verified address at that domain.
+- The backend is an OAuth2 resource server (`spring-boot-starter-security-oauth2-resource-server`, only `issuer-uri`).
+  It checks signature, issuer and expiry with Keycloak's public keys, fetched on the first request and cached, so no
+  call to Keycloak per request. `SecurityConfig` requires a token for `/onboarding` only. A missing, expired or
+  forged token is `401` with an empty body and only the RFC 6750 challenge: `WWW-Authenticate: Bearer`, plus
+  `error="invalid_token"` when a token was sent. Spring's default `error_description` (why the token was rejected) and
+  `resource_metadata` link are left out (`BearerChallengeEntryPoint`).
+- Authentication failures are logged with method and path, never the token, other headers, the query string or the
+  client's address: no token at `info`, a rejected token at `warn` with the reason, anything unexpected at `error`
+  with its stack trace. When Keycloak is unreachable while the keys are fetched, Spring Security rethrows the failure:
+  Tomcat logs it at `error` with the cause (e.g. `503` on `.../certs`) and the client gets a bare `500`.
 
 ## Identity provider: Keycloak
 
@@ -130,8 +151,8 @@ in RESTEasy and Jackson 2, which the Enforcer bans.
 ## Contract
 
 `talmar-contracts/.../IdentityApi.yml`, generated by a second `openapi-generator-maven-plugin` execution into
-`eu.talmar.api.identity.adapter.in.rest` and `eu.talmar.api.identity.adapter.in.web.contract`. It has no operations
-yet; the `JobRole` and `AccountStatus` schemas stay for onboarding.
+`eu.talmar.api.identity.adapter.in.rest` (`OnboardingApi`) and `eu.talmar.api.identity.adapter.in.web.contract`.
+`bearerAuth` is the default security of the contract.
 
 The execution differs from the vacancy one in two ways:
 
@@ -147,6 +168,11 @@ The execution differs from the vacancy one in two ways:
 
 - Two simultaneous first users of the same new domain hit the unique constraint on `email_domain`; the second one
   gets a `500` (ADR 0006, section 7). A retry then joins the company as member.
+- When Keycloak is unreachable on the first request with a token, the resource server cannot fetch the issuer's
+  configuration and answers `500` with Spring's default error body instead of a `503` problem. Once the keys are
+  cached, a Keycloak outage only affects calls to the Admin API.
+- A `401` has an empty body here, while `VacancyApi.yml` declares a problem body for its `401`. Align both when #103
+  secures the vacancy endpoints.
 - An account that is deleted and created again in Keycloak with the same address gets a new `sub`; onboarding then
   hits the unique `email` and answers `500`.
 - There is no optimistic locking (`@Version`) on `company` or `app_user`.

@@ -33,7 +33,7 @@ import org.springframework.transaction.support.TransactionOperations;
  *
  * <p>Only verified work addresses onboard. The identity provider already refuses public mail
  * domains (ADR 0006, section 3); checking again here means one mistake in its configuration does
- * not let such an address found or join a company.
+ * not let such an address create or join a company.
  */
 @Service
 @Log4j2

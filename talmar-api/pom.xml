@@ -54,6 +54,11 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-security-oauth2-client</artifactId>
     </dependency>
+    <!-- Validates the access tokens Keycloak issues (ADR 0006). -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
+    </dependency>
 
     <!--	==AI==	 -->
     <dependency>

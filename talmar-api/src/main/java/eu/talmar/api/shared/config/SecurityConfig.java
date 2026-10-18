@@ -10,10 +10,17 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * The security filter chain. For now it secures nothing on purpose (ADR 0003): every request is
- * permitted, so adding Spring Security does not change behaviour before login exists. Having the
- * chain in place means the login slice only tightens this configuration, and tests already run
- * through the security filters.
+ * The security filter chain. The backend is an OAuth2 resource server for the access tokens
+ * Keycloak issues (ADR 0006, section 6): it checks their signature with Keycloak's public keys, the
+ * issuer and the expiry, without calling Keycloak per request.
+ *
+ * <p>Only the identity endpoints that act on the logged-in account require a token so far. Every
+ * other request is still permitted; securing them and scoping them to a company is the next story
+ * (#103). A request that does send a token is checked everywhere, so an expired or forged token is
+ * a {@code 401} also on an open endpoint.
+ *
+ * <p>A {@code 401} carries the bearer challenge of RFC 6750 and nothing more; why the request was
+ * not authenticated goes to the log ({@link BearerChallengeEntryPoint}).
  *
  * <p>CSRF protection, form login, HTTP basic and logout are disabled because the API is stateless
  * and will authenticate with bearer tokens, not cookies or sessions. CORS defers to the Spring MVC
@@ -35,7 +42,14 @@ public class SecurityConfig {
         .cors(Customizer.withDefaults())
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authorizeHttpRequests(requests -> requests.anyRequest().permitAll())
+        .authorizeHttpRequests(
+            requests ->
+                requests.requestMatchers("/onboarding").authenticated().anyRequest().permitAll())
+        .oauth2ResourceServer(
+            resourceServer ->
+                resourceServer
+                    .jwt(Customizer.withDefaults())
+                    .authenticationEntryPoint(new BearerChallengeEntryPoint()))
         .build();
   }
 }

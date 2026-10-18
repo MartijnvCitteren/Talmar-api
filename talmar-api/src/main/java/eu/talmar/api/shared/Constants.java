@@ -24,6 +24,14 @@ public class Constants {
   public static final String GENERATION_UNAVAILABLE_DETAIL =
       "AI description generation is not available right now. Write the description yourself or"
           + " try again later.";
+  public static final String ONBOARDING_NOT_ALLOWED_TITLE = "Onboarding not allowed";
+  public static final String ONBOARDING_NOT_ALLOWED_DETAIL =
+      "Only a verified work e-mail address can create or join a company in Talmar.";
+  public static final String ALREADY_ONBOARDED_TITLE = "Already onboarded";
+  public static final String ALREADY_ONBOARDED_DETAIL = "This account has already been onboarded.";
+  public static final String IDENTITY_PROVIDER_UNAVAILABLE_TITLE = "Identity provider unavailable";
+  public static final String IDENTITY_PROVIDER_UNAVAILABLE_DETAIL =
+      "The identity provider is not available right now. Try again later.";
   public static final String INTERNAL_SERVER_ERROR_TITLE = "Internal server error";
   public static final String INTERNAL_SERVER_ERROR_DETAIL =
       "An unexpected error occurred while processing the request";

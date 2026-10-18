@@ -323,3 +323,11 @@ the registration form, the login flow, the account API and the Admin API:
 - The `talmar-backend` service account creates an organization (`201`, `409` on a repeat), finds it by exact domain,
   adds a member (`201`, `409` on a repeat) as `UNMANAGED`, and cannot read clients (`403`).
 - With an organization in the realm, login is identity-first.
+
+## Verified in PR 4
+
+Checked on 2026-10-18 against the Docker Compose setup with the backend running on the `local` profile: a user logged
+in through `talmar-web` (authorization code + PKCE), and `POST /onboarding` with that access token answered `200
+ACTIVE`. Keycloak then held the organization (name and domain `smoke-test.nl`, alias the company id) with the user as
+`UNMANAGED` member. A repeat answered `409`. This found one bug the H2 tests cannot: SQL Server's default `varchar`
+collation stored `Łukasz` as `Lukasz`, so `app_user`'s name columns are now `nvarchar`.
