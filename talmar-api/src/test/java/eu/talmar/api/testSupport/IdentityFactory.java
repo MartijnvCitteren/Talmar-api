@@ -14,17 +14,17 @@ public class IdentityFactory {
   public static final String FIRST_NAME = "Jane";
   public static final String LAST_NAME = "Doe";
   public static final JobRole JOB_ROLE = JobRole.RECRUITER;
-  public static final UUID FOUNDER_ID = UUID.fromString("0199c9a0-0000-7000-8000-000000000001");
+  public static final UUID CREATOR_ID = UUID.fromString("0199c9a0-0000-7000-8000-000000000001");
   public static final String SUBJECT = "6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a4b";
   public static final String ORGANIZATION_ID = "2c2786d5-36d6-45e4-98f4-905d026f66a9";
 
   public static Company company() {
-    return Company.found(EMAIL_DOMAIN, FOUNDER_ID, NOW);
+    return Company.create(EMAIL_DOMAIN, CREATOR_ID, NOW);
   }
 
   public static Company linkedCompany() {
     var company = company();
-    company.linkOrganization(ORGANIZATION_ID, FOUNDER_ID, NOW);
+    company.linkOrganization(ORGANIZATION_ID, CREATOR_ID, NOW);
     return company;
   }
 

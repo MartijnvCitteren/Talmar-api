@@ -24,7 +24,7 @@ Constraints that shaped this decision:
 
 - **EU only, self-hosted.** No US-owned identity service, not even in an EU region (`.claude/CLAUDE.md`, hosting).
 - **The business rules stay in Talmar**: the company comes from the e-mail domain, the first registrant of a domain
-  founds it and becomes `OWNER`/`ACTIVE`, later registrants join as `MEMBER`/`PENDING_APPROVAL`. The identity
+  creates it and becomes `OWNER`/`ACTIVE`, later registrants join as `MEMBER`/`PENDING_APPROVAL`. The identity
   provider stores accounts; it does not decide who belongs to which company.
 - **No public mail domain ever gets an account** (maintainer requirement, 2026-10-18). Not "no Talmar user": no
   login at all, so nobody with a gmail address can authenticate against anything of ours.
@@ -114,7 +114,7 @@ also covers accounts created by an administrator, invited organization members a
 **Layer 2 — onboarding.** `OnboardUserService` checks the e-mail domain of the verified profile against the same list
 through a port (`PublicEmailDomains`) and answers `403`; nothing is saved. ADR 0003's revision of 2026-10-15 moved
 this check from the use case to the REST adapter because the address was request input. It no longer is: it comes
-from the identity provider, and "only work domains found or join a company" is now a rule of the onboarding use case.
+from the identity provider, and "only work domains create or join a company" is now a rule of the onboarding use case.
 The port returns, implemented by an adapter that reads the same file.
 
 **Other ways in, closed:**
