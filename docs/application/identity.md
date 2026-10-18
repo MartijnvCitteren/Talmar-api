@@ -3,10 +3,10 @@
 Accounts and companies. Keycloak owns accounts, credentials, e-mail verification and login (ADR 0006); Talmar keeps
 its own `company` and `app_user` and everything that decides access to company data.
 
-This page covers what is built today: the domain model, its persistence and the Keycloak adapter. The backend's own
-registration flow (ADR 0003) has been removed. Nothing creates a company or a user yet, and nothing calls the adapter
-yet: onboarding a logged-in Keycloak user (`POST /onboarding`), `GET /me`, owner approval and securing the other
-endpoints follow in the next PRs of ADR 0006.
+This page covers what is built today: the onboarding use case, the domain model, its persistence and the Keycloak
+adapter. The backend's own registration flow (ADR 0003) has been removed. Nothing calls the use case yet: the
+endpoint `POST /onboarding` and the resource server follow in the next PR. `GET /me`, profile editing, owner approval
+and securing the other endpoints do not exist yet.
 
 ## Domain model
 
@@ -20,35 +20,69 @@ Two aggregates in `domain/identity`, linked by id only in the domain (a user hol
 | `id` | UUIDv7. |
 | `name` | Derived from the e-mail domain when the company is founded: the registrable label, capitalised (`acme.nl` and `sales.acme.co.uk` → "Acme"; `co`, `com`, `org`, `net`, `ac`, `gov`, `edu` before the top-level domain are skipped). There is no endpoint to correct it yet. |
 | `emailDomain` | Lower case, unique. The key for "same company". |
-| `lastModifiedBy` | Required. The `app_user` id of whoever last created or changed the company: the founder, since nothing changes a company yet. |
+| `organizationId` | The company's Keycloak organization; `null` until onboarding has linked it (`isLinkedToOrganization`). |
+| `lastModifiedBy` | Required. The `app_user` id of whoever last created or changed the company: the founder, or the user whose onboarding linked the organization. |
 
 `User`
 
 | Field | Notes |
 |-------|-------|
 | `id` | UUIDv7. |
+| `subject` | The Keycloak account's id, the `sub` claim of its access tokens. Unique. |
 | `firstName`, `lastName` | A copy of the verified profile in Keycloak (ADR 0006, section 5). |
 | `email` | `EmailAddress`: lower case. |
 | `jobRole` | `RECRUITER`, `HIRING_MANAGER`, `HR`, `FOUNDER_OR_DIRECTOR`, `OTHER`. A profile field, not a right. |
 | `companyId` | The company of the e-mail domain. |
 | `membership` | `OWNER` for the first user of a company, `MEMBER` after that. Derived, never chosen. |
 | `status` | `ACTIVE` (owner) or `PENDING_APPROVAL` (member). |
+| `organizationMember` | Whether Keycloak has made the user a member of the company's organization. Only an owner becomes one at onboarding. |
 
 Rules the `User` aggregate owns:
 
 - `create` decides membership and status from whether the company already existed. It takes an id generated up
   front (`User.newId()`), so a company founded by the same user can record the founder as `lastModifiedBy` before
   either is saved.
+- `needsOrganizationMembership` is true for an owner who is not an organization member yet;
+  `markOrganizationMember` records that Keycloak added them.
+
+`Company.linkOrganization` stores the organization id and records who linked it.
 
 Input validation is not in the domain: the values come from an adapter that has validated them. `toString` of
 `EmailAddress` and `User` is redacted, so personal data does not reach the logs.
+
+## Onboarding use case
+
+What will run behind `POST /onboarding`, the first call after the first login (ADR 0006, section 2). The command
+holds the token's `sub` and the `jobRole`; names and e-mail address come from Keycloak, never from the request.
+
+`OnboardUserService`, idempotent (ADR 0006, section 7):
+
+1. Look up the user by the token's `sub`. If it exists and onboarding is complete (company linked, and an owner is an
+   organization member) → `UserAlreadyOnboardedException` (to become `409`). Nothing changes.
+2. If there is no user: fetch the profile from Keycloak. An unverified address, or one on a public mail domain
+   (`PublicEmailDomains`), → `OnboardingNotAllowedException` (to become `403`); nothing is saved. Otherwise, in one transaction
+   (`TransactionOperations`): find the company of the domain or found it, and save the user (`ACTIVE` owner or
+   `PENDING_APPROVAL` member).
+3. If the company is not linked: `findOrCreateOrganization`, then save the link. This belongs to the company: a
+   colleague whose onboarding comes first links it for a founder whose onboarding stopped.
+4. If the user is an owner without membership: `addOrganizationMember`, then save `organizationMember`.
+5. Return the status.
+
+No transaction is open during a Keycloak call. A Keycloak failure in any step throws
+`IdentityProviderUnavailableException` (to become `503`). What was saved before it stays, and the next call resumes at the step that
+failed: a retry after step 2 does not fetch the profile again. A `PENDING_APPROVAL` member is not added to the
+organization; that is for owner approval.
+
+The public-domain check repeats what the realm already enforces (ADR 0006, section 3, layer 2), so one mistake in the
+realm configuration does not let such an address found or join a company.
 
 ## Block list
 
 `identity/public-email-domains.txt` lists the public mail domains that never get an account, one per line with `#`
 comments; an entry like `hotmail.*` matches the name under any top-level domain. The Keycloak realm enforces it on
 every account (ADR 0006, section 3), and `KeycloakRealmTest` fails and prints the new pattern when the realm and the
-file differ. The backend's own check moves behind a port with onboarding.
+file differ. Onboarding checks it again through the `PublicEmailDomains` port, implemented by
+`ClasspathPublicEmailDomains` (`adapter/out/blocklist`), which reads the file once at startup.
 
 ## Identity provider: Keycloak
 
@@ -81,16 +115,17 @@ in RESTEasy and Jackson 2, which the Enforcer bans.
 
 | Table | Entity | Notes |
 |-------|--------|-------|
-| `company` | `CompanyJpaEntity` | `email_domain` unique. `last_modified_by` not null. All fields `@ProcessData`. |
-| `app_user` | `UserJpaEntity` | `user` is reserved in SQL Server. `email` unique. `company_id` is a foreign key to `company` (`fk_app_user_company`), mapped as a lazy `@ManyToOne`; the adapter sets it with `getReferenceById`, without a query. Index on `company_id`. |
+| `company` | `CompanyJpaEntity` | `email_domain` unique. `last_modified_by` not null. `keycloak_organization_id` nullable and **not** unique: SQL Server allows only one `NULL` in a unique column, so two unlinked companies would block each other; Keycloak keeps the ids unique. All fields `@ProcessData`. |
+| `app_user` | `UserJpaEntity` | `user` is reserved in SQL Server. `email` and `keycloak_subject` unique. `first_name` and `last_name` are `nvarchar` (`@Nationalized`): Keycloak accepts any script, and the default `varchar` collation silently turned `Ł` into `L` (found against SQL Server; H2 in the tests is Unicode, so no test catches a regression). `company_id` is a foreign key to `company` (`fk_app_user_company`), mapped as a lazy `@ManyToOne`; the adapter sets it with `getReferenceById`, without a query. Index on `company_id`. |
 
-- GDPR: `first_name`, `last_name` and `email` are `@PersonalData`. `job_role`, `membership`, `status` and
-  `last_modified_by` are `@ProcessData`, following the ADR 0003 table. `company_id` is an association and the company
+- GDPR: `first_name`, `last_name` and `email` are `@PersonalData`. `job_role`, `membership`, `status`,
+  `organization_member`, `last_modified_by` and the Keycloak ids are `@ProcessData`, following the ADR 0003 table and
+  ADR 0006 section 5: the ids are random and identify nobody without Keycloak. `company_id` is an association and the company
   classifies its own columns.
 - `company.last_modified_by` holds the user id without a foreign key, so deleting a user never fails on, or rewrites,
   the audit trail of a company (ADR 0003, "Revisions").
-- The removed `user_credentials` table and `verification_token_*` columns are not dropped by `ddl-auto: update`. A
-  local database still has them until it is reset.
+- The removed `user_credentials` table and `verification_token_*` columns are not dropped by `ddl-auto: update`, and
+  existing name columns stay `varchar`. A local database needs a reset.
 
 ## Contract
 
@@ -110,10 +145,9 @@ The execution differs from the vacancy one in two ways:
 
 ## Known gaps
 
-- Spring Boot's `UserDetailsServiceAutoConfiguration` is still active. It creates an unused in-memory user and logs
-  "Using generated security password" at startup. No login mechanism is enabled, so nothing accepts it. It goes away
-  with the resource server.
-- Two simultaneous first users of the same new domain will hit the unique constraint on `email_domain`; the second
-  one would get a `500` (ADR 0006, section 7).
+- Two simultaneous first users of the same new domain hit the unique constraint on `email_domain`; the second one
+  gets a `500` (ADR 0006, section 7). A retry then joins the company as member.
+- An account that is deleted and created again in Keycloak with the same address gets a new `sub`; onboarding then
+  hits the unique `email` and answers `500`.
 - There is no optimistic locking (`@Version`) on `company` or `app_user`.
 - `PENDING_APPROVAL` users stay that way: owner approval does not exist yet.

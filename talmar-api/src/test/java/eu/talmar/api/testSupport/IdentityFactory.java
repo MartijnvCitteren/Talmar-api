@@ -15,13 +15,27 @@ public class IdentityFactory {
   public static final String LAST_NAME = "Doe";
   public static final JobRole JOB_ROLE = JobRole.RECRUITER;
   public static final UUID FOUNDER_ID = UUID.fromString("0199c9a0-0000-7000-8000-000000000001");
+  public static final String SUBJECT = "6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a4b";
+  public static final String ORGANIZATION_ID = "2c2786d5-36d6-45e4-98f4-905d026f66a9";
 
   public static Company company() {
     return Company.found(EMAIL_DOMAIN, FOUNDER_ID, NOW);
   }
 
+  public static Company linkedCompany() {
+    var company = company();
+    company.linkOrganization(ORGANIZATION_ID, FOUNDER_ID, NOW);
+    return company;
+  }
+
   public static User owner(UUID companyId) {
     return user(companyId, EMAIL, false);
+  }
+
+  public static User organizationMemberOwner(UUID companyId) {
+    var owner = owner(companyId);
+    owner.markOrganizationMember(NOW);
+    return owner;
   }
 
   public static User member(UUID companyId) {
@@ -35,6 +49,7 @@ public class IdentityFactory {
   private static User user(UUID companyId, String email, boolean companyAlreadyExisted) {
     return User.create(
         User.newId(),
+        email.equals(EMAIL) ? SUBJECT : UUID.randomUUID().toString(),
         FIRST_NAME,
         LAST_NAME,
         new EmailAddress(email),

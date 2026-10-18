@@ -1,6 +1,7 @@
 package eu.talmar.api.domain.identity;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -29,6 +30,23 @@ class CompanyTest {
     assertEquals(FOUNDER_ID, company.getLastModifiedBy());
     assertEquals(NOW, company.getCreatedAt());
     assertEquals(NOW, company.getLastModifiedAt());
+  }
+
+  @Test
+  @DisplayName(
+      "given a new company, when linked to its organization then it records the organization and"
+          + " who linked it")
+  void givenNewCompanyWhenLinkedToOrganizationThenItRecordsTheOrganizationAndWhoLinkedIt() {
+    var company = Company.found("acme.nl", FOUNDER_ID, NOW);
+    var colleagueId = UUID.randomUUID();
+    assertFalse(company.isLinkedToOrganization());
+
+    company.linkOrganization("organization-id", colleagueId, NOW.plusMinutes(1));
+
+    assertTrue(company.isLinkedToOrganization());
+    assertEquals("organization-id", company.getOrganizationId());
+    assertEquals(colleagueId, company.getLastModifiedBy());
+    assertEquals(NOW.plusMinutes(1), company.getLastModifiedAt());
   }
 
   @ParameterizedTest

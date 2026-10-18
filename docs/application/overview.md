@@ -130,5 +130,8 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 Open issues an agent should know about before building on top of them. Remove an entry in the PR that fixes it.
 
 - Javadoc and code comments refer to ADR 0004 and ADR 0005, which are not in `docs/adr/`.
-- `BaseJpaEntity.lastModifiedBy` (an `app_user` id) is filled only for companies. Nothing creates a company
-  yet; for vacancies it stays empty until login exists: there is no `AuditorAware`, because nobody is authenticated yet.
+- `BaseJpaEntity.lastModifiedBy` (an `app_user` id) is filled only for companies, by onboarding. For vacancies it
+  stays empty: there is no `AuditorAware`, because the vacancy endpoints are not authenticated yet (#103).
+- Strings are `varchar` with SQL Server's Latin-1 collation unless a column is `@Nationalized`. Only the user's names
+  are so far; vacancy texts lose characters outside Latin-1 (Polish, Czech, Greek, ...) on SQL Server. H2 in the
+  tests is Unicode and hides this.

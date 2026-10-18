@@ -8,4 +8,11 @@ public interface UserRepository {
   void save(User user);
 
   Optional<User> findByEmail(EmailAddress email);
+
+  /**
+   * Finds the user linked to an identity-provider account.
+   *
+   * @param subject the account's id at the identity provider
+   */
+  Optional<User> findBySubject(String subject);
 }
