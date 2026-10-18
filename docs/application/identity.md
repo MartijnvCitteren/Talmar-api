@@ -73,7 +73,7 @@ failed: a retry after step 2 does not fetch the profile again. A `PENDING_APPROV
 organization; that is for owner approval.
 
 The public-domain check repeats what the realm already enforces (ADR 0006, section 3, layer 2), so one mistake in the
-realm configuration does not let such an address found or join a company.
+realm configuration does not let such an address create or join a company.
 
 ## Block list
 
@@ -90,10 +90,16 @@ file differ. Onboarding checks it again through the `PublicEmailDomains` port, i
 - `IdentityExceptionHandler` (highest precedence) maps `OnboardingNotAllowedException` to `403`,
   `UserAlreadyOnboardedException` to `409` and `IdentityProviderUnavailableException` to `503`, as problem details with
   fixed texts. Requests are not logged.
+- What the responses reveal: onboarding only acts on the account in the token (`sub`), never on one named in the
+  request, so `403` and `409` say something about the caller's own account and nothing about other accounts. `ACTIVE`
+  versus `PENDING_APPROVAL` does tell whether the e-mail domain already has a company, but only to an account with a
+  verified address at that domain.
 - The backend is an OAuth2 resource server (`spring-boot-starter-security-oauth2-resource-server`, only `issuer-uri`).
   It checks signature, issuer and expiry with Keycloak's public keys, fetched on the first request and cached, so no
   call to Keycloak per request. `SecurityConfig` requires a token for `/onboarding` only. A missing, expired or
-  forged token is `401` with a `WWW-Authenticate` header and an empty body.
+  forged token is `401` with an empty body and only the RFC 6750 challenge: `WWW-Authenticate: Bearer`, plus
+  `error="invalid_token"` when a token was sent. Spring's default `error_description` (why the token was rejected) and
+  `resource_metadata` link are left out; the reason is logged at `warn`.
 
 ## Identity provider: Keycloak
 

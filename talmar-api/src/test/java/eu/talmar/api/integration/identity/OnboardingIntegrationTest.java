@@ -19,7 +19,7 @@ import static eu.talmar.api.testSupport.KeycloakStub.json;
 import static eu.talmar.api.testSupport.KeycloakStub.stubRealm;
 import static eu.talmar.api.testSupport.KeycloakStub.user;
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.emptyString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
@@ -149,8 +149,11 @@ class OnboardingIntegrationTest extends BaseIntegrationTest {
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("unauthenticatedRequests")
-  @DisplayName("given no valid access token, when onboarding then 401 and Keycloak is not asked")
-  void givenNoValidAccessTokenWhenOnboardingThen401(String problem, String accessToken) {
+  @DisplayName(
+      "given no valid access token, when onboarding then 401 without the reason, and Keycloak is"
+          + " not asked")
+  void givenNoValidAccessTokenWhenOnboardingThen401WithoutReason(
+      String problem, String accessToken, String challenge) {
     var request = accessToken == null ? given() : withToken(accessToken);
 
     request
@@ -160,17 +163,20 @@ class OnboardingIntegrationTest extends BaseIntegrationTest {
         .post("/onboarding")
         .then()
         .statusCode(HttpStatus.UNAUTHORIZED.value())
-        .header("WWW-Authenticate", startsWith("Bearer"));
+        .header("WWW-Authenticate", challenge)
+        .body(emptyString());
 
     KEYCLOAK_WIREMOCK.verify(0, getRequestedFor(urlEqualTo(NEW_USER_PATH)));
   }
 
   private static Stream<Arguments> unauthenticatedRequests() {
+    var noToken = "Bearer";
+    var rejectedToken = "Bearer error=\"invalid_token\"";
     return Stream.of(
-        arguments("no token", null),
-        arguments("expired token", expiredAccessToken(NEW_SUBJECT)),
-        arguments("token signed with another key", foreignAccessToken(NEW_SUBJECT)),
-        arguments("not a token", "not-a-jwt"));
+        arguments("no token", null, noToken),
+        arguments("expired token", expiredAccessToken(NEW_SUBJECT), rejectedToken),
+        arguments("token signed with another key", foreignAccessToken(NEW_SUBJECT), rejectedToken),
+        arguments("not a token", "not-a-jwt", rejectedToken));
   }
 
   @ParameterizedTest
