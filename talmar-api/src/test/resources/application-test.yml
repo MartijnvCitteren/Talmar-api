@@ -24,7 +24,17 @@ spring:
         initial-interval: 10ms
         max-interval: 20ms
 
+  # Tests never call Keycloak: they point talmar.keycloak.base-url at WireMock (KeycloakStub).
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak-admin:
+            client-secret: test-secret
+
 talmar:
+  keycloak:
+    base-url: http://localhost:1
   scheduling:
     # Scheduled jobs are tested by calling their use case directly.
     enabled: false
