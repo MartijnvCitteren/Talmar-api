@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=talmar;trustServerCertificate=true
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    properties:
+      hibernate.dialect: org.hibernate.dialect.SQLServerDialect
+    password: Super_secret-123
+    username: sa
+
+talmar:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  identity:
+    confirmation-url: ${IDENTITY_CONFIRMATION_URL:http://localhost:5173/registration/confirm}
+
+logging:
+  level:
+    eu.talmar: DEBUG

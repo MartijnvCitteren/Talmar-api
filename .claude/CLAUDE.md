@@ -1,13 +1,13 @@
 # CLAUDE.md
 
-Instructions for Claude (Code) when working in the jobzy-backend repository. This file describes the *code* context — for the
+Instructions for Claude (Code) when working in the talmar-backend repository. This file describes the *code* context — for the
 product/market "why" and the roadmap, see project knowledge (product/market vision, H2 2026 epics).
 
 **Before you start a task, read `docs/application/`** (start with `overview.md`): it describes what is built, how it
 fits together and its known gaps. Keeping it current is part of every change — see "Application docs" below.
 
-## What Jobzy is
-Jobzy is a recruitment hub — ATS, channel-advice engine, and later a marketplace — replacing fragmented point tools. The
+## What Talmar is
+Talmar is a recruitment hub — ATS, channel-advice engine, and later a marketplace — replacing fragmented point tools. The
 advice engine depends entirely on ATS pipeline data (channel source, rejection reason, stage transitions), so those must be
 captured accurately from day one. Build order is dependency-driven, ATS core first:
 
@@ -22,11 +22,11 @@ Marketplace and payment mediation are explicitly phase 2. Don't build marketplac
 flow-builder now — out of scope until the ATS core and advice engine prove out.
 
 This repository is the backend only. A separate frontend team builds the frontend against the OpenAPI contracts in
-`jobzy-contracts`.
+`talmar-contracts`.
 
 ## AI and human oversight
 
-Jobzy is AI-native: AI capabilities (vacancy text generation, candidate matching, advice) are first-class concepts in the
+Talmar is AI-native: AI capabilities (vacancy text generation, candidate matching, advice) are first-class concepts in the
 domain model, not a layer bolted onto a finished ATS. That does not change the build order above.
 
 - **AI advises, a human decides.** No use case lets AI decide about a candidate (invite, reject, advance a stage). AI
@@ -69,7 +69,7 @@ domain model, not a layer bolted onto a finished ATS. That does not change the b
 - **Error Prone + NullAway** (JSpecify mode) in the compiler, **SpotBugs + FindSecBugs** and **Maven Enforcer** in
   `verify` — see "Static analysis" below.
 - **Hosting: European provider, EU only — a hard requirement.** Not AWS or Azure, not even their EU regions: they remain
-  under US jurisdiction. The provider itself is not decided yet; custom domain jobzy.app. Keep the application
+  under US jurisdiction. The provider itself is not decided yet; custom domain talmar.eu. Keep the application
   cloud-agnostic: configuration through Spring properties / environment variables, a standard container image, and no
   cloud SDK outside an adapter behind a port. Flag any change that would tie the code to one provider or send data
   outside the EU.
@@ -77,23 +77,23 @@ domain model, not a layer bolted onto a finished ATS. That does not change the b
 
 ## Repository structure (multi-module)
 
-Root modules (`pom.xml` `<modules>`): **`jobzy-contracts`** and **`jobzy-api`**. Root package for both:
-`app.jobzy`.
+Root modules (`pom.xml` `<modules>`): **`talmar-contracts`** and **`talmar-api`**. Root package for both:
+`eu.talmar`.
 
-- **`jobzy-contracts`** — the API contract as source of truth. Contains the OpenAPI/YAML spec(s) (e.g.
-  `src/main/java/app/jobzy/contracts/VacancyApi.yml`); shared models and API interfaces are generated from these via
+- **`talmar-contracts`** — the API contract as source of truth. Contains the OpenAPI/YAML spec(s) (e.g.
+  `src/main/java/eu/talmar/contracts/VacancyApi.yml`); shared models and API interfaces are generated from these via
   `openapi-generator-maven-plugin`.
     - **Never** hand-edit generated classes. Changes always go through the YAML.
     - Contract changes are breaking-change-sensitive: the frontend team consumes them today, and the multiposting
       aggregator and future integrations will later — treat the YAML as a published API.
-    - Codegen is configured in `jobzy-api/pom.xml` (`openapi-generator-maven-plugin`, bound to `generate-sources`, output
-      in `jobzy-api/target/generated-sources/openapi`). Generated code lands at the adapter edge, never under `domain`:
-      models in `app.jobzy.api.vacancy.adapter.in.web.contract`, API interfaces in `app.jobzy.api.vacancy.adapter.in.rest`.
+    - Codegen is configured in `talmar-api/pom.xml` (`openapi-generator-maven-plugin`, bound to `generate-sources`, output
+      in `talmar-api/target/generated-sources/openapi`). Generated code lands at the adapter edge, never under `domain`:
+      models in `eu.talmar.api.vacancy.adapter.in.web.contract`, API interfaces in `eu.talmar.api.vacancy.adapter.in.rest`.
       A generated model landing under a `domain` package is a bug, not a style nit.
-    - Note: generated packages are aggregate-first (`app.jobzy.api.vacancy.adapter...`), hand-written code is layer-first
+    - Note: generated packages are aggregate-first (`eu.talmar.api.vacancy.adapter...`), hand-written code is layer-first
       (see below). Don't "fix" this inconsistency as a side effect of another change.
-- **`jobzy-api`** — the application core, built following **DDD + Hexagonal (Ports & Adapters)**. Hand-written code is
-  organised layer-first under `app.jobzy.api`:
+- **`talmar-api`** — the application core, built following **DDD + Hexagonal (Ports & Adapters)**. Hand-written code is
+  organised layer-first under `eu.talmar.api`:
     - `domain/<aggregate>/` — entities, value objects (`domain/<aggregate>/valueobject/`), domain services, domain
       events. Shared domain base types (`BaseObject`, `UuidV7Generator`) live directly in `domain/`. **Zero** framework
       dependencies, no Spring annotations.
@@ -221,8 +221,8 @@ Always use the wrapper (`./mvnw`), never a globally installed `mvn`.
 ```
 ./mvnw clean install                           # full build incl. contract codegen, tests and checks
 ./mvnw verify                                  # compile, all tests, format check — the definition of "green"
-./mvnw -pl jobzy-contracts -am generate-sources   # regenerate contract only
-./mvnw -pl jobzy-api -am test                  # tests for the api module only (fast inner loop)
+./mvnw -pl talmar-contracts -am generate-sources   # regenerate contract only
+./mvnw -pl talmar-api -am test                  # tests for the api module only (fast inner loop)
 ./mvnw spotless:apply                          # fix formatting (google-java-format)
 ```
 
@@ -244,7 +244,7 @@ Always use the wrapper (`./mvnw`), never a globally installed `mvn`.
   (`com.fasterxml.jackson.core:jackson-databind`; `jackson-annotations` is fine, Jackson 3 uses it), `javax.*`, JUnit 4
   and log4j 1. Don't exclude a banned artifact to make it pass; find the dependency that pulls it in.
 - **Tests run in random order** (classes and methods). The seed is printed at the start of the run ("Random test order
-  seed"); reproduce with `./mvnw -pl jobzy-api -am test -Dtest.order.seed=<seed>`. An order-dependent failure is a test
+  seed"); reproduce with `./mvnw -pl talmar-api -am test -Dtest.order.seed=<seed>`. An order-dependent failure is a test
   isolation bug — fix the shared state, don't pin the order.
 - **ArchUnit ban list** (`ArchitectureTest`, production code unless noted): no Jackson 2 (`com.fasterxml.jackson`
   outside `.annotation`), no Java EE `javax.*` (use `jakarta.*`), no `java.util.Date`/`Calendar`/`SimpleDateFormat`/

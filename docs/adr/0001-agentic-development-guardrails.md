@@ -86,7 +86,7 @@ Constraints:
 - Formatting is no longer applied automatically by the build; IDE formatting, the agent hook (PR 2) or
   `./mvnw spotless:apply` must be used.
 - OSV-Scanner must scan an SBOM produced by Maven, not `pom.xml`: on this multi-module build it cannot resolve the
-  internal `jobzy-contracts` module and silently reports zero packages and zero vulnerabilities. The first real scan
+  internal `talmar-contracts` module and silently reports zero packages and zero vulnerabilities. The first real scan
   found 14 known vulnerabilities (4 critical), fixed by upgrading Spring Boot to 4.1.1 and pinning patched Jackson and
   Tomcat versions.
 - The `guardrail-diff` job (PR 4) runs as its own workflow on `pull_request_target`, with the PR head checked out as

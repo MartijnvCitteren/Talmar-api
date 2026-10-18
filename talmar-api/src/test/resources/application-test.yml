@@ -1,0 +1,34 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:talmar;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+  ai:
+    mistralai:
+      # Tests never call Mistral: integration and adapter tests point this at WireMock (MistralStub).
+      # An unreachable default makes an accidental real call fail fast.
+      # The chat client has its own base URL that defaults to api.mistral.ai and wins over
+      # spring.ai.mistralai.base-url, so it is the one to override.
+      api-key: test-key
+      chat:
+        base-url: http://localhost:1
+    # Same number of attempts as in production, without waiting seconds between them.
+    retry:
+      backoff:
+        initial-interval: 10ms
+        max-interval: 20ms
+
+talmar:
+  scheduling:
+    # Scheduled jobs are tested by calling their use case directly.
+    enabled: false
+
+logging:
+  level:
+    eu.talmar: DEBUG

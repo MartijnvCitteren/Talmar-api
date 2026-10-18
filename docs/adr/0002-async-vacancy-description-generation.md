@@ -91,7 +91,7 @@ different owners (the AI vs. the user) and different lifetimes.
 
 ### 3. Retention: a scheduled clean-up, nothing else
 
-A `@Scheduled` job deletes generations older than `jobzy.generation.retention` (default `PT32H`). It touches only
+A `@Scheduled` job deletes generations older than `talmar.generation.retention` (default `PT32H`). It touches only
 the generation table. "Cache" in the product sense is therefore a retention rule on an ordinary table, not a cache
 technology.
 

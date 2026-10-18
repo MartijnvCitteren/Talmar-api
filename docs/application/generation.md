@@ -121,9 +121,9 @@ generation and never sees Spring AI or contract types.
 ## Retention
 
 `GenerationRetentionJob` (`adapter/in/scheduling`) calls `PurgeExpiredGenerationsService` every
-`jobzy.generation.purge-interval` (default `PT1H`, first run one minute after start). It bulk-deletes generations
-requested longer ago than `jobzy.generation.retention` (default `PT32H`). It touches only the generation table. Every
-instance runs it; the delete is idempotent. `jobzy.scheduling.enabled=false` switches all scheduled jobs off (tests do
+`talmar.generation.purge-interval` (default `PT1H`, first run one minute after start). It bulk-deletes generations
+requested longer ago than `talmar.generation.retention` (default `PT32H`). It touches only the generation table. Every
+instance runs it; the delete is idempotent. `talmar.scheduling.enabled=false` switches all scheduled jobs off (tests do
 this).
 
 ## Persistence

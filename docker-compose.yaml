@@ -1,4 +1,4 @@
-name: jobzy-backend
+name: talmar-backend
 
 services:
   sqlserver:
@@ -28,9 +28,9 @@ services:
     entrypoint: [ "/bin/bash", "-c" ]
     command: >
       "/opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q
-      \"IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'jobzy_db') CREATE DATABASE jobzy_db\""
+      \"IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'talmar_db') CREATE DATABASE talmar_db\""
     restart: "no"
 
 volumes:
   sqlserverdata:
-    name: jobzy-sqlserverdata
+    name: talmar-sqlserverdata

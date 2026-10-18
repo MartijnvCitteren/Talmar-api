@@ -4,7 +4,7 @@
 <FindBugsFilter xmlns="https://github.com/spotbugs/filter/3.0.0">
   <!-- Generated code: OpenAPI contract models and API interfaces, MapStruct mapper implementations. -->
   <Match>
-    <Package name="~app\.jobzy\.api\.vacancy\.adapter\.in\..*"/>
+    <Package name="~eu\.talmar\.api\.vacancy\.adapter\.in\..*"/>
   </Match>
   <Match>
     <Class name="~.*MapperImpl"/>

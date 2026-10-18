@@ -1,6 +1,6 @@
-# Jobzy backend agent team — learnings
+# Talmar backend agent team — learnings
 
-Retro notes appended by jobzy-scrummaster after each completed task/epic. Every subagent
+Retro notes appended by talmar-scrummaster after each completed task/epic. Every subagent
 on this team reads this file before starting work — keep entries concrete and actionable.
 
 ## 2026-09-05 — GitHub issue #79, "Write vacancytext manually"
@@ -30,7 +30,7 @@ on this team reads this file before starting work — keep entries concrete and 
   "decision + superseded alternative + why," never as a quiet rewrite.
 
 **What wasted tokens or time**
-- Two architects (`jobzy-architect-79` and `jobzy-architect-79-2`, the latter on a different model)
+- Two architects (`talmar-architect-79` and `talmar-architect-79-2`, the latter on a different model)
   were run on the same task at the same time. The team lead saw the first architect go idle
   mid–`mvn test` and, on a user request to switch models, spawned a fresh duplicate agent with the full
   original prompt instead of resuming/checking the first one — the first agent wasn't actually stuck,
@@ -52,7 +52,7 @@ on this team reads this file before starting work — keep entries concrete and 
   available to the team lead, backend developer, and code reviewer. In this run no such tool was ever
   available — the "task list" was only prose in `.claude/planning/79-write-vacancytext-manually.md`,
   and the review sign-off ended up being recorded by hand (team lead directly edited the plan file to
-  add "Reviewed-by: jobzy-code-reviewer" under Task 12, as seen in this file's Task 12 status line)
+  add "Reviewed-by: talmar-code-reviewer" under Task 12, as seen in this file's Task 12 status line)
   because there was nothing to formally mark complete. This doesn't need a workaround from future
   teammates — it needs whoever configures agent teams/hooks in this environment to either provision the
   expected task-tracking tool or update the playbook and hook to match the prose-plan-file reality.

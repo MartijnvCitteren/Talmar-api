@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fails when an OpenAPI contract under jobzy-contracts/ has a breaking change compared to a base revision,
+# Fails when an OpenAPI contract under talmar-contracts/ has a breaking change compared to a base revision,
 # or when a contract that exists on the base revision was deleted.
 # Usage: check-contract.sh <base-revision>   (e.g. origin/main)
 set -euo pipefail
@@ -16,7 +16,7 @@ while IFS= read -r spec; do
     echo "::error file=$spec::Contract $spec exists on $base but was deleted."
     status=1
   fi
-done < <(git ls-tree -r --name-only "$base" -- jobzy-contracts | list_specs)
+done < <(git ls-tree -r --name-only "$base" -- talmar-contracts | list_specs)
 
 while IFS= read -r spec; do
   [ -z "$spec" ] && continue
@@ -30,6 +30,6 @@ while IFS= read -r spec; do
     echo "::error file=$spec::Breaking API change in $spec. Make the change backwards compatible, or deprecate first."
     status=1
   fi
-done < <(git ls-files -- jobzy-contracts | list_specs)
+done < <(git ls-files -- talmar-contracts | list_specs)
 
 exit "$status"

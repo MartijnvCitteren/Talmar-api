@@ -12,7 +12,7 @@ endpoints are the next slice; they are designed here only far enough to make sur
 
 Requirements and constraints:
 
-- **The backend owns identity.** User data is sensitive and Jobzy is heading towards enterprise customers; the
+- **The backend owns identity.** User data is sensitive and Talmar is heading towards enterprise customers; the
   user store, the credentials and the registration rules live in this repository, not in the frontend stack.
 - **Spring Security, the current way**: stateless, JWT-based, `oauth2ResourceServer` style; no sessions.
 - **Tokens carry IDs and rights only** (`sub`, `org`, `roles`). Name and e-mail are personal data and do not belong
@@ -93,14 +93,14 @@ Rules the aggregates own:
      and a new verification mail, a confirmed one gets a mail saying the account exists and inviting to log in. The
      response never reveals whether an e-mail address exists (enumeration). That the *company* exists is revealed (status `PENDING_APPROVAL` after confirmation); accepted.
    - A verification mail is sent through the `RegistrationMailer` port with a link to
-     `jobzy.identity.confirmation-url` plus the token.
+     `talmar.identity.confirmation-url` plus the token.
 2. `POST /registration/confirm` with `token` and `password`.
    - Password 12–128 characters, no composition rules (NIST 800-63B), checked by the contract; stored as Argon2id
      with RFC 9106's second recommended parameters (64 MiB, 3 iterations, parallelism 4). No breach-list check: it
      would be an external call per registration and the usual service is outside the EU.
    - Valid token → `ACTIVE` for an owner, `PENDING_APPROVAL` for a member; token cleared. Unknown, used or expired
      → `400` on `token`, one response for all three.
-3. A `@Scheduled` purge deletes users still `PENDING_VERIFICATION` after `jobzy.identity.unconfirmed-retention`
+3. A `@Scheduled` purge deletes users still `PENDING_VERIFICATION` after `talmar.identity.unconfirmed-retention`
    (default `PT48H`), with their company if it has no other users. Same pattern as the generation purge in ADR 0002.
 
 The mail adapter for now is `LoggingRegistrationMailer` (writes the link to the log). An EU mail provider goes behind
@@ -115,7 +115,7 @@ then `oauth2Login()` configuration; per-customer enterprise SSO is the trigger t
 
 ### 5. Contract
 
-A separate `IdentityApi.yml` next to `VacancyApi.yml`, generated into `app.jobzy.api.identity.adapter...` by a
+A separate `IdentityApi.yml` next to `VacancyApi.yml`, generated into `eu.talmar.api.identity.adapter...` by a
 second execution of the generator plugin. Identity has a different consumer lifecycle and, soon, different security
 than the vacancy API. The existing `bearerAuth` scheme in `VacancyApi.yml` stays as it is.
 
@@ -124,12 +124,12 @@ than the vacancy API. The existing `bearerAuth` scheme in `VacancyApi.yml` stays
 - New tables: `company`, `app_user` (`user` is reserved in SQL Server), `user_credentials`, with a foreign key from
   `app_user.company_id` to `company`. `BaseJpaEntity.modifiedBy` (a string) becomes `lastModifiedBy` (a user id,
   `@ProcessData`) for every table. `schema-change` label.
-- A second codegen execution in `jobzy-api/pom.xml` (`<build>` change → `guardrail-change-ok`).
+- A second codegen execution in `talmar-api/pom.xml` (`<build>` change → `guardrail-change-ok`).
 - `spring-boot-starter-security` enters the dependency tree now (Argon2 comes with it). The starter secures everything
   by default, so this slice ships a `SecurityFilterChain` that explicitly permits all requests and disables CSRF and
   form login, so behaviour does not change before the login slice. Having the chain in place now means the login
   slice only tightens configuration and the tests already run through the security filters.
-- New configuration: `jobzy.identity.confirmation-url`, `jobzy.identity.unconfirmed-retention`.
+- New configuration: `talmar.identity.confirmation-url`, `talmar.identity.unconfirmed-retention`.
 - The frontend gets a registration form, a confirmation page that reads the token from the URL, and must treat
   `202` as "check your mail" regardless of whether the address was new.
 - Delivered as one PR for registration and confirmation (contract, domain, persistence, use cases, mail port, purge,

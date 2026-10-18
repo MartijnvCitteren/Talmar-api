@@ -3,16 +3,16 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>app.jobzy</groupId>
-	<artifactId>jobzy-parent</artifactId>
+	<groupId>eu.talmar</groupId>
+	<artifactId>talmar</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
-	<name>jobzy-parent</name>
-	<description>Jobzy - making recruitment easy</description>
+	<name>talmar</name>
+	<description>Talmar - making recruitment easy</description>
 
 	<modules>
-		<module>jobzy-api</module>
-		<module>jobzy-contracts</module>
+		<module>talmar-api</module>
+		<module>talmar-contracts</module>
 	</modules>
 
 	<properties>

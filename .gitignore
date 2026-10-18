@@ -86,8 +86,8 @@ cmake-build-*/
 # matched this project's own hexagonal package directories (adapter/out/, port/out/) at any
 # depth, silently excluding the entire outbound-port/adapter layer from git across the repo.
 /out/
-jobzy-api/out/
-jobzy-contracts/out/
+talmar-api/out/
+talmar-contracts/out/
 
 # mpeltonen/sbt-idea plugin
 .idea_modules/
