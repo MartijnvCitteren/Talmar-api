@@ -29,6 +29,9 @@ public class Constants {
       "Only a verified work e-mail address can found or join a company in Talmar.";
   public static final String ALREADY_ONBOARDED_TITLE = "Already onboarded";
   public static final String ALREADY_ONBOARDED_DETAIL = "This account has already been onboarded.";
+  public static final String NOT_ONBOARDED_TITLE = "Not onboarded";
+  public static final String NOT_ONBOARDED_DETAIL =
+      "This account has no Talmar user yet. Complete the onboarding first.";
   public static final String IDENTITY_PROVIDER_UNAVAILABLE_TITLE = "Identity provider unavailable";
   public static final String IDENTITY_PROVIDER_UNAVAILABLE_DETAIL =
       "The identity provider is not available right now. Try again later.";

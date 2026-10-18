@@ -3,6 +3,7 @@ package eu.talmar.api.adapter.in.rest.identity;
 import eu.talmar.api.application.port.out.IdentityProviderUnavailableException;
 import eu.talmar.api.domain.identity.OnboardingNotAllowedException;
 import eu.talmar.api.domain.identity.UserAlreadyOnboardedException;
+import eu.talmar.api.domain.identity.UserNotOnboardedException;
 import eu.talmar.api.shared.Constants;
 import eu.talmar.api.vacancy.adapter.in.web.contract.ProblemDetails;
 import jakarta.servlet.http.HttpServletRequest;
@@ -45,6 +46,16 @@ public class IdentityExceptionHandler {
         HttpStatus.CONFLICT,
         Constants.ALREADY_ONBOARDED_TITLE,
         Constants.ALREADY_ONBOARDED_DETAIL,
+        request);
+  }
+
+  @ExceptionHandler(UserNotOnboardedException.class)
+  ResponseEntity<ProblemDetails> handleUserNotOnboardedException(
+      UserNotOnboardedException ex, HttpServletRequest request) {
+    return problem(
+        HttpStatus.NOT_FOUND,
+        Constants.NOT_ONBOARDED_TITLE,
+        Constants.NOT_ONBOARDED_DETAIL,
         request);
   }
 

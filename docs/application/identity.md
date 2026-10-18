@@ -5,7 +5,8 @@ its own `company` and `app_user` and everything that decides access to company d
 
 This page covers what is built today: onboarding a logged-in Keycloak account (`POST /onboarding`), the domain
 model, its persistence and the Keycloak adapter. The backend's own registration flow (ADR 0003) has been removed.
-`GET /me`, profile editing, owner approval and securing the other endpoints do not exist yet.
+Users change their names with `PATCH /me`. `GET /me`, owner approval and securing the other endpoints do not exist
+yet.
 
 ## Domain model
 
@@ -28,7 +29,7 @@ Two aggregates in `domain/identity`, linked by id only in the domain (a user hol
 |-------|-------|
 | `id` | UUIDv7. |
 | `subject` | The Keycloak account's id, the `sub` claim of its access tokens. Unique. |
-| `firstName`, `lastName` | A copy of the verified profile in Keycloak (ADR 0006, section 5). |
+| `firstName`, `lastName` | A copy of the profile in Keycloak (ADR 0006, section 5), taken at onboarding and changed with `PATCH /me`, which changes Keycloak first. |
 | `email` | `EmailAddress`: lower case. |
 | `jobRole` | `RECRUITER`, `HIRING_MANAGER`, `HR`, `FOUNDER_OR_DIRECTOR`, `OTHER`. A profile field, not a right. |
 | `companyId` | The company of the e-mail domain. |
@@ -75,6 +76,22 @@ organization; that is for owner approval.
 The public-domain check repeats what the realm already enforces (ADR 0006, section 3, layer 2), so one mistake in the
 realm configuration does not let such an address found or join a company.
 
+## Change names — `PATCH /me`
+
+Requires an access token. Body: `firstName` and/or `lastName`, each optional, with the contract's 1–35 character
+whitelist (the same rules as the realm's user profile). An omitted or `null` name stays as it is. `204`.
+
+`ChangeNameService` (ADR 0006, "Revisions"):
+
+1. Look up the user by the token's `sub`; none → `UserNotOnboardedException`, `404`.
+2. No names in the request → nothing happens.
+3. Fill in the name that is not changing from the copy and send **both** names to Keycloak first (`changeName`).
+   A Keycloak failure is `503` and nothing has changed.
+4. Change the copy (`User.changeName`) and save it.
+
+If saving the copy fails after Keycloak changed, the two differ until the user repeats the request; sending both
+names every time brings them back in line. The e-mail address cannot change: it decides the company.
+
 ## Block list
 
 `identity/public-email-domains.txt` lists the public mail domains that never get an account, one per line with `#`
@@ -85,14 +102,15 @@ file differ. Onboarding checks it again through the `PublicEmailDomains` port, i
 
 ## REST adapter and security
 
-- `OnboardingController` implements the generated `OnboardingApi`. `AuthenticatedUser.subject()` reads the `sub` of
+- `OnboardingController` implements the generated `OnboardingApi`, `ProfileController` the generated `MeApi`. `AuthenticatedUser.subject()` reads the `sub` of
   the validated token from the security context; the request mapper combines it with `jobRole` into the command.
 - `IdentityExceptionHandler` (highest precedence) maps `OnboardingNotAllowedException` to `403`,
-  `UserAlreadyOnboardedException` to `409` and `IdentityProviderUnavailableException` to `503`, as problem details with
+  `UserAlreadyOnboardedException` to `409`, `UserNotOnboardedException` to `404` and
+  `IdentityProviderUnavailableException` to `503`, as problem details with
   fixed texts. Requests are not logged.
 - The backend is an OAuth2 resource server (`spring-boot-starter-security-oauth2-resource-server`, only `issuer-uri`).
   It checks signature, issuer and expiry with Keycloak's public keys, fetched on the first request and cached, so no
-  call to Keycloak per request. `SecurityConfig` requires a token for `/onboarding` only. A missing, expired or
+  call to Keycloak per request. `SecurityConfig` requires a token for `/onboarding` and `/me` only. A missing, expired or
   forged token is `401` with a `WWW-Authenticate` header and an empty body.
 
 ## Identity provider: Keycloak
@@ -105,6 +123,7 @@ in RESTEasy and Jackson 2, which the Enforcer bans.
 |-----------|---------------|-------|
 | `getProfile(subject)` | `GET /users/{subject}` | Names, lower-cased e-mail address and whether Keycloak verified it. |
 | `findOrCreateOrganization(domain, companyId)` | `POST /organizations`; on `409` `GET /organizations?search={domain}&exact=true` | Name and only domain = the e-mail domain, alias = the company id (ADR 0006, section 4). A `409` means an earlier attempt created it; the one with exactly that domain is returned. |
+| `changeName(subject, firstName, lastName)` | `PUT /users/{subject}` with only the two names | Keycloak 26.8 keeps every field the body leaves out; the realm validates the names again. |
 | `addOrganizationMember(organizationId, subject)` | `POST /organizations/{id}/members` with the subject as body | `409` (already a member) counts as success. Adds the account as an unmanaged member. |
 
 - **Service-account token**: the `keycloak-admin` client registration (`client_credentials` as `talmar-backend`).

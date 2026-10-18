@@ -164,9 +164,9 @@ First name, last name and e-mail address are copied from Keycloak into `app_user
 - **Alternative considered — read from Keycloak on demand.** One copy of the personal data, but every profile read
   becomes an Admin API call, a Keycloak outage takes down those reads, and the service account needs user-read rights
   at runtime. Rejected.
-- **Drift:** the e-mail address is the company key, so users cannot change it in Keycloak. Names are locked as
-  well for now: there is no profile editing in Talmar or Keycloak yet. Profile editing becomes a Talmar feature that
-  writes through to Keycloak. How the lock works (each way tested in PR 1):
+- **Drift:** the e-mail address is the company key, so users cannot change it in Keycloak. Users cannot edit their
+  names in Keycloak either; they change them through Talmar (`PATCH /me`, see "Revisions"), which writes through to
+  Keycloak, so the copy cannot drift. How the lock works (each way tested in PR 1):
   - **E-mail address:** it is the username, and username editing is off. Keycloak marks it read-only for the user
     and ignores a change sent to the account API. Nothing extra is needed.
   - **Names:** user-profile permissions cannot do it. With "edit: admin only", Keycloak also leaves the field off the
@@ -300,11 +300,35 @@ onboards first, the colleague's request creates and links the organization (but 
   account (without a password) indefinitely. Someone who registers another person's address first blocks that
   person's registration ("already associated with an existing account") until the real owner uses "forgot
   password", which proves the address. A clean-up of old unverified accounts is a later task.
-- **No account console.** Users cannot change their names, sign out other sessions or set up two-factor
-  authentication themselves. That comes back as Talmar features or when the lock in section 5 is revisited.
-- **Delivery:** four PRs, each leaving the build green: (1) this ADR, Docker Compose and the realm, (2) removal of the
-  old registration code, (3) the identity-provider port and Keycloak adapter, (4) the contract, the onboarding use
-  case, the resource server and the application docs.
+- **No account console.** Users cannot sign out other sessions or set up two-factor authentication themselves. That
+  comes back as Talmar features or when the lock in section 5 is revisited. Names they change through Talmar.
+- **Delivery:** PRs that each leave the build green: (1) this ADR, Docker Compose and the realm, (2) removal of the
+  old registration code, (3) the identity-provider port and Keycloak adapter, (4a) the onboarding use case and its
+  persistence, (4b) the contract, the resource server and the endpoint, (5) changing names (`PATCH /me`). Step 4 was
+  split to stay within the PR size limit.
+
+## Revisions
+
+### 2026-10-18 — users change their names through Talmar
+
+The maintainer asked for name editing right after onboarding. It is the "Talmar feature that writes through to
+Keycloak" this ADR anticipated in section 5:
+
+- `PATCH /me` with `firstName` and/or `lastName` (the contract's whitelist, the same as the realm's user profile).
+  An omitted name stays as it is. The account must have onboarded (`404` otherwise): the copy in `app_user` is what
+  Talmar shows, and there is no copy to change before onboarding.
+- **Keycloak first, then the copy.** Keycloak is the source for login and its mails. When the Keycloak call fails,
+  nothing has changed (`503`). When saving the copy fails after it, the two differ until the user repeats the
+  request; both names always go to Keycloak, so a repeat brings them back in line. No distributed transaction.
+- **Partial update.** The adapter sends `PUT /users/{id}` with only the two names. Keycloak 26.8 leaves every field
+  that is missing from the representation as it is (checked against a running Keycloak, see below). Re-check this on
+  a Keycloak upgrade; the fallback is to `GET` the user and `PUT` it back whole.
+- The lock in section 5 stays: users still cannot edit their names in Keycloak itself, so Talmar is the only way in.
+- **Rights:** no new role. `manage-users` already allows the update.
+
+**Alternative considered — reopen the account console for names only.** One fewer endpoint, but the console is
+all-or-nothing (it also exposes sessions, credentials and the e-mail field), and a change there does not reach the
+copy without an event listener extension in Keycloak. Rejected for the same reason the lock exists.
 
 ## Verified in PR 1
 
@@ -331,3 +355,10 @@ in through `talmar-web` (authorization code + PKCE), and `POST /onboarding` with
 ACTIVE`. Keycloak then held the organization (name and domain `smoke-test.nl`, alias the company id) with the user as
 `UNMANAGED` member. A repeat answered `409`. This found one bug the H2 tests cannot: SQL Server's default `varchar`
 collation stored `Łukasz` as `Lukasz`, so `app_user`'s name columns are now `nvarchar`.
+
+## Verified in PR 5
+
+Checked on 2026-10-18 against the Docker Compose setup: before onboarding, `PATCH /me` answered `404`; after it,
+changing the last name and then the first name answered `204` twice. Keycloak then held `José` / `Żółć-李` with the
+e-mail address, its verified flag and the required actions unchanged, and `app_user` held the same names. A name with
+a digit answered `400`.

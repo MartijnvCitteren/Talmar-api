@@ -29,8 +29,8 @@ public class User extends BaseObject {
 
   private final UUID id;
   private final String subject;
-  private final String firstName;
-  private final String lastName;
+  private String firstName;
+  private String lastName;
   private final EmailAddress email;
   private final JobRole jobRole;
   private final UUID companyId;
@@ -90,6 +90,16 @@ public class User extends BaseObject {
   /** A new user id: a UUIDv7, like every id in the domain. */
   public static UUID newId() {
     return UuidV7Generator.getUUID();
+  }
+
+  /**
+   * Replaces the names. They are a copy of the identity provider's profile (ADR 0006, section 5),
+   * so the caller changes them there first.
+   */
+  public void changeName(String newFirstName, String newLastName, LocalDateTime changedAt) {
+    this.firstName = newFirstName;
+    this.lastName = newLastName;
+    setLastModifiedAt(changedAt);
   }
 
   /** Whether the user is an owner who is not a member of the organization yet. */

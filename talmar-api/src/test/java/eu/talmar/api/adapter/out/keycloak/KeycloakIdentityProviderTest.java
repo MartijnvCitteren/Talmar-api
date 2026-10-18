@@ -2,11 +2,14 @@ package eu.talmar.api.adapter.out.keycloak;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.put;
+import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static eu.talmar.api.testSupport.KeycloakStub.ADMIN_PATH;
@@ -284,6 +287,33 @@ class KeycloakIdentityProviderTest {
         postRequestedFor(urlEqualTo(MEMBERS_PATH))
             .withHeader("Content-Type", equalTo("application/json"))
             .withRequestBody(equalTo(SUBJECT)));
+  }
+
+  @Test
+  @DisplayName(
+      "given new names, when change name then only both names are sent, so the rest of the profile"
+          + " stays")
+  void givenNewNamesWhenChangeNameThenOnlyBothNamesAreSent() {
+    KEYCLOAK_WIREMOCK.stubFor(put(USER_PATH).willReturn(aResponse().withStatus(204)));
+
+    identityProvider.changeName(SUBJECT, "José", "'t Hooft");
+
+    KEYCLOAK_WIREMOCK.verify(
+        putRequestedFor(urlEqualTo(USER_PATH))
+            .withHeader("Authorization", equalTo("Bearer " + SERVICE_ACCOUNT_TOKEN))
+            .withRequestBody(equalToJson("{\"firstName\": \"José\", \"lastName\": \"'t Hooft\"}")));
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {400, 404, 503})
+  @DisplayName(
+      "given Keycloak refuses the change, when change name then the provider is unavailable")
+  void givenKeycloakRefusesTheChangeWhenChangeNameThenUnavailable(int status) {
+    KEYCLOAK_WIREMOCK.stubFor(put(USER_PATH).willReturn(aResponse().withStatus(status)));
+
+    assertThrows(
+        IdentityProviderUnavailableException.class,
+        () -> identityProvider.changeName(SUBJECT, "Jane", "Doe"));
   }
 
   @ParameterizedTest
