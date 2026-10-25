@@ -29,9 +29,9 @@ paths:
       summary: Create a vacancy
       description: >
         Creates a new vacancy in `DRAFT` status from the core section only (job title, category,
-        location, workplace type, hours per week). Description, contact person, and offer details
-        are added afterwards via `PATCH /vacancy/{id}`, matching the staged/AI-assisted creation
-        flow.
+        location, workplace type, hours per week). The description is added afterwards via
+        `POST /vacancy/{id}/description`, contact person and offer via `PUT /vacancy/{id}/offer`,
+        matching the staged/AI-assisted creation flow.
       requestBody:
         required: true
         content:
@@ -85,6 +85,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VacancyDescriptionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ConcurrentModification'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /vacancy/{id}/offer:
+    parameters:
+      - $ref: '#/components/parameters/VacancyId'
+    put:
+      operationId: setVacancyOffer
+      tags: [Vacancy]
+      summary: Set the contact person and offer of a vacancy
+      description: >
+        Sets the contact person and the offer of an existing vacancy, entered together in one step
+        of the creation flow. Replaces both in full: a field left out of `contactPerson` or `offer`
+        is cleared. Can be called while a description is being generated; the generation never
+        changes these fields.
+
+
+        `offer` must contain `salaryMin`, `salaryMax` or `numberOfHolidays`; `currency` and
+        `salaryPeriod` are required as soon as a salary is present; and `salaryMin` must not be
+        greater than `salaryMax`. A violation is a `400` naming the field.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VacancyOfferRequest'
+      responses:
+        '200':
+          description: The vacancy with its new contact person and offer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VacancyResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -744,9 +787,11 @@ components:
     Offer:
       type: object
       description: >
-        `currency` and `salaryPeriod` are required as soon as either `salaryMin` or `salaryMax` is
-        present, given the EU multi-country target market. Not enforced at the schema level (kept
-        as a plain object for codegen compatibility) — enforce this rule in the application layer.
+        At least one of `salaryMin`, `salaryMax` and `numberOfHolidays` is present. `currency` and
+        `salaryPeriod` are required as soon as either `salaryMin` or `salaryMax` is present, given
+        the EU multi-country target market, and `salaryMin` is not greater than `salaryMax`. Not
+        expressed in the schema (kept as a plain object for codegen compatibility); the API rejects
+        a violation with `400`.
       properties:
         salaryMin:
           type: [integer, 'null']
@@ -903,10 +948,8 @@ components:
     VacancyOfferRequest:
       type: object
       description: >
-        Contact person and offer details, captured together as they are entered in the same FE
-        stage. No `id`. Not referenced directly by `PATCH /vacancy/{id}` — `VacancyUpdateRequest`
-        exposes `contactPerson` and `offer` as independent optional sections instead, per JSON
-        Merge Patch semantics — but documents the shape of that combined FE-stage payload.
+        Body of `PUT /vacancy/{id}/offer`: contact person and offer details, captured together as
+        they are entered in the same FE stage. No `id`.
       required: [contactPerson, offer]
       properties:
         contactPerson:

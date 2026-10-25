@@ -64,12 +64,26 @@ public class VacancyExceptionHandler {
   @ExceptionHandler(InvalidVacancyDescriptionRequestException.class)
   ResponseEntity<ProblemDetails> handleInvalidVacancyDescriptionRequestException(
       InvalidVacancyDescriptionRequestException ex, HttpServletRequest request) {
+    return validationFailed(ex.getField(), ex.getMessage(), request);
+  }
+
+  /**
+   * Turns an offer that breaks a combined-field contract rule into an RFC 9457 400 problem
+   * response, naming the offending field the same way bean-validation failures do.
+   */
+  @ExceptionHandler(InvalidVacancyOfferRequestException.class)
+  ResponseEntity<ProblemDetails> handleInvalidVacancyOfferRequestException(
+      InvalidVacancyOfferRequestException ex, HttpServletRequest request) {
+    return validationFailed(ex.getField(), ex.getMessage(), request);
+  }
+
+  private static ResponseEntity<ProblemDetails> validationFailed(
+      String field, String message, HttpServletRequest request) {
     var problemDetails =
         new ProblemDetails(Constants.VALIDATION_FAILED_TITLE, HttpStatus.BAD_REQUEST.value());
     problemDetails.setDetail(Constants.VALIDATION_FAILED_DETAIL);
     problemDetails.setInstance(URI.create(request.getRequestURI()));
-    problemDetails.setErrors(
-        List.of(new ProblemDetailsErrorsInner(ex.getField(), ex.getMessage())));
+    problemDetails.setErrors(List.of(new ProblemDetailsErrorsInner(field, message)));
 
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)

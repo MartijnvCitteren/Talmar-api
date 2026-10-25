@@ -3,17 +3,21 @@ package eu.talmar.api.adapter.in.rest.vacancy;
 import eu.talmar.api.adapter.in.rest.EndpointNotImplementedException;
 import eu.talmar.api.adapter.in.rest.vacancy.mapper.request.VacancyCoreRequestMapper;
 import eu.talmar.api.adapter.in.rest.vacancy.mapper.request.VacancyDescriptionRequestMapper;
+import eu.talmar.api.adapter.in.rest.vacancy.mapper.request.VacancyOfferRequestMapper;
 import eu.talmar.api.adapter.in.rest.vacancy.mapper.response.VacancyDescriptionResponseMapper;
 import eu.talmar.api.adapter.in.rest.vacancy.mapper.response.VacancyResponseMapper;
 import eu.talmar.api.adapter.in.rest.vacancy.validation.VacancyDescriptionContentValidator;
+import eu.talmar.api.adapter.in.rest.vacancy.validation.VacancyOfferRequestValidator;
 import eu.talmar.api.application.port.in.CreateVacancyUseCase;
 import eu.talmar.api.application.port.in.ManualVacancyDescriptionUseCase;
+import eu.talmar.api.application.port.in.SetVacancyOfferUseCase;
 import eu.talmar.api.vacancy.adapter.in.rest.VacancyApi;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyCategory;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyCoreRequest;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyDescriptionRequest;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyDescriptionResponse;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyListResponse;
+import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyOfferRequest;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyResponse;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyStatus;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyUpdateRequest;
@@ -28,11 +32,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Only {@link #createVacancy} and {@link #manualVacancyDescription} are wired up so far; the
- * description-generation operations live in {@code VacancyDescriptionGenerationController}. The
- * generated {@link VacancyApi} has no default methods ({@code skipDefaultInterface}), so every
- * other operation throws {@link EndpointNotImplementedException}, which responds with 501 Not
- * Implemented.
+ * Only {@link #createVacancy}, {@link #manualVacancyDescription} and {@link #setVacancyOffer} are
+ * wired up so far; the description-generation operations live in {@code
+ * VacancyDescriptionGenerationController}. The generated {@link VacancyApi} has no default methods
+ * ({@code skipDefaultInterface}), so every other operation throws {@link
+ * EndpointNotImplementedException}, which responds with 501 Not Implemented.
  */
 @Log4j2
 @RestController
@@ -45,6 +49,9 @@ public class VacancyController implements VacancyApi {
   private final VacancyDescriptionRequestMapper descriptionRequestMapper;
   private final VacancyDescriptionResponseMapper descriptionResponseMapper;
   private final ManualVacancyDescriptionUseCase manualVacancyDescriptionUseCase;
+  private final VacancyOfferRequestValidator offerRequestValidator;
+  private final VacancyOfferRequestMapper offerRequestMapper;
+  private final SetVacancyOfferUseCase setVacancyOfferUseCase;
 
   @Override
   public ResponseEntity<VacancyResponse> closeVacancy(UUID id) {
@@ -106,6 +113,15 @@ public class VacancyController implements VacancyApi {
   @Override
   public ResponseEntity<VacancyResponse> publishVacancy(UUID id) {
     throw new EndpointNotImplementedException("publishVacancy");
+  }
+
+  @Override
+  public ResponseEntity<VacancyResponse> setVacancyOffer(
+      UUID id, VacancyOfferRequest vacancyOfferRequest) {
+    offerRequestValidator.validate(vacancyOfferRequest);
+    var command = offerRequestMapper.toCommand(id, vacancyOfferRequest);
+    var vacancy = setVacancyOfferUseCase.setOffer(command);
+    return ResponseEntity.ok(responseMapper.toVacancyResponse(vacancy));
   }
 
   @Override
