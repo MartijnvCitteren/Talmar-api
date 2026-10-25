@@ -1,15 +1,21 @@
 package eu.talmar.api.testSupport;
 
 import eu.talmar.api.application.port.in.command.CreateCoreVacancyCommand;
+import eu.talmar.api.domain.identity.valueobject.EmailAddress;
 import eu.talmar.api.domain.vacancy.Vacancy;
+import eu.talmar.api.domain.vacancy.valueobject.ContactPerson;
 import eu.talmar.api.domain.vacancy.valueobject.HoursPerWeek;
 import eu.talmar.api.domain.vacancy.valueobject.Language;
 import eu.talmar.api.domain.vacancy.valueobject.Location;
+import eu.talmar.api.domain.vacancy.valueobject.Offer;
+import eu.talmar.api.domain.vacancy.valueobject.PhoneNumber;
+import eu.talmar.api.domain.vacancy.valueobject.SalaryPeriod;
 import eu.talmar.api.domain.vacancy.valueobject.VacancyCategory;
 import eu.talmar.api.domain.vacancy.valueobject.VacancyStatus;
 import eu.talmar.api.domain.vacancy.valueobject.WorkplaceType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Currency;
 
 public class VacancyFactory {
   public static final String JOB_TITLE = "Sales Manager";
@@ -22,6 +28,15 @@ public class VacancyFactory {
   public static final VacancyStatus STATUS = VacancyStatus.DRAFT;
   public static final WorkplaceType WORKPLACE_TYPE = WorkplaceType.HYBRID;
   public static final LocalDateTime CREATED_AT = LocalDateTime.of(2026, 1, 1, 9, 0);
+  public static final ContactPerson CONTACT_PERSON =
+      new ContactPerson(
+          "Łukasz Żółć-Kowalski",
+          "Hiring manager",
+          new PhoneNumber("+48 601 234 567"),
+          new EmailAddress("lukasz.kowalski@acme.pl"));
+  public static final Offer OFFER =
+      new Offer(
+          3800, 4600, Currency.getInstance("EUR"), SalaryPeriod.MONTHLY, new BigDecimal("25.50"));
 
   public static Vacancy.Builder getFilledCoreVacancy() {
     return Vacancy.builder()

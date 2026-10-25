@@ -125,6 +125,42 @@ class VacancyRepositoryAdapterTest {
 
   @Test
   @DisplayName(
+      "given a vacancy with a contact person and an offer, when saved and reloaded then both"
+          + " round-trip unchanged")
+  void givenVacancyWithContactPersonAndOfferWhenSavedAndReloadedThenBothRoundTrip() {
+    var vacancy =
+        VacancyFactory.getFilledCoreVacancy()
+            .contactPerson(VacancyFactory.CONTACT_PERSON)
+            .offer(VacancyFactory.OFFER)
+            .build();
+
+    vacancyRepositoryAdapter.save(vacancy);
+    entityManager.flush();
+    entityManager.clear();
+
+    var reloaded = vacancyRepositoryAdapter.findById(vacancy.getId()).orElseThrow();
+    assertEquals(vacancy.getContactPerson(), reloaded.getContactPerson());
+    assertEquals(vacancy.getOffer(), reloaded.getOffer());
+  }
+
+  @Test
+  @DisplayName(
+      "given a vacancy without a contact person and an offer, when saved and reloaded then both"
+          + " are null")
+  void givenVacancyWithoutContactPersonAndOfferWhenSavedAndReloadedThenBothAreNull() {
+    var vacancy = VacancyFactory.getFilledCoreVacancy().build();
+
+    vacancyRepositoryAdapter.save(vacancy);
+    entityManager.flush();
+    entityManager.clear();
+
+    var reloaded = vacancyRepositoryAdapter.findById(vacancy.getId()).orElseThrow();
+    assertNull(reloaded.getContactPerson());
+    assertNull(reloaded.getOffer());
+  }
+
+  @Test
+  @DisplayName(
       "given two copies of the same vacancy loaded at the same version, when both are saved then"
           + " the second save fails as a concurrent modification")
   void givenTwoCopiesAtSameVersionWhenBothSavedThenSecondSaveFailsAsConcurrentModification() {
