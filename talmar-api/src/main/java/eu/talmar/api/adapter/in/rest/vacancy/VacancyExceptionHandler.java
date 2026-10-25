@@ -1,5 +1,6 @@
 package eu.talmar.api.adapter.in.rest.vacancy;
 
+import eu.talmar.api.application.port.out.VacancyModifiedConcurrentlyException;
 import eu.talmar.api.domain.vacancy.VacancyNotFoundException;
 import eu.talmar.api.shared.Constants;
 import eu.talmar.api.vacancy.adapter.in.web.contract.ProblemDetails;
@@ -37,6 +38,21 @@ public class VacancyExceptionHandler {
     problemDetails.setInstance(URI.create(request.getRequestURI()));
 
     return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(problemDetails);
+  }
+
+  /** Turns a save that lost a version conflict into an RFC 9457 409 problem response. */
+  @ExceptionHandler(VacancyModifiedConcurrentlyException.class)
+  ResponseEntity<ProblemDetails> handleVacancyModifiedConcurrentlyException(
+      VacancyModifiedConcurrentlyException ex, HttpServletRequest request) {
+    var problemDetails =
+        new ProblemDetails(
+            Constants.VACANCY_MODIFIED_CONCURRENTLY_TITLE, HttpStatus.CONFLICT.value());
+    problemDetails.setDetail(Constants.VACANCY_MODIFIED_CONCURRENTLY_DETAIL);
+    problemDetails.setInstance(URI.create(request.getRequestURI()));
+
+    return ResponseEntity.status(HttpStatus.CONFLICT)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(problemDetails);
   }

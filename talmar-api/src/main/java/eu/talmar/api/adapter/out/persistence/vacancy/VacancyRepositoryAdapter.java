@@ -2,12 +2,14 @@ package eu.talmar.api.adapter.out.persistence.vacancy;
 
 import eu.talmar.api.adapter.out.persistence.vacancy.mapper.VacancyDescriptionJpaMapper;
 import eu.talmar.api.adapter.out.persistence.vacancy.mapper.VacancyJpaMapper;
+import eu.talmar.api.application.port.out.VacancyModifiedConcurrentlyException;
 import eu.talmar.api.application.port.out.VacancyRepository;
 import eu.talmar.api.domain.vacancy.Vacancy;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 
 /**
@@ -31,11 +33,23 @@ public class VacancyRepositoryAdapter implements VacancyRepository {
    * a single {@code save()} call. If description is being removed (set to null), an explicit {@code
    * deleteById} is issued afterward, since {@code orphanRemoval} does not fire on a freshly-built
    * transient graph.
+   *
+   * <p>The save is flushed at once, so a version conflict surfaces here, where it can be translated
+   * into {@link VacancyModifiedConcurrentlyException}, instead of at commit time.
    */
   @Override
   public void save(Vacancy vacancy) {
     var jpaVacancy = jpaMapper.toJpaEntity(vacancy);
+    try {
+      saveWithDescription(vacancy, jpaVacancy);
+    } catch (OptimisticLockingFailureException e) {
+      log.warn("Vacancy {} was modified concurrently", vacancy.getId(), e);
+      throw new VacancyModifiedConcurrentlyException(vacancy.getId());
+    }
+    log.info("Vacancy is saved");
+  }
 
+  private void saveWithDescription(Vacancy vacancy, VacancyJpaEntity jpaVacancy) {
     if (vacancy.getDescription() != null) {
       var descriptionEntity = descriptionJpaMapper.toJpaEntity(vacancy.getDescription());
       // Set the @MapsId-derived id explicitly: without it, Hibernate's merge cascade cannot tell
@@ -44,18 +58,16 @@ public class VacancyRepositoryAdapter implements VacancyRepository {
       descriptionEntity.setId(jpaVacancy.getId());
       descriptionEntity.setVacancy(jpaVacancy);
       jpaVacancy.setDescription(descriptionEntity);
-      jpaRepository.save(jpaVacancy);
+      jpaRepository.saveAndFlush(jpaVacancy);
     } else {
       // orphanRemoval does not fire from merging a freshly-built transient parent graph (verified
       // empirically: no DELETE is ever emitted, even after an explicit flush), since Hibernate has
       // no prior loaded snapshot of the association to diff against. Deleting the row explicitly
       // is required; deleteById is a no-op if no description exists yet.
       jpaVacancy.setDescription(null);
-      jpaRepository.save(jpaVacancy);
+      jpaRepository.saveAndFlush(jpaVacancy);
       descriptionJpaRepository.deleteById(jpaVacancy.getId());
     }
-
-    log.info("Vacancy is saved");
   }
 
   /**

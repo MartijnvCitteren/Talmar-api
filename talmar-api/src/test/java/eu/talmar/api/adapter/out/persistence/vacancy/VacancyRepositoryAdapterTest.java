@@ -2,10 +2,12 @@ package eu.talmar.api.adapter.out.persistence.vacancy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.talmar.api.adapter.out.persistence.vacancy.mapper.VacancyDescriptionJpaMapperImpl;
 import eu.talmar.api.adapter.out.persistence.vacancy.mapper.VacancyJpaMapperImpl;
+import eu.talmar.api.application.port.out.VacancyModifiedConcurrentlyException;
 import eu.talmar.api.domain.vacancy.valueobject.VacancyDescription;
 import eu.talmar.api.domain.vacancy.valueobject.VacancyDescriptionSource;
 import eu.talmar.api.testSupport.VacancyFactory;
@@ -71,8 +73,9 @@ class VacancyRepositoryAdapterTest {
             null,
             null,
             VacancyDescriptionSource.MANUAL);
-    vacancy.setDescription(secondDescription);
-    vacancyRepositoryAdapter.save(vacancy);
+    var loaded = vacancyRepositoryAdapter.findById(vacancy.getId()).orElseThrow();
+    loaded.setDescription(secondDescription);
+    vacancyRepositoryAdapter.save(loaded);
 
     var reloaded = vacancyRepositoryAdapter.findById(vacancy.getId()).orElseThrow();
     assertEquals(secondDescription, reloaded.getDescription());
@@ -106,8 +109,9 @@ class VacancyRepositoryAdapterTest {
     var vacancy = VacancyFactory.getFilledCoreVacancy().description(description).build();
     vacancyRepositoryAdapter.save(vacancy);
 
-    vacancy.setDescription(null);
-    vacancyRepositoryAdapter.save(vacancy);
+    var loaded = vacancyRepositoryAdapter.findById(vacancy.getId()).orElseThrow();
+    loaded.setDescription(null);
+    vacancyRepositoryAdapter.save(loaded);
     // Flush/clear required to bypass the persistence-context cache and verify the explicit
     // deleteById call in the adapter actually removed the row from the database (orphanRemoval
     // does not fire on freshly-built transient graphs, so the deletion is explicit, not cascaded).
@@ -117,6 +121,40 @@ class VacancyRepositoryAdapterTest {
     var reloaded = vacancyRepositoryAdapter.findById(vacancy.getId()).orElseThrow();
     assertNull(reloaded.getDescription());
     assertTrue(descriptionJpaRepository.findByVacancyId(vacancy.getId()).isEmpty());
+  }
+
+  @Test
+  @DisplayName(
+      "given two copies of the same vacancy loaded at the same version, when both are saved then"
+          + " the second save fails as a concurrent modification")
+  void givenTwoCopiesAtSameVersionWhenBothSavedThenSecondSaveFailsAsConcurrentModification() {
+    var vacancy = VacancyFactory.getFilledCoreVacancy().build();
+    vacancyRepositoryAdapter.save(vacancy);
+    var firstCopy = vacancyRepositoryAdapter.findById(vacancy.getId()).orElseThrow();
+    var secondCopy = vacancyRepositoryAdapter.findById(vacancy.getId()).orElseThrow();
+    firstCopy.setJobTitle("Account Manager");
+    vacancyRepositoryAdapter.save(firstCopy);
+    secondCopy.setJobTitle("Key Account Manager");
+
+    assertThrows(
+        VacancyModifiedConcurrentlyException.class,
+        () -> vacancyRepositoryAdapter.save(secondCopy));
+  }
+
+  @Test
+  @DisplayName(
+      "given a loaded vacancy, when it is changed and saved then the reloaded vacancy has the next"
+          + " version")
+  void givenLoadedVacancyWhenChangedAndSavedThenReloadedVacancyHasNextVersion() {
+    var vacancy = VacancyFactory.getFilledCoreVacancy().build();
+    vacancyRepositoryAdapter.save(vacancy);
+    var loaded = vacancyRepositoryAdapter.findById(vacancy.getId()).orElseThrow();
+    loaded.setJobTitle("Account Manager");
+
+    vacancyRepositoryAdapter.save(loaded);
+
+    var reloaded = vacancyRepositoryAdapter.findById(vacancy.getId()).orElseThrow();
+    assertEquals(loaded.getVersion() + 1, reloaded.getVersion());
   }
 
   @Test

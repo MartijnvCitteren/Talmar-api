@@ -17,9 +17,11 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.Version;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 /**
  * JPA entity for vacancies. Holds the inverse (non-owning) side of the {@code @OneToOne} relation
@@ -32,6 +34,17 @@ import lombok.Setter;
 @Entity
 public class VacancyJpaEntity extends BaseJpaEntity {
   @Id private UUID id;
+
+  /**
+   * Optimistic lock. Not null with a default of 0, so Hibernate's schema update can add the column
+   * to a table that already has rows. A null version in a mapped entity means "not saved yet" to
+   * Spring Data, so a new vacancy is inserted and a loaded one is updated with a version check.
+   */
+  @Version
+  @ColumnDefault("0")
+  @Column(nullable = false)
+  private Long version;
+
   @ProcessData private String jobTitle;
 
   @ProcessData

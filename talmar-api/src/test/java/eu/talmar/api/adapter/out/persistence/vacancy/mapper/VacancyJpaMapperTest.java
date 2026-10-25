@@ -28,11 +28,12 @@ class VacancyJpaMapperTest {
   @Test
   @DisplayName("given vacancy, when toJpaEntity then maps all fields")
   void givenVacancyWhenToJpaEntityThenMapsAllFields() {
-    var vacancy = VacancyFactory.getFilledCoreVacancy().build();
+    var vacancy = VacancyFactory.getFilledCoreVacancy().version(3L).build();
 
     VacancyJpaEntity result = mapper.toJpaEntity(vacancy);
 
     assertInstanceOf(UUID.class, result.getId());
+    assertEquals(vacancy.getVersion(), result.getVersion());
     assertEquals(vacancy.getJobTitle(), result.getJobTitle());
     assertEquals(vacancy.getLanguage(), result.getLanguage());
     assertEquals(vacancy.getCategory(), result.getCategory());
@@ -55,6 +56,7 @@ class VacancyJpaMapperTest {
   void givenVacancyEntityWithDescriptionWhenToDomainThenMapsEveryFieldIncludingDescription() {
     var vacancy = VacancyFactory.getFilledCoreVacancy().build();
     var vacancyEntity = mapper.toJpaEntity(vacancy);
+    vacancyEntity.setVersion(3L);
     var descriptionEntity = new VacancyDescriptionJpaEntity();
     vacancyEntity.setDescription(descriptionEntity);
     var domainDescription =
@@ -70,6 +72,7 @@ class VacancyJpaMapperTest {
     var result = mapper.toDomain(vacancyEntity);
 
     assertEquals(vacancyEntity.getId(), result.getId());
+    assertEquals(vacancyEntity.getVersion(), result.getVersion());
     assertEquals(vacancyEntity.getJobTitle(), result.getJobTitle());
     assertEquals(vacancyEntity.getLanguage(), result.getLanguage());
     assertEquals(vacancyEntity.getCategory(), result.getCategory());
