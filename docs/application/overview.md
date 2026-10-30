@@ -19,7 +19,7 @@ A request passes through the hexagon in one direction; each arrow is an explicit
 does not belong to.
 
 ```
-HTTP ─▶ Security filter chain (validates a bearer token when one is sent; only /onboarding and /me require one)
+HTTP ─▶ Security filter chain (uses a valid bearer token, ignores an invalid one; only /onboarding and /me require one)
           ▼
         Controller (implements generated *Api interface)
           │  1. bean validation on the generated contract model (@Valid from the spec)
@@ -86,9 +86,11 @@ The response goes back up the same way: domain object ─▶ response mapper ─
   mapping at all.
 - **Security**: one `SecurityFilterChain` (`SecurityConfig`). The backend is an OAuth2 resource server for Keycloak's
   access tokens (ADR 0006): signature, issuer and expiry are checked with the realm's public keys, fetched on the
-  first request and cached. Only `/onboarding` and `/me` require a token. The vacancy endpoints are still open although their
-  contract declares bearer auth; #103 secures them. A request that sends a token is checked on every endpoint, so an
-  expired or forged token is a `401` everywhere, with a `WWW-Authenticate` challenge that does not say why. CSRF,
+  first request and cached. Security is relaxed for now: only `/onboarding` and `/me` require a token, because they
+  act on the account in it. The vacancy endpoints are open although their contract declares bearer auth; #103 secures
+  them. An expired, forged or malformed token is ignored (`LenientBearerTokenResolver`, logged at `warn`) instead of
+  answered with `401`, so a stale token in a client does not block open endpoints; on `/onboarding` and `/me` it gets
+  the same `401` as no token. A valid token is decoded twice per request (resolver and provider), both locally. CSRF,
   form login, HTTP basic and logout are disabled, sessions are stateless, and CORS defers to `WebConfig`. Spring
   Security adds its default response headers (e.g. `X-Content-Type-Options: nosniff`).
   `SecurityConfig` only loads in a servlet web application, so a test that starts the context without a web
@@ -134,6 +136,9 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 Open issues an agent should know about before building on top of them. Remove an entry in the PR that fixes it.
 
 - Javadoc and code comments refer to ADR 0004 and ADR 0005, which are not in `docs/adr/`.
+- A request with a `Content-Type` the endpoint does not accept (e.g. `application/json` on `PATCH /vacancy/{id}`,
+  which takes `application/merge-patch+json`) hits the catch-all in `GlobalExceptionHandler` and gets a `500`
+  instead of a `415`. The contract declares no `415` response yet.
 - `BaseJpaEntity.lastModifiedBy` (an `app_user` id) is filled only for companies, by onboarding. For vacancies it
   stays empty: there is no `AuditorAware`, because the vacancy endpoints are not authenticated yet (#103).
 - Strings are `varchar` with SQL Server's Latin-1 collation unless a column is `@Nationalized`. Only the user's names

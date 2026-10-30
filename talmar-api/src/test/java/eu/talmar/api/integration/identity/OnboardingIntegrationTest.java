@@ -153,7 +153,7 @@ class OnboardingIntegrationTest extends BaseIntegrationTest {
       "given no valid access token, when onboarding then 401 without the reason, and Keycloak is"
           + " not asked")
   void givenNoValidAccessTokenWhenOnboardingThen401WithoutReason(
-      String problem, String accessToken, String challenge) {
+      String problem, String accessToken) {
     var request = accessToken == null ? given() : withToken(accessToken);
 
     request
@@ -163,20 +163,19 @@ class OnboardingIntegrationTest extends BaseIntegrationTest {
         .post("/onboarding")
         .then()
         .statusCode(HttpStatus.UNAUTHORIZED.value())
-        .header("WWW-Authenticate", challenge)
+        .header("WWW-Authenticate", "Bearer")
         .body(emptyString());
 
     KEYCLOAK_WIREMOCK.verify(0, getRequestedFor(urlEqualTo(NEW_USER_PATH)));
   }
 
+  /** An invalid token is ignored, so it gets the same challenge as no token at all. */
   private static Stream<Arguments> unauthenticatedRequests() {
-    var noToken = "Bearer";
-    var rejectedToken = "Bearer error=\"invalid_token\"";
     return Stream.of(
-        arguments("no token", null, noToken),
-        arguments("expired token", expiredAccessToken(NEW_SUBJECT), rejectedToken),
-        arguments("token signed with another key", foreignAccessToken(NEW_SUBJECT), rejectedToken),
-        arguments("not a token", "not-a-jwt", rejectedToken));
+        arguments("no token", null),
+        arguments("expired token", expiredAccessToken(NEW_SUBJECT)),
+        arguments("token signed with another key", foreignAccessToken(NEW_SUBJECT)),
+        arguments("not a token", "not-a-jwt"));
   }
 
   @ParameterizedTest

@@ -1,4 +1,4 @@
-# Diff-based guardrails: compares a PR with its base (new suppressions, removed tests, PR size, guardrail and schema
+# Diff-based guardrails: compares a PR with its base (new suppressions, removed tests, guardrail and schema
 # changes, stale paths in CLAUDE.md). Each finding can be overridden by a label that only the maintainer applies.
 # See docs/adr/0001-agentic-development-guardrails.md.
 #

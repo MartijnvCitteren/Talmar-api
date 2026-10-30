@@ -114,12 +114,13 @@ file differ. Onboarding checks it again through the `PublicEmailDomains` port, i
   only to an account with a verified address at that domain.
 - The backend is an OAuth2 resource server (`spring-boot-starter-security-oauth2-resource-server`, only `issuer-uri`).
   It checks signature, issuer and expiry with Keycloak's public keys, fetched on the first request and cached, so no
-  call to Keycloak per request. `SecurityConfig` requires a token for `/onboarding` and `/me` only. A missing,
-  expired or forged token is `401` with an empty body and only the RFC 6750 challenge: `WWW-Authenticate: Bearer`, plus
-  `error="invalid_token"` when a token was sent. Spring's default `error_description` (why the token was rejected) and
-  `resource_metadata` link are left out (`BearerChallengeEntryPoint`).
+  call to Keycloak per request. `SecurityConfig` requires a token for `/onboarding` and `/me` only. An expired, forged
+  or malformed token is ignored (`LenientBearerTokenResolver`, see `overview.md`), so on these endpoints it is the same
+  as no token: `401` with an empty body and only the RFC 6750 challenge `WWW-Authenticate: Bearer`. Spring's default
+  `error_description` (why the token was rejected) and `resource_metadata` link are left out
+  (`BearerChallengeEntryPoint`). Its `error="invalid_token"` branch is unreachable while invalid tokens are ignored.
 - Authentication failures are logged with method and path, never the token, other headers, the query string or the
-  client's address: no token at `info`, a rejected token at `warn` with the reason, anything unexpected at `error`
+  client's address: no token at `info`, an ignored token at `warn` with the reason, anything unexpected at `error`
   with its stack trace. When Keycloak is unreachable while the keys are fetched, Spring Security rethrows the failure:
   Tomcat logs it at `error` with the cause (e.g. `503` on `.../certs`) and the client gets a bare `500`.
 
