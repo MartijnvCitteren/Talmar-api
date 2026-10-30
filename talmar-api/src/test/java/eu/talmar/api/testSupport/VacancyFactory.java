@@ -36,7 +36,11 @@ public class VacancyFactory {
           new EmailAddress("lukasz.kowalski@acme.pl"));
   public static final Offer OFFER =
       new Offer(
-          3800, 4600, Currency.getInstance("EUR"), SalaryPeriod.MONTHLY, new BigDecimal("25.50"));
+          new BigDecimal("3800.75"),
+          new BigDecimal("4601.92"),
+          Currency.getInstance("EUR"),
+          SalaryPeriod.MONTHLY,
+          new BigDecimal("25.50"));
 
   public static Vacancy.Builder getFilledCoreVacancy() {
     return Vacancy.builder()
