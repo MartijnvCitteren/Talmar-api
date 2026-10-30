@@ -93,6 +93,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ConcurrentModification'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -561,6 +563,14 @@ components:
             $ref: '#/components/schemas/ProblemDetails'
     Conflict:
       description: The requested status transition is not legal from the vacancy's current status.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ConcurrentModification:
+      description: >
+        The vacancy was changed by someone else while this request was processed. Reload it and
+        make the change again.
       content:
         application/problem+json:
           schema:

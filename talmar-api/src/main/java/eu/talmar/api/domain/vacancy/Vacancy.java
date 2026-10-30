@@ -16,6 +16,7 @@ import java.util.UUID;
 public class Vacancy extends BaseObject {
 
   private final UUID id;
+  private final Long version;
   private String jobTitle;
   private Language language;
   private VacancyCategory category;
@@ -27,6 +28,7 @@ public class Vacancy extends BaseObject {
 
   private Vacancy(
       UUID id,
+      Long version,
       String jobTitle,
       Language language,
       VacancyCategory category,
@@ -38,6 +40,7 @@ public class Vacancy extends BaseObject {
       LocalDateTime createdAt) {
     super(createdAt);
     this.id = id;
+    this.version = version;
     this.jobTitle = jobTitle;
     this.language = language;
     this.category = category;
@@ -50,6 +53,15 @@ public class Vacancy extends BaseObject {
 
   public UUID getId() {
     return id;
+  }
+
+  /**
+   * The version this vacancy had when it was loaded, or {@code null} for a vacancy that has not
+   * been saved yet. Saving a vacancy that was changed by someone else since it was loaded fails, so
+   * one user's changes never silently overwrite another's.
+   */
+  public Long getVersion() {
+    return version;
   }
 
   public String getJobTitle() {
@@ -158,6 +170,7 @@ public class Vacancy extends BaseObject {
 
   public static class Builder {
     private UUID explicitId;
+    private Long version;
     private String jobTitle;
     private Language language;
     private VacancyCategory category;
@@ -172,6 +185,11 @@ public class Vacancy extends BaseObject {
 
     public Builder id(UUID id) {
       this.explicitId = id;
+      return this;
+    }
+
+    public Builder version(Long version) {
+      this.version = version;
       return this;
     }
 
@@ -224,6 +242,7 @@ public class Vacancy extends BaseObject {
       UUID id = explicitId != null ? explicitId : UuidV7Generator.getUUID();
       return new Vacancy(
           id,
+          version,
           Objects.requireNonNull(jobTitle, "jobTitle is required"),
           Objects.requireNonNull(language, "language is required"),
           Objects.requireNonNull(category, "category is required"),

@@ -2,6 +2,7 @@ package eu.talmar.api.adapter.in.rest.vacancy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import eu.talmar.api.application.port.out.VacancyModifiedConcurrentlyException;
 import eu.talmar.api.domain.vacancy.VacancyNotFoundException;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +27,20 @@ class VacancyExceptionHandlerTest {
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     assertEquals(MediaType.APPLICATION_PROBLEM_JSON, response.getHeaders().getContentType());
     assertEquals(HttpStatus.NOT_FOUND.value(), response.getBody().getStatus());
+  }
+
+  @Test
+  @DisplayName(
+      "given a vacancy modified concurrently exception, when handling then returns a 409 problem"
+          + " detail")
+  void givenVacancyModifiedConcurrentlyExceptionWhenHandleThenReturns409ProblemDetail() {
+    var exception = new VacancyModifiedConcurrentlyException(UUID.randomUUID());
+
+    var response = handler.handleVacancyModifiedConcurrentlyException(exception, request());
+
+    assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+    assertEquals(MediaType.APPLICATION_PROBLEM_JSON, response.getHeaders().getContentType());
+    assertEquals(HttpStatus.CONFLICT.value(), response.getBody().getStatus());
   }
 
   @Test
