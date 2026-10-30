@@ -794,13 +794,19 @@ components:
         a violation with `400`.
       properties:
         salaryMin:
-          type: [integer, 'null']
-          description: Gross salary in whole units of `currency` per `salaryPeriod`.
+          type: [number, 'null']
+          description: >
+            Gross salary in `currency` per `salaryPeriod`. Decimals are allowed; the amount is
+            rounded half up to 2 decimals (`10.745` becomes `10.75`, `10.744` becomes `10.74`) and
+            always returned with 2 decimals.
           minimum: 0
           maximum: 100000000
         salaryMax:
-          type: [integer, 'null']
-          description: Gross salary in whole units of `currency` per `salaryPeriod`.
+          type: [number, 'null']
+          description: >
+            Gross salary in `currency` per `salaryPeriod`. Decimals are allowed; the amount is
+            rounded half up to 2 decimals (`10.745` becomes `10.75`, `10.744` becomes `10.74`) and
+            always returned with 2 decimals.
           minimum: 0
           maximum: 100000000
         currency:
@@ -814,8 +820,8 @@ components:
           minimum: 0
           maximum: 60
       example:
-        salaryMin: 3800
-        salaryMax: 4600
+        salaryMin: 3800.75
+        salaryMax: 4601.92
         currency: EUR
         salaryPeriod: MONTHLY
         numberOfHolidays: 25

@@ -18,7 +18,7 @@
 	<properties>
 		<antlr4.version>4.13.2</antlr4.version>
 		<arch-unit.version>1.5.1</arch-unit.version>
-		<error-prone.version>2.50.0</error-prone.version>
+		<error-prone.version>2.51.0</error-prone.version>
 		<findsecbugs.version>1.14.0</findsecbugs.version>
 		<java.version>25</java.version>
 		<jspecify.version>1.0.1</jspecify.version>
@@ -27,13 +27,13 @@
 		<mapstruct.version>1.6.3</mapstruct.version>
 		<maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
 		<maven-enforcer-plugin.version>3.6.3</maven-enforcer-plugin.version>
-		<maven-surefire-plugin.version>3.6.0</maven-surefire-plugin.version>
-		<nullaway.version>0.14.2</nullaway.version>
-		<rest-assured.version>6.1.0</rest-assured.version>
+		<maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
+		<nullaway.version>0.14.3</nullaway.version>
+		<rest-assured.version>6.2.0</rest-assured.version>
 		<spotbugs-maven-plugin.version>4.10.5.0</spotbugs-maven-plugin.version>
 		<spotless.version>3.10.4</spotless.version>
-		<spring-ai.version>2.0.1</spring-ai.version>
-		<spring-boot.version>4.1.1</spring-boot.version>
+		<spring-ai.version>2.0.2</spring-ai.version>
+		<spring-boot.version>4.1.2</spring-boot.version>
 		<swagger-annotations.version>2.2.55</swagger-annotations.version>
 		<uuid-generator.version>5.2.0</uuid-generator.version>
 		<wiremock.version>3.13.2</wiremock.version>
@@ -43,7 +43,7 @@
 		<test.order.seed>${maven.build.timestamp}</test.order.seed>
 		<!-- Security overrides of Spring Boot managed versions. Remove each one as soon as the Spring Boot
 		     version above manages an equal or newer version. -->
-		<jackson-bom.override.version>3.2.3</jackson-bom.override.version>
+		<jackson-bom.override.version>3.2.4</jackson-bom.override.version>
 		<tomcat.override.version>11.0.27</tomcat.override.version>
 	</properties>
 

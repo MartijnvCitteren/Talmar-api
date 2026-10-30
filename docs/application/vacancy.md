@@ -20,7 +20,7 @@ it gets published to job boards and receives candidates.
 | `status` | `VacancyStatus` | `DRAFT`, `PUBLISHED`, `FILLED`, `CLOSED`. Defaults to `DRAFT`. |
 | `description` | `VacancyDescription` | Optional, see below. |
 | `contactPerson` | `ContactPerson(name, role, phone, email)` | Optional. Free text, not a Talmar user (often a hiring manager without an account). `role` and `phone` are optional. `email` reuses identity's `EmailAddress` (lower case). `toString` is redacted to the role. |
-| `offer` | `Offer(salaryMin, salaryMax, currency, salaryPeriod, numberOfHolidays)` | Optional. Gross whole amounts per `SalaryPeriod` (`HOURLY`, `MONTHLY`, `ANNUAL`), a `java.util.Currency`, and full-time-equivalent holiday days (`BigDecimal`). The combination rules are contract rules, see the contract. |
+| `offer` | `Offer(salaryMin, salaryMax, currency, salaryPeriod, numberOfHolidays)` | Optional. Gross salary amounts (`BigDecimal`, rounded half up to 2 decimals in the constructor: `10.745` becomes `10.75`) per `SalaryPeriod` (`HOURLY`, `MONTHLY`, `ANNUAL`), a `java.util.Currency`, and full-time-equivalent holiday days (`BigDecimal`). The combination rules are contract rules, see the contract. |
 | `createdAt`, `lastModifiedAt`, `lastModifiedBy` | from `BaseObject` | `createdAt` is required and passed in by the use case. |
 
 `VacancyDescription` is a value object with five optional texts (`summary`, `jobDescription`, `tasks`, `whatWeOffer`,
@@ -103,7 +103,7 @@ details (`EndpointNotImplementedException`). The domain has no `ARCHIVED` status
   GDPR rule classifies an embedded field as a whole. Name and role are `nvarchar` (`@Nationalized`). A row without a
   name has no contact person.
 - **Offer**: `OfferJpaEmbeddable`, `offer_*` columns on the vacancy table, all `@ProcessData`. Hibernate loads it as
-  `null` when every column is `null`. The currency is stored as its ISO code.
+  `null` when every column is `null`. Salaries are `decimal(11,2)`, the currency is stored as its ISO code.
 - Every other vacancy field is `@ProcessData`. The contact person's name, phone and e-mail are the vacancy's only
   personal data. `lastModifiedBy` (from `BaseJpaEntity`) is
   a user id, also process data, and it is not filled yet.

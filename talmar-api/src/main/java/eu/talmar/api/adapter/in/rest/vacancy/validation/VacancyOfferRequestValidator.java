@@ -56,7 +56,7 @@ public class VacancyOfferRequestValidator {
   private void requireMinimumNotAboveMaximum(Offer offer) {
     var salaryMin = offer.getSalaryMin();
     var salaryMax = offer.getSalaryMax();
-    if (salaryMin != null && salaryMax != null && salaryMin > salaryMax) {
+    if (salaryMin != null && salaryMax != null && salaryMin.compareTo(salaryMax) > 0) {
       throw new InvalidVacancyOfferRequestException(
           SALARY_MIN, "salaryMin must not be greater than salaryMax");
     }

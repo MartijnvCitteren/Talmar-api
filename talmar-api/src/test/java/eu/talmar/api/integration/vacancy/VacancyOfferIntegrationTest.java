@@ -41,7 +41,7 @@ class VacancyOfferIntegrationTest extends BaseIntegrationTest {
           "email": "Lukasz.Kowalski@acme.pl"
         },
         "offer": {
-          "salaryMin": 3800,
+          "salaryMin": 3800.745,
           "salaryMax": 4600,
           "currency": "PLN",
           "salaryPeriod": "MONTHLY",
@@ -53,7 +53,7 @@ class VacancyOfferIntegrationTest extends BaseIntegrationTest {
   @Test
   @DisplayName(
       "given an existing vacancy, when a valid contact person and offer are set then 200 with the"
-          + " vacancy holding both, phone and e-mail normalised")
+          + " vacancy holding both, phone and e-mail normalised and salaries rounded to cents")
   void givenExistingVacancyWhenValidContactPersonAndOfferSetThen200WithBoth() {
     var vacancy = putOffer(VACANCY_ID, VALID_REQUEST, HttpStatus.OK);
 
@@ -65,8 +65,8 @@ class VacancyOfferIntegrationTest extends BaseIntegrationTest {
     assertEquals("+48601234567", contactPerson.getPhone());
     assertEquals("lukasz.kowalski@acme.pl", contactPerson.getEmail());
     var offer = vacancy.getOffer();
-    assertEquals(3800, offer.getSalaryMin());
-    assertEquals(4600, offer.getSalaryMax());
+    assertEquals(new BigDecimal("3800.75"), offer.getSalaryMin());
+    assertEquals(new BigDecimal("4600.00"), offer.getSalaryMax());
     assertEquals(CurrencyCode.PLN, offer.getCurrency());
     assertEquals(SalaryPeriod.MONTHLY, offer.getSalaryPeriod());
     assertEquals(0, new BigDecimal("26").compareTo(offer.getNumberOfHolidays()));
@@ -168,7 +168,7 @@ class VacancyOfferIntegrationTest extends BaseIntegrationTest {
             "offer.salaryMin",
             request(
                 validContactPerson,
-                "{\"salaryMin\": 4601, \"salaryMax\": 4600, \"currency\": \"EUR\","
+                "{\"salaryMin\": 4600.01, \"salaryMax\": 4600, \"currency\": \"EUR\","
                     + " \"salaryPeriod\": \"MONTHLY\"}")),
         Arguments.of(
             "offer.numberOfHolidays", request(validContactPerson, "{\"numberOfHolidays\": 61}")));

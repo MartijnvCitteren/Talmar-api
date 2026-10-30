@@ -21,12 +21,12 @@ import lombok.Setter;
 @Embeddable
 public class OfferJpaEmbeddable {
   @ProcessData
-  @Column(name = "offer_salary_min")
-  private Integer salaryMin;
+  @Column(name = "offer_salary_min", precision = 11, scale = 2)
+  private BigDecimal salaryMin;
 
   @ProcessData
-  @Column(name = "offer_salary_max")
-  private Integer salaryMax;
+  @Column(name = "offer_salary_max", precision = 11, scale = 2)
+  private BigDecimal salaryMax;
 
   @ProcessData
   @Column(name = "offer_currency", length = 3)

@@ -35,20 +35,23 @@ class VacancyOfferRequestValidatorTest {
         Arguments.of(
             "full offer",
             new Offer()
-                .salaryMin(3800)
-                .salaryMax(4600)
+                .salaryMin(new BigDecimal("3800"))
+                .salaryMax(new BigDecimal("4600"))
                 .currency(CurrencyCode.EUR)
                 .salaryPeriod(SalaryPeriod.MONTHLY)
                 .numberOfHolidays(new BigDecimal("25"))),
         Arguments.of("holidays only", new Offer().numberOfHolidays(new BigDecimal("25"))),
         Arguments.of(
             "minimum only",
-            new Offer().salaryMin(20).currency(CurrencyCode.CHF).salaryPeriod(SalaryPeriod.HOURLY)),
+            new Offer()
+                .salaryMin(new BigDecimal("20.50"))
+                .currency(CurrencyCode.CHF)
+                .salaryPeriod(SalaryPeriod.HOURLY)),
         Arguments.of(
             "minimum equals maximum",
             new Offer()
-                .salaryMin(50000)
-                .salaryMax(50000)
+                .salaryMin(new BigDecimal("50000"))
+                .salaryMax(new BigDecimal("50000.00"))
                 .currency(CurrencyCode.GBP)
                 .salaryPeriod(SalaryPeriod.ANNUAL)));
   }
@@ -72,15 +75,19 @@ class VacancyOfferRequestValidatorTest {
         Arguments.of("offer", new Offer()),
         Arguments.of("offer", new Offer().currency(CurrencyCode.EUR)),
         Arguments.of(
-            "offer.currency", new Offer().salaryMin(3800).salaryPeriod(SalaryPeriod.MONTHLY)),
+            "offer.currency",
+            new Offer().salaryMin(new BigDecimal("3800")).salaryPeriod(SalaryPeriod.MONTHLY)),
         Arguments.of(
-            "offer.currency", new Offer().salaryMax(4600).salaryPeriod(SalaryPeriod.MONTHLY)),
-        Arguments.of("offer.salaryPeriod", new Offer().salaryMin(3800).currency(CurrencyCode.EUR)),
+            "offer.currency",
+            new Offer().salaryMax(new BigDecimal("4600")).salaryPeriod(SalaryPeriod.MONTHLY)),
+        Arguments.of(
+            "offer.salaryPeriod",
+            new Offer().salaryMin(new BigDecimal("3800")).currency(CurrencyCode.EUR)),
         Arguments.of(
             "offer.salaryMin",
             new Offer()
-                .salaryMin(4601)
-                .salaryMax(4600)
+                .salaryMin(new BigDecimal("4600.01"))
+                .salaryMax(new BigDecimal("4600"))
                 .currency(CurrencyCode.EUR)
                 .salaryPeriod(SalaryPeriod.MONTHLY)));
   }

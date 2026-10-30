@@ -33,8 +33,8 @@ class VacancyOfferRequestMapperTest {
             .phone("+31 (0)6 12 34 56 78");
     var offer =
         new Offer()
-            .salaryMin(3800)
-            .salaryMax(4600)
+            .salaryMin(new BigDecimal("3800.75"))
+            .salaryMax(new BigDecimal("4601.92"))
             .currency(CurrencyCode.PLN)
             .salaryPeriod(SalaryPeriod.MONTHLY)
             .numberOfHolidays(new BigDecimal("26"));
