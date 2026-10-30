@@ -271,8 +271,10 @@ roadmap of guardrails are in `docs/adr/0001-agentic-development-guardrails.md`.
   before finishing.
 - **Agents never merge, force-push, or label PRs.** Agents push branches and open PRs; only the human maintainer merges
   and applies override labels. `gh pr merge` is denied in `.claude/settings.json`.
-- **Keep PRs reviewable**: aim for at most ~400 changed lines of production code and config per PR. Split larger work
-  into a sequence of PRs that each leave the build green.
+- **Keep PRs reviewable**: aim for at most ~400 changed lines of production code and config per PR. CI reports the
+  size but does not block it; the maintainer declines a PR that is too large. When a task will clearly exceed the
+  target, ask the maintainer before you start: split it into a sequence of PRs that each leave the build green, or
+  make one larger PR. Ask again when a task grows past it unexpectedly.
 - **Changes to guardrails are changes to the safety net** (`.github/`, `.claude/`, `.agents/skills/`,
   `skills-lock.json`, `ArchitectureTest`, build plugin config): call them out explicitly in the PR description, never
   bundle them silently with feature work.
@@ -317,7 +319,6 @@ roadmap of guardrails are in `docs/adr/0001-agentic-development-guardrails.md`.
 |--------------------------|-----------------------------|
 | More suppressions than `main` (`@SuppressWarnings`, `@Disabled`, assumptions, `NOSONAR`, `spotless:off`, `<skip…>true`, `skip…=true`, `continue-on-error: true`, …) | `suppression-ok` |
 | Fewer test methods than `main`, or a test class deleted | `test-removal-ok` |
-| More than 400 changed lines of production code and config, or 800 of tests (docs and `.agents/` excluded) | `large-pr-ok` |
 | Guardrail files changed (`.github/`, `.claude/`, `.githooks/`, `.agents/`, `.mvn/`, `config/`, `mvnw`, `skills-lock.json`, `ArchitectureTest`, a `<build>` section in a `pom.xml`) | `guardrail-change-ok` |
 | JPA entity (`@Entity`, `@Embeddable`, `@MappedSuperclass`) or `ddl-auto` changed | `schema-change` |
 | `CLAUDE.md` names a path that does not exist | none — fix `CLAUDE.md` |

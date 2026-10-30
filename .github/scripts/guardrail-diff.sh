@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Compares a PR with its base and fails on changes a human must explicitly accept: new suppressions, removed tests,
-# oversized diffs, guardrail changes and JPA schema changes. Also fails when CLAUDE.md names a path that does not
+# guardrail changes and JPA schema changes. Also fails when CLAUDE.md names a path that does not
 # exist. Each finding names its override label; only the human maintainer applies labels (ADR 0001).
 # Usage: guardrail-diff.sh <base-revision> [<head-revision>]   with the PR's labels in $PR_LABELS (comma-separated)
 # Reads both revisions through git only; nothing from the PR is executed.
@@ -10,9 +10,6 @@ base=$1
 pr_head=${2:-HEAD}
 mb=$(git merge-base "$base" "$pr_head")
 labels=",${PR_LABELS:-},"
-
-MAX_PROD_LINES=400
-MAX_TEST_LINES=800
 
 failures=0
 report=""
@@ -83,7 +80,7 @@ if [ -n "$deleted_tests" ]; then
   finding test-removal-ok "Test classes deleted: $deleted_tests."
 fi
 
-# --- PR size ------------------------------------------------------------------------------------------------------
+# --- PR size: reported for the reviewer, never a finding (the maintainer declines a PR that is too large) ----------
 prod_lines=0
 test_lines=0
 while IFS=$'\t' read -r added deleted path; do
@@ -94,10 +91,7 @@ while IFS=$'\t' read -r added deleted path; do
     *) prod_lines=$((prod_lines + added + deleted)) ;;
   esac
 done < <(git diff --numstat -M "$mb" "$pr_head")
-echo "Changed lines: $prod_lines production/config (max $MAX_PROD_LINES), $test_lines test (max $MAX_TEST_LINES)"
-if [ "$prod_lines" -gt "$MAX_PROD_LINES" ] || [ "$test_lines" -gt "$MAX_TEST_LINES" ]; then
-  finding large-pr-ok "PR changes $prod_lines production/config lines (max $MAX_PROD_LINES) and $test_lines test lines (max $MAX_TEST_LINES). Split it into smaller PRs."
-fi
+echo "Changed lines: $prod_lines production/config, $test_lines test"
 
 # --- Guardrail changes: agent config, skills, CI, build wrapper, ArchUnit rules and Maven <build> sections --------
 guardrail_files=$(changed '.github/*' '.claude/*' '.githooks/*' '.agents/*' '.mvn/*' 'config/*' mvnw mvnw.cmd skills-lock.json \

@@ -46,7 +46,7 @@ Constraints:
 | 1 | Clean-up: remove dead hook and Speckit references, rewrite `CLAUDE.md`, Maven Wrapper with checksum pin, `spotless:check` instead of `apply`, deny `gh pr merge`, narrow `gh` allowlist, this ADR | repo |
 | 2 | Claude Code hooks: block bypass commands (skip flags, `--no-verify`, force push, `reset --hard`, `gh pr merge`, adding labels); block writes to `target/` and generated sources; ask before editing guardrail files and skills; Stop hook formats the code and requires green `./mvnw verify`; Gitleaks pre-commit | agent |
 | 3 | GitHub Actions in two jobs (each job is billed rounded up to a minute on private repos): `build` (`./mvnw -B verify`, CycloneDX SBOM, OSV-Scanner on the SBOM) and `checks` (Gitleaks, actionlint, hook regression tests, `oasdiff` breaking-change check); actions pinned by commit SHA, tools by SHA-256; Dependabot (Maven + Actions); branch protection on `main` | CI |
-| 4 | `guardrail-diff` job: suppression count vs `main`; deleted tests / lower test count; PR size limit (~400 lines production + config, ~800 tests); skills and guardrail-config changes; `schema-change` label on JPA entity changes; paths named in `CLAUDE.md` must exist | CI |
+| 4 | `guardrail-diff` job: suppression count vs `main`; deleted tests / lower test count; PR size limit (~400 lines production + config, ~800 tests; dropped, see Revisions); skills and guardrail-config changes; `schema-change` label on JPA entity changes; paths named in `CLAUDE.md` must exist | CI |
 | 5 | Error Prone + NullAway (JSpecify mode, adopted per package via `@NullMarked`), Maven Enforcer, SpotBugs + FindSecBugs, random test order | build |
 | 6 | ArchUnit ban list for typical agent mistakes (Jackson 2, `javax`, `java.util.Date`, `System.out`, field injection, `@Transactional` outside services, `now()` without `Clock`, `Thread.sleep` in tests); GDPR rule: every persistence-entity field is `@PersonalData` or `@ProcessData` | build |
 | 7 | Integration-test responses validated against the OpenAPI spec (RestAssured filter) | build |
@@ -118,3 +118,17 @@ Constraints:
   custom rule was checked against a temporary violation to make sure it actually fails.
 - Open risks to verify during rollout: Jackson 3 support in `swagger-request-validator` (PR 7), offline SQL Server DDL
   generation with Hibernate (PR 8), PIT on JUnit 6 (deferred).
+
+## Revisions
+
+### 2026-10-30 — PR size is reported, not enforced
+
+The `guardrail-diff` job no longer fails a PR above ~400 changed lines of production code and config (or ~800 of
+tests), and the `large-pr-ok` label is gone. It still counts the changed lines and shows them in the job summary. The
+maintainer reviews every PR anyway and declines one that is too large to review; a label on top of that was an extra
+step on every larger PR without adding a check. Agents keep the ~400-line target and ask the maintainer before
+starting work that will clearly exceed it: split into stacked PRs, or one larger PR.
+
+Superseded: a hard limit with a human-only override label. Rejected because the size of a reviewable PR depends on
+the change (a mechanical rename is easy to review at 600 lines, a scoring rule may not be at 200), and the review
+itself is already the gate.

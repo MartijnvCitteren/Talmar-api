@@ -71,13 +71,8 @@ git_q mv api/src/test/java/app/OtherTest.java api/src/test/java/app/MovedTest.ja
 expect pass "test class renamed"
 
 new_repo
-seq 1 401 >api/src/main/resources.txt && commit
-expect fail "401 production lines"
-expect pass "401 production lines with override label" "large-pr-ok"
-
-new_repo
-seq 1 800 >api/src/test/java/app/data.txt && seq 1 400 >api/src/main/resources.txt && seq 1 2000 >docs/big.md && commit
-expect pass "400 production lines, 800 test lines and large docs"
+seq 1 801 >api/src/test/java/app/data.txt && seq 1 401 >api/src/main/resources.txt && commit
+expect pass "large PR: size is reported, not a finding"
 
 new_repo
 mkdir -p .github/workflows && echo "name: x" >.github/workflows/ci.yml && commit
