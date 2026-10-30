@@ -68,12 +68,12 @@ public class VacancyExceptionHandler {
   }
 
   /**
-   * Turns an offer that breaks a combined-field contract rule into an RFC 9457 400 problem
+   * Turns an update that breaks a combined-field contract rule into an RFC 9457 400 problem
    * response, naming the offending field the same way bean-validation failures do.
    */
-  @ExceptionHandler(InvalidVacancyOfferRequestException.class)
-  ResponseEntity<ProblemDetails> handleInvalidVacancyOfferRequestException(
-      InvalidVacancyOfferRequestException ex, HttpServletRequest request) {
+  @ExceptionHandler(InvalidVacancyUpdateRequestException.class)
+  ResponseEntity<ProblemDetails> handleInvalidVacancyUpdateRequestException(
+      InvalidVacancyUpdateRequestException ex, HttpServletRequest request) {
     return validationFailed(ex.getField(), ex.getMessage(), request);
   }
 

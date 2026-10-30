@@ -23,11 +23,24 @@ public class VacancyDescriptionContentValidator {
    *     field
    */
   public void validate(VacancyDescriptionRequest request) {
-    validateField("summary", request.getSummary());
-    validateField("jobDescription", request.getJobDescription());
-    validateField("tasks", request.getTasks());
-    validateField("whatWeOffer", request.getWhatWeOffer());
-    validateField("aboutUs", request.getAboutUs());
+    validate(request, "");
+  }
+
+  /**
+   * Validates a description sent as part of a larger request, naming a failing field by its path in
+   * that request.
+   *
+   * @param request the description to validate
+   * @param fieldPrefix put in front of each field name, e.g. {@code description.}
+   * @throws InvalidVacancyDescriptionRequestException if validation fails, naming the offending
+   *     field
+   */
+  public void validate(VacancyDescriptionRequest request, String fieldPrefix) {
+    validateField(fieldPrefix + "summary", request.getSummary());
+    validateField(fieldPrefix + "jobDescription", request.getJobDescription());
+    validateField(fieldPrefix + "tasks", request.getTasks());
+    validateField(fieldPrefix + "whatWeOffer", request.getWhatWeOffer());
+    validateField(fieldPrefix + "aboutUs", request.getAboutUs());
   }
 
   private void validateField(String fieldName, String value) {
