@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import eu.talmar.api.adapter.out.persistence.vacancy.VacancyDescriptionJpaEntity;
 import eu.talmar.api.adapter.out.persistence.vacancy.VacancyJpaEntity;
+import eu.talmar.api.domain.vacancy.valueobject.ContactPerson;
 import eu.talmar.api.domain.vacancy.valueobject.VacancyDescription;
 import eu.talmar.api.domain.vacancy.valueobject.VacancyDescriptionSource;
 import eu.talmar.api.testSupport.VacancyFactory;
@@ -93,5 +94,75 @@ class VacancyJpaMapperTest {
     var result = mapper.toDomain(vacancyEntity);
 
     assertNull(result.getDescription());
+  }
+
+  @Test
+  @DisplayName(
+      "given a vacancy with a contact person and an offer, when toJpaEntity then the contact"
+          + " person is flattened into its columns and the offer is embedded")
+  void givenVacancyWithContactPersonAndOfferWhenToJpaEntityThenBothAreMapped() {
+    var vacancy =
+        VacancyFactory.getFilledCoreVacancy()
+            .contactPerson(VacancyFactory.CONTACT_PERSON)
+            .offer(VacancyFactory.OFFER)
+            .build();
+
+    var result = mapper.toJpaEntity(vacancy);
+
+    var contactPerson = vacancy.getContactPerson();
+    assertEquals(contactPerson.name(), result.getContactPersonName());
+    assertEquals(contactPerson.role(), result.getContactPersonRole());
+    assertEquals(contactPerson.phone().value(), result.getContactPersonPhone());
+    assertEquals(contactPerson.email().value(), result.getContactPersonEmail());
+    var offer = vacancy.getOffer();
+    assertEquals(offer.salaryMin(), result.getOffer().getSalaryMin());
+    assertEquals(offer.salaryMax(), result.getOffer().getSalaryMax());
+    assertEquals(offer.currency(), result.getOffer().getCurrency());
+    assertEquals(offer.salaryPeriod(), result.getOffer().getSalaryPeriod());
+    assertEquals(offer.numberOfHolidays(), result.getOffer().getNumberOfHolidays());
+  }
+
+  @Test
+  @DisplayName(
+      "given a vacancy entity with contact person columns and an offer, when toDomain then both"
+          + " are rebuilt")
+  void givenVacancyEntityWithContactPersonAndOfferWhenToDomainThenBothAreRebuilt() {
+    var vacancy =
+        VacancyFactory.getFilledCoreVacancy()
+            .contactPerson(VacancyFactory.CONTACT_PERSON)
+            .offer(VacancyFactory.OFFER)
+            .build();
+    var vacancyEntity = mapper.toJpaEntity(vacancy);
+
+    var result = mapper.toDomain(vacancyEntity);
+
+    assertEquals(vacancy.getContactPerson(), result.getContactPerson());
+    assertEquals(vacancy.getOffer(), result.getOffer());
+  }
+
+  @Test
+  @DisplayName(
+      "given a contact person without a phone number, when mapped both ways then the phone"
+          + " number stays null")
+  void givenContactPersonWithoutPhoneNumberWhenMappedBothWaysThenPhoneNumberStaysNull() {
+    var contactPerson = VacancyFactory.CONTACT_PERSON;
+    var withoutPhone = new ContactPerson(contactPerson.name(), null, null, contactPerson.email());
+    var vacancy = VacancyFactory.getFilledCoreVacancy().contactPerson(withoutPhone).build();
+
+    var result = mapper.toDomain(mapper.toJpaEntity(vacancy));
+
+    assertEquals(withoutPhone, result.getContactPerson());
+  }
+
+  @Test
+  @DisplayName(
+      "given a vacancy entity without contact person columns, when toDomain then the contact"
+          + " person is null")
+  void givenVacancyEntityWithoutContactPersonColumnsWhenToDomainThenContactPersonIsNull() {
+    var vacancyEntity = mapper.toJpaEntity(VacancyFactory.getFilledCoreVacancy().build());
+
+    var result = mapper.toDomain(vacancyEntity);
+
+    assertNull(result.getContactPerson());
   }
 }

@@ -40,6 +40,45 @@ class VacancyResponseMapperTest {
   }
 
   @Test
+  @DisplayName(
+      "given a vacancy with a contact person and an offer, when toVacancyResponse then both are in"
+          + " the response")
+  void givenVacancyWithContactPersonAndOfferWhenToVacancyResponseThenBothAreInTheResponse() {
+    var vacancy =
+        VacancyFactory.getFilledCoreVacancy()
+            .contactPerson(VacancyFactory.CONTACT_PERSON)
+            .offer(VacancyFactory.OFFER)
+            .build();
+
+    VacancyResponse result = mapper.toVacancyResponse(vacancy);
+
+    var contactPerson = vacancy.getContactPerson();
+    assertEquals(contactPerson.name(), result.getContactPerson().getName());
+    assertEquals(contactPerson.role(), result.getContactPerson().getRole());
+    assertEquals(contactPerson.phone().value(), result.getContactPerson().getPhone());
+    assertEquals(contactPerson.email().value(), result.getContactPerson().getEmail());
+    var offer = vacancy.getOffer();
+    assertEquals(offer.salaryMin(), result.getOffer().getSalaryMin());
+    assertEquals(offer.salaryMax(), result.getOffer().getSalaryMax());
+    assertEquals(offer.currency().getCurrencyCode(), result.getOffer().getCurrency().getValue());
+    assertEquals(offer.salaryPeriod().name(), result.getOffer().getSalaryPeriod().getValue());
+    assertEquals(offer.numberOfHolidays(), result.getOffer().getNumberOfHolidays());
+  }
+
+  @Test
+  @DisplayName(
+      "given a vacancy without a contact person and an offer, when toVacancyResponse then both"
+          + " are absent")
+  void givenVacancyWithoutContactPersonAndOfferWhenToVacancyResponseThenBothAreAbsent() {
+    var vacancy = VacancyFactory.getFilledCoreVacancy().build();
+
+    VacancyResponse result = mapper.toVacancyResponse(vacancy);
+
+    assertNull(result.getContactPerson());
+    assertNull(result.getOffer());
+  }
+
+  @Test
   @DisplayName("given local date time, when map then applies UTC offset")
   void givenLocalDateTimeWhenMapThenAppliesUtcOffset() {
     var localDateTime = LocalDateTime.of(2026, 3, 15, 13, 45, 30);

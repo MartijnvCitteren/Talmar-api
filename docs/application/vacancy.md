@@ -19,12 +19,20 @@ it gets published to job boards and receives candidates.
 | `hoursPerWeek` | `HoursPerWeek(minHours, maxHours)` | Required. `BigDecimal`, so part-time hours like 32.5 are exact. |
 | `status` | `VacancyStatus` | `DRAFT`, `PUBLISHED`, `FILLED`, `CLOSED`. Defaults to `DRAFT`. |
 | `description` | `VacancyDescription` | Optional, see below. |
+| `contactPerson` | `ContactPerson(name, role, phone, email)` | Optional. Free text, not a Talmar user (often a hiring manager without an account). `role` and `phone` are optional. `email` reuses identity's `EmailAddress` (lower case). `toString` is redacted to the role. |
+| `offer` | `Offer(salaryMin, salaryMax, currency, salaryPeriod, numberOfHolidays)` | Optional. Gross salary amounts (`BigDecimal`, rounded half up to 2 decimals in the constructor: `10.745` becomes `10.75`) per `SalaryPeriod` (`HOURLY`, `MONTHLY`, `ANNUAL`), a `java.util.Currency`, and full-time-equivalent holiday days (`BigDecimal`). The combination rules are contract rules, see the contract. |
 | `createdAt`, `lastModifiedAt`, `lastModifiedBy` | from `BaseObject` | `createdAt` is required and passed in by the use case. |
 
 `VacancyDescription` is a value object with five optional texts (`summary`, `jobDescription`, `tasks`, `whatWeOffer`,
 `aboutUs`) and a `source`: `MANUAL` (typed by the user) or `GENERATED` (reserved; not set by any use case). A draft
 from AI generation (`generation.md`) is saved through the manual endpoint and therefore has source `MANUAL`: the user
 reviewed and submitted it. It is replaced as a whole, never edited field by field.
+
+`PhoneNumber` normalises what the user typed to digits only, with a leading `+` for an international number: a
+leading `00` becomes `+`, and in an international number the trunk prefix `(0)` is dropped (`+31 (0)6 12 34 56 78` and
+`0031 6-12345678` both become `+31612345678`). A national number stays national, because the country code cannot be
+derived. Normalising twice gives the same value. Its shape (6–15 digits, separators only) is checked against the
+contract before it gets here.
 
 The aggregate has no behaviour beyond construction and setters yet: no status transitions, no rule that
 `minHours <= maxHours`. Add such rules to the aggregate when the use case that needs them is built.
@@ -51,9 +59,9 @@ endpoint never generates text itself, which keeps the human in control of what g
 ## Contract-only operations
 
 The contract also defines list, get, update (`PATCH`, which accepts `language`), delete (soft delete, status
-`ARCHIVED`), publish, fill, close, plus contact person and offer/salary data on the vacancy. None of this is
-implemented: the controller answers these with `501` problem details (`EndpointNotImplementedException`). The domain
-has no `ARCHIVED` status, contact person or offer yet.
+`ARCHIVED`), publish, fill and close. None of this is implemented: the controller answers these with `501` problem
+details (`EndpointNotImplementedException`). The domain has no `ARCHIVED` status yet. Contact person and offer are in
+the domain, the database and `VacancyResponse`, but no endpoint sets them yet.
 
 ## Persistence
 
@@ -71,7 +79,14 @@ has no `ARCHIVED` status, contact person or offer yet.
   (`application/port/out`); `VacancyExceptionHandler` answers `409` (`ConcurrentModification` in the contract).
   It protects the time between loading and saving inside one request: two overlapping requests on the same vacancy
   cannot both win. A save must start from a loaded vacancy; saving the same unsaved domain object twice fails.
-- All vacancy fields are `@ProcessData`: a vacancy holds no personal data. `lastModifiedBy` (from `BaseJpaEntity`) is
+- **Contact person**: four flat columns on the vacancy table (`contact_person_name`, `_role`, `_phone`, `_email`)
+  instead of an embeddable, because name, phone and e-mail are `@PersonalData` and the role is `@ProcessData`, and the
+  GDPR rule classifies an embedded field as a whole. Name and role are `nvarchar` (`@Nationalized`). A row without a
+  name has no contact person.
+- **Offer**: `OfferJpaEmbeddable`, `offer_*` columns on the vacancy table, all `@ProcessData`. Hibernate loads it as
+  `null` when every column is `null`. Salaries are `decimal(11,2)`, the currency is stored as its ISO code.
+- Every other vacancy field is `@ProcessData`. The contact person's name, phone and e-mail are the vacancy's only
+  personal data. `lastModifiedBy` (from `BaseJpaEntity`) is
   a user id, also process data, and it is not filled yet.
 
 ## Known gaps
