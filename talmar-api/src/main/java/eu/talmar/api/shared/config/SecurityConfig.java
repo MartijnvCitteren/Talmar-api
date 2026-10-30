@@ -7,6 +7,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
@@ -14,10 +15,10 @@ import org.springframework.security.web.SecurityFilterChain;
  * Keycloak issues (ADR 0006, section 6): it checks their signature with Keycloak's public keys, the
  * issuer and the expiry, without calling Keycloak per request.
  *
- * <p>Only the identity endpoints that act on the logged-in account require a token so far. Every
- * other request is still permitted; securing them and scoping them to a company is the next story
- * (#103). A request that does send a token is checked everywhere, so an expired or forged token is
- * a {@code 401} also on an open endpoint.
+ * <p>Security is relaxed for now: every request is permitted, except the identity endpoints that
+ * act on the logged-in account, which cannot work without one. A token that is not valid is ignored
+ * instead of answered with {@code 401} ({@link LenientBearerTokenResolver}). Securing the other
+ * endpoints and scoping them to a company is a later story (#103).
  *
  * <p>A {@code 401} carries the bearer challenge of RFC 6750 and nothing more; why the request was
  * not authenticated goes to the log ({@link BearerChallengeEntryPoint}).
@@ -34,7 +35,8 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
   @Bean
-  SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+  SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder)
+      throws Exception {
     return http.csrf(AbstractHttpConfigurer::disable)
         .formLogin(AbstractHttpConfigurer::disable)
         .httpBasic(AbstractHttpConfigurer::disable)
@@ -52,6 +54,7 @@ public class SecurityConfig {
         .oauth2ResourceServer(
             resourceServer ->
                 resourceServer
+                    .bearerTokenResolver(new LenientBearerTokenResolver(jwtDecoder))
                     .jwt(Customizer.withDefaults())
                     .authenticationEntryPoint(new BearerChallengeEntryPoint()))
         .build();

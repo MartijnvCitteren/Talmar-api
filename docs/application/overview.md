@@ -19,7 +19,7 @@ A request passes through the hexagon in one direction; each arrow is an explicit
 does not belong to.
 
 ```
-HTTP ─▶ Security filter chain (validates a bearer token when one is sent; only /onboarding and /me require one)
+HTTP ─▶ Security filter chain (uses a valid bearer token, ignores an invalid one; only /onboarding and /me require one)
           ▼
         Controller (implements generated *Api interface)
           │  1. bean validation on the generated contract model (@Valid from the spec)
@@ -86,9 +86,11 @@ The response goes back up the same way: domain object ─▶ response mapper ─
   mapping at all.
 - **Security**: one `SecurityFilterChain` (`SecurityConfig`). The backend is an OAuth2 resource server for Keycloak's
   access tokens (ADR 0006): signature, issuer and expiry are checked with the realm's public keys, fetched on the
-  first request and cached. Only `/onboarding` and `/me` require a token. The vacancy endpoints are still open although their
-  contract declares bearer auth; #103 secures them. A request that sends a token is checked on every endpoint, so an
-  expired or forged token is a `401` everywhere, with a `WWW-Authenticate` challenge that does not say why. CSRF,
+  first request and cached. Security is relaxed for now: only `/onboarding` and `/me` require a token, because they
+  act on the account in it. The vacancy endpoints are open although their contract declares bearer auth; #103 secures
+  them. An expired, forged or malformed token is ignored (`LenientBearerTokenResolver`, logged at `warn`) instead of
+  answered with `401`, so a stale token in a client does not block open endpoints; on `/onboarding` and `/me` it gets
+  the same `401` as no token. A valid token is decoded twice per request (resolver and provider), both locally. CSRF,
   form login, HTTP basic and logout are disabled, sessions are stateless, and CORS defers to `WebConfig`. Spring
   Security adds its default response headers (e.g. `X-Content-Type-Options: nosniff`).
   `SecurityConfig` only loads in a servlet web application, so a test that starts the context without a web
