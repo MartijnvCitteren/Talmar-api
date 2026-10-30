@@ -136,6 +136,9 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 Open issues an agent should know about before building on top of them. Remove an entry in the PR that fixes it.
 
 - Javadoc and code comments refer to ADR 0004 and ADR 0005, which are not in `docs/adr/`.
+- A request with a `Content-Type` the endpoint does not accept (e.g. `application/json` on `PATCH /vacancy/{id}`,
+  which takes `application/merge-patch+json`) hits the catch-all in `GlobalExceptionHandler` and gets a `500`
+  instead of a `415`. The contract declares no `415` response yet.
 - `BaseJpaEntity.lastModifiedBy` (an `app_user` id) is filled only for companies, by onboarding. For vacancies it
   stays empty: there is no `AuditorAware`, because the vacancy endpoints are not authenticated yet (#103).
 - Strings are `varchar` with SQL Server's Latin-1 collation unless a column is `@Nationalized`. Only the user's names
