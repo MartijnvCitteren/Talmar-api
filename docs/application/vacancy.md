@@ -56,12 +56,31 @@ The rest of the vacancy is added in later steps; this is the "staged creation" t
 AI generation is a separate endpoint (`generation.md`) whose drafts the user edits and then submits here. This
 endpoint never generates text itself, which keeps the human in control of what gets saved.
 
+### Set the contact person and offer — `PUT /vacancy/{id}/offer`
+
+The step after the core vacancy: the user fills in contact person and offer while the description may still be
+generating. Generation never writes to the vacancy, so the two do not interfere.
+
+1. Bean validation on `VacancyOfferRequest`: both sections required, the field limits and whitelists, and the
+   `CurrencyCode` enum (European currencies only; another code is an unreadable body, `400`).
+2. `VacancyOfferRequestValidator` checks the rules that combine fields → `400` naming the field:
+   - the offer has a salary or holidays (`offer`)
+   - a salary needs `currency` and `salaryPeriod`
+   - `salaryMin` is not greater than `salaryMax` (`offer.salaryMin`)
+3. `VacancyOfferRequestMapper` builds the domain objects. This normalises the phone number (`PhoneNumber`) and lower-cases the
+   e-mail address.
+4. `SetVacancyOfferService` loads the vacancy (`404`), replaces contact person and offer as a whole (a field left out is
+   cleared, PUT semantics), and saves (`409` on a concurrent change).
+5. Returns `200` with the `VacancyResponse`.
+
+The controller does not log the request: it holds personal data.
+
 ## Contract-only operations
 
 The contract also defines list, get, update (`PATCH`, which accepts `language`), delete (soft delete, status
 `ARCHIVED`), publish, fill and close. None of this is implemented: the controller answers these with `501` problem
-details (`EndpointNotImplementedException`). The domain has no `ARCHIVED` status yet. Contact person and offer are in
-the domain, the database and `VacancyResponse`, but no endpoint sets them yet.
+details (`EndpointNotImplementedException`). The domain has no `ARCHIVED` status yet. `PATCH` still lists
+`contactPerson` and `offer`; they are set through `PUT /vacancy/{id}/offer` instead.
 
 ## Persistence
 
@@ -90,6 +109,11 @@ the domain, the database and `VacancyResponse`, but no endpoint sets them yet.
   a user id, also process data, and it is not filled yet.
 
 ## Known gaps
+
+- `PATCH /vacancy/{id}` (`501`) still accepts `contactPerson` and `offer` in the contract, next to
+  `PUT /vacancy/{id}/offer`. Remove them from `VacancyUpdateRequest` (breaking) when `PATCH` is built.
+- Contact person and offer can be changed in every status, also `PUBLISHED`. Once publishing exists, a change to a
+  published vacancy has to reach the job boards.
 
 - The client never sends the version it last saw (no `ETag`/`If-Match`), so a user who edits a stale copy in the
   browser still overwrites a newer change. The optimistic lock only covers overlapping requests.

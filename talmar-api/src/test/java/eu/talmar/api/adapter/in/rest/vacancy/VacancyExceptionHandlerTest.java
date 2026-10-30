@@ -61,6 +61,23 @@ class VacancyExceptionHandlerTest {
         "summary contains a raw tag", response.getBody().getErrors().getFirst().getMessage());
   }
 
+  @Test
+  @DisplayName(
+      "given an invalid vacancy offer request exception, when handling then returns a 400 problem"
+          + " detail naming the offending field")
+  void givenInvalidVacancyOfferRequestExceptionWhenHandleThenReturns400ProblemDetail() {
+    var exception =
+        new InvalidVacancyOfferRequestException(
+            "offer.currency", "currency is required when a salary is given");
+
+    var response = handler.handleInvalidVacancyOfferRequestException(exception, request());
+
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertEquals(MediaType.APPLICATION_PROBLEM_JSON, response.getHeaders().getContentType());
+    assertEquals(exception.getField(), response.getBody().getErrors().getFirst().getField());
+    assertEquals(exception.getMessage(), response.getBody().getErrors().getFirst().getMessage());
+  }
+
   private MockHttpServletRequest request() {
     return new MockHttpServletRequest("POST", "/api/v1/vacancy");
   }
