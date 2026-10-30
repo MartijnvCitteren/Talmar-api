@@ -2,9 +2,11 @@ package eu.talmar.api.domain.vacancy;
 
 import eu.talmar.api.domain.BaseObject;
 import eu.talmar.api.domain.UuidV7Generator;
+import eu.talmar.api.domain.vacancy.valueobject.ContactPerson;
 import eu.talmar.api.domain.vacancy.valueobject.HoursPerWeek;
 import eu.talmar.api.domain.vacancy.valueobject.Language;
 import eu.talmar.api.domain.vacancy.valueobject.Location;
+import eu.talmar.api.domain.vacancy.valueobject.Offer;
 import eu.talmar.api.domain.vacancy.valueobject.VacancyCategory;
 import eu.talmar.api.domain.vacancy.valueobject.VacancyDescription;
 import eu.talmar.api.domain.vacancy.valueobject.VacancyStatus;
@@ -25,6 +27,8 @@ public class Vacancy extends BaseObject {
   private HoursPerWeek hoursPerWeek;
   private VacancyStatus status;
   private VacancyDescription description;
+  private ContactPerson contactPerson;
+  private Offer offer;
 
   private Vacancy(
       UUID id,
@@ -37,6 +41,8 @@ public class Vacancy extends BaseObject {
       HoursPerWeek hoursPerWeek,
       VacancyStatus status,
       VacancyDescription description,
+      ContactPerson contactPerson,
+      Offer offer,
       LocalDateTime createdAt) {
     super(createdAt);
     this.id = id;
@@ -49,6 +55,8 @@ public class Vacancy extends BaseObject {
     this.hoursPerWeek = hoursPerWeek;
     this.status = status;
     this.description = description;
+    this.contactPerson = contactPerson;
+    this.offer = offer;
   }
 
   public UUID getId() {
@@ -128,6 +136,22 @@ public class Vacancy extends BaseObject {
     this.description = description;
   }
 
+  public ContactPerson getContactPerson() {
+    return contactPerson;
+  }
+
+  public void setContactPerson(ContactPerson contactPerson) {
+    this.contactPerson = contactPerson;
+  }
+
+  public Offer getOffer() {
+    return offer;
+  }
+
+  public void setOffer(Offer offer) {
+    this.offer = offer;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -179,6 +203,8 @@ public class Vacancy extends BaseObject {
     private HoursPerWeek hoursPerWeek;
     private VacancyStatus status = VacancyStatus.DRAFT;
     private VacancyDescription description;
+    private ContactPerson contactPerson;
+    private Offer offer;
     private LocalDateTime createdAt;
 
     private Builder() {}
@@ -233,6 +259,16 @@ public class Vacancy extends BaseObject {
       return this;
     }
 
+    public Builder contactPerson(ContactPerson contactPerson) {
+      this.contactPerson = contactPerson;
+      return this;
+    }
+
+    public Builder offer(Offer offer) {
+      this.offer = offer;
+      return this;
+    }
+
     public Builder createdAt(LocalDateTime createdAt) {
       this.createdAt = createdAt;
       return this;
@@ -251,6 +287,8 @@ public class Vacancy extends BaseObject {
           Objects.requireNonNull(hoursPerWeek, "hoursPerWeek is required"),
           status,
           description,
+          contactPerson,
+          offer,
           Objects.requireNonNull(createdAt, "createdAt is required"));
     }
   }

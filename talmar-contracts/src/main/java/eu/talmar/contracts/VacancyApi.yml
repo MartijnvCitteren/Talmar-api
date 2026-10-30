@@ -700,21 +700,46 @@ components:
 
     ContactPerson:
       type: object
+      description: >
+        The person candidates can contact about the vacancy. `phone` is returned normalised: digits
+        only, with a leading `+` for an international number (`+31 (0)6 12 34 56 78` becomes
+        `+31612345678`, `0031 6-12345678` too).
       required: [name, email]
       properties:
         name:
           type: string
+          description: Full name. Letters, spaces, apostrophes, dots and hyphens only.
           minLength: 2
-          maxLength: 50
+          maxLength: 35
+          pattern: '^(?=.*\p{L})[\p{L}\p{M}''’.-]+( [\p{L}\p{M}''’.-]+)*$'
         role:
           type: string
-          maxLength: 100
+          description: Job title of the contact person, e.g. `Hiring manager`.
+          maxLength: 50
+          pattern: '^[\p{L}\p{M}\p{N} &/(),.''’+-]+$'
         phone:
           type: string
-          maxLength: 20
+          description: >
+            6 to 15 digits, optionally with a leading `+` and spaces, brackets, dots, slashes or
+            hyphens between them.
+          maxLength: 25
+          pattern: '^\+?(?:[ ()./-]*[0-9]){6,15}[ ()./-]*$'
         email:
           type: string
           format: email
+          maxLength: 75
+      example:
+        name: Sanne de Vries
+        role: Hiring manager
+        phone: +31 (0)6 12 34 56 78
+        email: sanne.devries@acme.nl
+
+    CurrencyCode:
+      type: string
+      description: >
+        ISO 4217 code of a currency used in Europe: the EU (euro and the national currencies of
+        member states outside the euro area), and the other European countries Talmar serves.
+      enum: [EUR, CZK, DKK, HUF, PLN, RON, SEK, GBP, CHF, NOK, ISK, ALL, BAM, MKD, MDL, RSD, UAH]
 
     Offer:
       type: object
@@ -724,19 +749,37 @@ components:
         as a plain object for codegen compatibility) — enforce this rule in the application layer.
       properties:
         salaryMin:
-          type: [integer, 'null']
+          type: [number, 'null']
+          description: >
+            Gross salary in `currency` per `salaryPeriod`. Decimals are allowed; the amount is
+            rounded half up to 2 decimals (`10.745` becomes `10.75`, `10.744` becomes `10.74`) and
+            always returned with 2 decimals.
+          minimum: 0
+          maximum: 100000000
         salaryMax:
-          type: [integer, 'null']
+          type: [number, 'null']
+          description: >
+            Gross salary in `currency` per `salaryPeriod`. Decimals are allowed; the amount is
+            rounded half up to 2 decimals (`10.745` becomes `10.75`, `10.744` becomes `10.74`) and
+            always returned with 2 decimals.
+          minimum: 0
+          maximum: 100000000
         currency:
-          type: string
-          description: ISO 4217 currency code.
-          pattern: '^[A-Z]{3}$'
+          $ref: '#/components/schemas/CurrencyCode'
         salaryPeriod:
           $ref: '#/components/schemas/SalaryPeriod'
         numberOfHolidays:
           type: [number, 'null']
           description: >
             Full-time-equivalent holiday days. Never pre-computed/prorated server-side.
+          minimum: 0
+          maximum: 60
+      example:
+        salaryMin: 3800.75
+        salaryMax: 4601.92
+        currency: EUR
+        salaryPeriod: MONTHLY
+        numberOfHolidays: 25
 
     VacancyResponse:
       type: object
