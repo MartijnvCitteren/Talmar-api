@@ -1,4 +1,4 @@
 @NullMarked
-package eu.talmar.api.application.port.out.company;
+package eu.talmar.api.application.service.generation;
 
 import org.jspecify.annotations.NullMarked;

@@ -1,8 +1,8 @@
-package eu.talmar.api.application.service.vacancy;
+package eu.talmar.api.application.service.generation;
 
 import eu.talmar.api.application.port.in.generation.StartVacancyDescriptionGenerationUseCase;
 import eu.talmar.api.application.port.in.generation.command.StartVacancyDescriptionGenerationCommand;
-import eu.talmar.api.application.port.out.vacancy.VacancyDescriptionGenerationRepository;
+import eu.talmar.api.application.port.out.generation.VacancyDescriptionGenerationRepository;
 import eu.talmar.api.application.port.out.vacancy.VacancyRepository;
 import eu.talmar.api.domain.generation.VacancyDescriptionGeneration;
 import eu.talmar.api.domain.generation.VacancyDescriptionGenerationStarted;

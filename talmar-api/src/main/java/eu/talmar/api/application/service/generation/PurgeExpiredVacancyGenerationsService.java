@@ -1,7 +1,7 @@
-package eu.talmar.api.application.service.vacancy;
+package eu.talmar.api.application.service.generation;
 
 import eu.talmar.api.application.port.in.generation.PurgeExpiredVacancyGenerationsUseCase;
-import eu.talmar.api.application.port.out.vacancy.VacancyDescriptionGenerationRepository;
+import eu.talmar.api.application.port.out.generation.VacancyDescriptionGenerationRepository;
 import eu.talmar.api.shared.config.GenerationProperties;
 import java.time.Clock;
 import java.time.LocalDateTime;

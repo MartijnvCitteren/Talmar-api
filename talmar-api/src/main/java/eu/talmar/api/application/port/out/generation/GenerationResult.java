@@ -1,6 +1,5 @@
 package eu.talmar.api.application.port.out.generation;
 
-import eu.talmar.api.application.port.out.vacancy.VacancyDescriptionGenerator;
 import eu.talmar.api.domain.generation.valueobject.GeneratedDraft;
 import eu.talmar.api.domain.generation.valueobject.GenerationFailureReason;
 

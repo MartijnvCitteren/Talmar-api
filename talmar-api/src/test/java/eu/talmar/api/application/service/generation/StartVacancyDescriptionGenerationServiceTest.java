@@ -1,4 +1,4 @@
-package eu.talmar.api.application.service.vacancy;
+package eu.talmar.api.application.service.generation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import eu.talmar.api.application.port.in.generation.command.StartVacancyDescriptionGenerationCommand;
-import eu.talmar.api.application.port.out.vacancy.VacancyDescriptionGenerationRepository;
+import eu.talmar.api.application.port.out.generation.VacancyDescriptionGenerationRepository;
 import eu.talmar.api.application.port.out.vacancy.VacancyRepository;
 import eu.talmar.api.domain.generation.VacancyDescriptionGenerationStarted;
 import eu.talmar.api.domain.vacancy.exception.VacancyNotFoundException;

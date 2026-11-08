@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when;
 
 import eu.talmar.api.application.exception.IdentityProviderUnavailableException;
 import eu.talmar.api.application.port.in.identity.command.OnboardUserCommand;
-import eu.talmar.api.application.port.out.company.CompanyRepository;
+import eu.talmar.api.application.port.out.identity.CompanyRepository;
 import eu.talmar.api.application.port.out.identity.IdentityProfile;
 import eu.talmar.api.application.port.out.identity.IdentityProvider;
 import eu.talmar.api.application.port.out.identity.PublicEmailDomains;

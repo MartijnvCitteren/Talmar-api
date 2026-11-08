@@ -1,4 +1,4 @@
-package eu.talmar.api.application.port.out.company;
+package eu.talmar.api.application.port.out.identity;
 
 import eu.talmar.api.domain.identity.Company;
 import java.util.Optional;

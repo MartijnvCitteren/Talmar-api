@@ -1,4 +1,4 @@
-package eu.talmar.api.application.port.out.vacancy;
+package eu.talmar.api.application.port.out.generation;
 
 import eu.talmar.api.domain.generation.VacancyDescriptionGeneration;
 import java.time.LocalDateTime;

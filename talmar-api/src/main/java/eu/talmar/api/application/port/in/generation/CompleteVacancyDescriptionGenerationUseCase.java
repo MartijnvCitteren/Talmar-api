@@ -1,4 +1,4 @@
-package eu.talmar.api.application.port.in.vacancy;
+package eu.talmar.api.application.port.in.generation;
 
 import eu.talmar.api.domain.generation.exception.VacancyDescriptionGenerationNotFoundException;
 import java.util.UUID;

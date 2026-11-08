@@ -1,7 +1,7 @@
-package eu.talmar.api.application.service.vacancy;
+package eu.talmar.api.application.service.generation;
 
 import eu.talmar.api.application.port.in.generation.GetVacancyDescriptionGenerationUseCase;
-import eu.talmar.api.application.port.out.vacancy.VacancyDescriptionGenerationRepository;
+import eu.talmar.api.application.port.out.generation.VacancyDescriptionGenerationRepository;
 import eu.talmar.api.domain.generation.VacancyDescriptionGeneration;
 import eu.talmar.api.domain.generation.exception.VacancyDescriptionGenerationFailedException;
 import eu.talmar.api.domain.generation.exception.VacancyDescriptionGenerationNotFoundException;

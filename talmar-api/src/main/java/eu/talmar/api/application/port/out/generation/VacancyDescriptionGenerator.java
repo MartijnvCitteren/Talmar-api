@@ -1,6 +1,5 @@
-package eu.talmar.api.application.port.out.vacancy;
+package eu.talmar.api.application.port.out.generation;
 
-import eu.talmar.api.application.port.out.generation.GenerationResult;
 import eu.talmar.api.domain.generation.valueobject.GenerationInput;
 
 /**

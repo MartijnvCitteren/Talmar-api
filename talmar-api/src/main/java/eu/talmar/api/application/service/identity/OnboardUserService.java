@@ -2,7 +2,7 @@ package eu.talmar.api.application.service.identity;
 
 import eu.talmar.api.application.port.in.identity.OnboardUserUseCase;
 import eu.talmar.api.application.port.in.identity.command.OnboardUserCommand;
-import eu.talmar.api.application.port.out.company.CompanyRepository;
+import eu.talmar.api.application.port.out.identity.CompanyRepository;
 import eu.talmar.api.application.port.out.identity.IdentityProfile;
 import eu.talmar.api.application.port.out.identity.IdentityProvider;
 import eu.talmar.api.application.port.out.identity.PublicEmailDomains;

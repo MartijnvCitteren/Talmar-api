@@ -1,8 +1,8 @@
-package eu.talmar.api.application.service.vacancy;
+package eu.talmar.api.application.service.generation;
 
 import static org.mockito.Mockito.verify;
 
-import eu.talmar.api.application.port.in.vacancy.CompleteVacancyDescriptionGenerationUseCase;
+import eu.talmar.api.application.port.in.generation.CompleteVacancyDescriptionGenerationUseCase;
 import eu.talmar.api.domain.generation.VacancyDescriptionGenerationStarted;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;

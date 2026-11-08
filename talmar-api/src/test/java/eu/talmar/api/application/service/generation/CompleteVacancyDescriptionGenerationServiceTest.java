@@ -1,4 +1,4 @@
-package eu.talmar.api.application.service.vacancy;
+package eu.talmar.api.application.service.generation;
 
 import static eu.talmar.api.testSupport.GenerationFactory.MODEL;
 import static eu.talmar.api.testSupport.GenerationFactory.PROMPT_VERSION;
@@ -11,8 +11,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import eu.talmar.api.application.port.out.generation.GenerationResult;
-import eu.talmar.api.application.port.out.vacancy.VacancyDescriptionGenerationRepository;
-import eu.talmar.api.application.port.out.vacancy.VacancyDescriptionGenerator;
+import eu.talmar.api.application.port.out.generation.VacancyDescriptionGenerationRepository;
+import eu.talmar.api.application.port.out.generation.VacancyDescriptionGenerator;
 import eu.talmar.api.domain.generation.exception.VacancyDescriptionGenerationNotFoundException;
 import eu.talmar.api.domain.generation.valueobject.GenerationFailureReason;
 import eu.talmar.api.testSupport.GenerationFactory;
