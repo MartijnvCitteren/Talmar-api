@@ -103,9 +103,14 @@ paths:
       - $ref: '#/components/parameters/VacancyId'
     put:
       operationId: setVacancyOffer
+      deprecated: true
       tags: [Vacancy]
       summary: Set the contact person and offer of a vacancy
       description: >
+        Deprecated: send `contactPerson` and `offer` with `PATCH /vacancy/{id}` instead, which
+        replaces them the same way.
+
+
         Sets the contact person and the offer of an existing vacancy, entered together in one step
         of the creation flow. Replaces both in full: a field left out of `contactPerson` or `offer`
         is cleared. Can be called while a description is being generated; the generation never
@@ -284,12 +289,19 @@ paths:
       tags: [Vacancy]
       summary: Partially update a vacancy
       description: >
-        Applies a partial update following **JSON Merge Patch semantics (RFC 7396)**: a field
-        present in the request body replaces the current value, a field omitted from the body is
-        left untouched, and a field explicitly set to `null` clears it (only where the underlying
-        field is nullable — see `Vacancy` schema). Any combination of the core fields, `description`,
-        `contactPerson`, and `offer` may be sent in a single request; the client sends whichever
-        section(s) it currently has.
+        Partially updates a vacancy. A field present in the request body replaces the current
+        value; a field omitted from the body, or set to `null`, is left untouched. Clearing a field
+        is not supported. Any combination of the core fields, `description`, `contactPerson` and
+        `offer` may be sent in a single request; the client sends whichever section(s) it currently
+        has. A body without fields changes nothing and returns the vacancy as it is.
+
+
+        An object (`location`, `description`, `contactPerson`, `offer`) is replaced as a whole, not
+        merged field by field: a field left out of a section that is sent is cleared. The rules of
+        each section are the same as where it is first set: `description` as in
+        `POST /vacancy/{id}/description`, `contactPerson` and `offer` as in
+        `PUT /vacancy/{id}/offer`. `minHoursPerWeek` and `maxHoursPerWeek` are sent together. A
+        violation is a `400` naming the field.
 
 
         Status is never changed through this endpoint — use the dedicated transition endpoints
@@ -316,6 +328,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ConcurrentModification'
         '500':
           $ref: '#/components/responses/InternalServerError'
     get:
@@ -966,9 +980,9 @@ components:
     VacancyUpdateRequest:
       type: object
       description: >
-        JSON Merge Patch (RFC 7396) body for `PATCH /vacancy/{id}`. Every section is optional and
-        independent — send only the section(s) you have. No `id` field; the resource is identified
-        by the URL path.
+        Body for `PATCH /vacancy/{id}`. Every section is optional and independent — send only the
+        section(s) you have; an omitted or `null` field is left untouched. No `id` field; the
+        resource is identified by the URL path.
       properties:
         jobTitle:
           type: string
@@ -981,15 +995,33 @@ components:
           $ref: '#/components/schemas/Location'
         workplaceType:
           $ref: '#/components/schemas/WorkplaceType'
-        hoursPerWeek:
+        minHoursPerWeek:
           type: number
-          exclusiveMinimum: 0
+          description: Sent together with `maxHoursPerWeek`.
+          minimum: 0
+          maximum: 60
+        maxHoursPerWeek:
+          type: number
+          description: Sent together with `minHoursPerWeek`.
+          exclusiveMinimum: 1
+          maximum: 60
         description:
           $ref: '#/components/schemas/VacancyDescriptionRequest'
         contactPerson:
           $ref: '#/components/schemas/ContactPerson'
         offer:
           $ref: '#/components/schemas/Offer'
+      example:
+        jobTitle: Senior Sales Manager
+        workplaceType: HYBRID
+        minHoursPerWeek: 32
+        maxHoursPerWeek: 40
+        offer:
+          salaryMin: 4200
+          salaryMax: 5000
+          currency: EUR
+          salaryPeriod: MONTHLY
+          numberOfHolidays: 25
 
     VacancyListResponse:
       type: object

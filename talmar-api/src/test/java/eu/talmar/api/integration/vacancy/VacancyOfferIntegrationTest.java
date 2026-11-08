@@ -23,10 +23,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.jdbc.Sql;
 
 /** Setting the contact person and offer of a vacancy ({@code PUT /vacancy/{id}/offer}). */
-@Sql("/sql/offer-vacancy.sql")
+@Sql("/sql/existing-vacancy.sql")
 class VacancyOfferIntegrationTest extends BaseIntegrationTest {
 
-  /** Seeded by {@code sql/offer-vacancy.sql}: Sales Manager in Amsterdam. */
+  /** Seeded by {@code sql/existing-vacancy.sql}: Sales Manager in Amsterdam. */
   private static final UUID VACANCY_ID = UUID.fromString("0199a000-0000-7000-8000-000000000011");
 
   private static final String PROBLEM_JSON = "application/problem+json";

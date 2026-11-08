@@ -3,14 +3,14 @@ package eu.talmar.api.adapter.in.rest.vacancy;
 import eu.talmar.api.adapter.in.rest.EndpointNotImplementedException;
 import eu.talmar.api.adapter.in.rest.vacancy.mapper.request.VacancyCoreRequestMapper;
 import eu.talmar.api.adapter.in.rest.vacancy.mapper.request.VacancyDescriptionRequestMapper;
-import eu.talmar.api.adapter.in.rest.vacancy.mapper.request.VacancyOfferRequestMapper;
+import eu.talmar.api.adapter.in.rest.vacancy.mapper.request.VacancyUpdateRequestMapper;
 import eu.talmar.api.adapter.in.rest.vacancy.mapper.response.VacancyDescriptionResponseMapper;
 import eu.talmar.api.adapter.in.rest.vacancy.mapper.response.VacancyResponseMapper;
 import eu.talmar.api.adapter.in.rest.vacancy.validation.VacancyDescriptionContentValidator;
-import eu.talmar.api.adapter.in.rest.vacancy.validation.VacancyOfferRequestValidator;
+import eu.talmar.api.adapter.in.rest.vacancy.validation.VacancyUpdateRequestValidator;
 import eu.talmar.api.application.port.in.CreateVacancyUseCase;
 import eu.talmar.api.application.port.in.ManualVacancyDescriptionUseCase;
-import eu.talmar.api.application.port.in.SetVacancyOfferUseCase;
+import eu.talmar.api.application.port.in.UpdateVacancyUseCase;
 import eu.talmar.api.vacancy.adapter.in.rest.VacancyApi;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyCategory;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyCoreRequest;
@@ -32,8 +32,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Only {@link #createVacancy}, {@link #manualVacancyDescription} and {@link #setVacancyOffer} are
- * wired up so far; the description-generation operations live in {@code
+ * Only {@link #createVacancy}, {@link #manualVacancyDescription}, {@link #updateVacancy} and {@link
+ * #setVacancyOffer} are wired up so far; the description-generation operations live in {@code
  * VacancyDescriptionGenerationController}. The generated {@link VacancyApi} has no default methods
  * ({@code skipDefaultInterface}), so every other operation throws {@link
  * EndpointNotImplementedException}, which responds with 501 Not Implemented.
@@ -49,9 +49,9 @@ public class VacancyController implements VacancyApi {
   private final VacancyDescriptionRequestMapper descriptionRequestMapper;
   private final VacancyDescriptionResponseMapper descriptionResponseMapper;
   private final ManualVacancyDescriptionUseCase manualVacancyDescriptionUseCase;
-  private final VacancyOfferRequestValidator offerRequestValidator;
-  private final VacancyOfferRequestMapper offerRequestMapper;
-  private final SetVacancyOfferUseCase setVacancyOfferUseCase;
+  private final VacancyUpdateRequestValidator updateRequestValidator;
+  private final VacancyUpdateRequestMapper updateRequestMapper;
+  private final UpdateVacancyUseCase updateVacancyUseCase;
 
   @Override
   public ResponseEntity<VacancyResponse> closeVacancy(UUID id) {
@@ -115,18 +115,26 @@ public class VacancyController implements VacancyApi {
     throw new EndpointNotImplementedException("publishVacancy");
   }
 
+  /**
+   * @deprecated replaced by {@link #updateVacancy}, which takes the same contact person and offer;
+   *     kept until the frontend has moved over.
+   */
+  @Deprecated
   @Override
   public ResponseEntity<VacancyResponse> setVacancyOffer(
       UUID id, VacancyOfferRequest vacancyOfferRequest) {
-    offerRequestValidator.validate(vacancyOfferRequest);
-    var command = offerRequestMapper.toCommand(id, vacancyOfferRequest);
-    var vacancy = setVacancyOfferUseCase.setOffer(command);
+    updateRequestValidator.validate(vacancyOfferRequest);
+    var command = updateRequestMapper.toCommand(id, vacancyOfferRequest);
+    var vacancy = updateVacancyUseCase.updateVacancy(command);
     return ResponseEntity.ok(responseMapper.toVacancyResponse(vacancy));
   }
 
   @Override
   public ResponseEntity<VacancyResponse> updateVacancy(
       UUID id, VacancyUpdateRequest vacancyUpdateRequest) {
-    throw new EndpointNotImplementedException("updateVacancy");
+    updateRequestValidator.validate(vacancyUpdateRequest);
+    var command = updateRequestMapper.toCommand(id, vacancyUpdateRequest);
+    var vacancy = updateVacancyUseCase.updateVacancy(command);
+    return ResponseEntity.ok(responseMapper.toVacancyResponse(vacancy));
   }
 }

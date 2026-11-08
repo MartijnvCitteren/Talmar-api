@@ -23,7 +23,6 @@ import org.springframework.http.HttpStatus;
 class VacancyNotImplementedIntegrationTest extends BaseIntegrationTest {
 
   private static final String PROBLEM_JSON = "application/problem+json";
-  private static final String MERGE_PATCH_JSON = "application/merge-patch+json";
   private static final String VACANCY = "/vacancy/" + UUID.randomUUID();
 
   @ParameterizedTest(name = "{0}")
@@ -32,14 +31,9 @@ class VacancyNotImplementedIntegrationTest extends BaseIntegrationTest {
       "given an operation that is not built yet, when called then it responds with a 501 problem"
           + " detail naming the operation")
   void givenNotImplementedOperationWhenCalledThenResponds501ProblemDetail(
-      String operationId, Method method, String path, String contentType, String body) {
-    var request = given();
-    if (body != null) {
-      request.contentType(contentType).body(body);
-    }
-
+      String operationId, Method method, String path) {
     var response =
-        request
+        given()
             .when()
             .request(method, path)
             .then()
@@ -56,13 +50,11 @@ class VacancyNotImplementedIntegrationTest extends BaseIntegrationTest {
 
   private static Stream<Arguments> notImplementedOperations() {
     return Stream.of(
-        arguments("getVacancy", Method.GET, VACANCY, null, null),
-        arguments(
-            "updateVacancy", Method.PATCH, VACANCY, MERGE_PATCH_JSON, "{\"jobTitle\": \"Chef\"}"),
-        arguments("deleteVacancy", Method.DELETE, VACANCY, null, null),
-        arguments("publishVacancy", Method.POST, VACANCY + "/publish", null, null),
-        arguments("fillVacancy", Method.POST, VACANCY + "/fill", null, null),
-        arguments("closeVacancy", Method.POST, VACANCY + "/close", null, null),
-        arguments("listVacancies", Method.GET, VACANCY + "/generate-description", null, null));
+        arguments("getVacancy", Method.GET, VACANCY),
+        arguments("deleteVacancy", Method.DELETE, VACANCY),
+        arguments("publishVacancy", Method.POST, VACANCY + "/publish"),
+        arguments("fillVacancy", Method.POST, VACANCY + "/fill"),
+        arguments("closeVacancy", Method.POST, VACANCY + "/close"),
+        arguments("listVacancies", Method.GET, VACANCY + "/generate-description"));
   }
 }

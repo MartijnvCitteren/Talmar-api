@@ -63,14 +63,14 @@ class VacancyExceptionHandlerTest {
 
   @Test
   @DisplayName(
-      "given an invalid vacancy offer request exception, when handling then returns a 400 problem"
+      "given an invalid vacancy update request exception, when handling then returns a 400 problem"
           + " detail naming the offending field")
-  void givenInvalidVacancyOfferRequestExceptionWhenHandleThenReturns400ProblemDetail() {
+  void givenInvalidVacancyUpdateRequestExceptionWhenHandleThenReturns400ProblemDetail() {
     var exception =
-        new InvalidVacancyOfferRequestException(
+        new InvalidVacancyUpdateRequestException(
             "offer.currency", "currency is required when a salary is given");
 
-    var response = handler.handleInvalidVacancyOfferRequestException(exception, request());
+    var response = handler.handleInvalidVacancyUpdateRequestException(exception, request());
 
     assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     assertEquals(MediaType.APPLICATION_PROBLEM_JSON, response.getHeaders().getContentType());

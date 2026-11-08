@@ -4,22 +4,27 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import eu.talmar.api.adapter.in.rest.vacancy.InvalidVacancyOfferRequestException;
+import eu.talmar.api.adapter.in.rest.vacancy.InvalidVacancyDescriptionRequestException;
+import eu.talmar.api.adapter.in.rest.vacancy.InvalidVacancyUpdateRequestException;
 import eu.talmar.api.vacancy.adapter.in.web.contract.ContactPerson;
 import eu.talmar.api.vacancy.adapter.in.web.contract.CurrencyCode;
 import eu.talmar.api.vacancy.adapter.in.web.contract.Offer;
 import eu.talmar.api.vacancy.adapter.in.web.contract.SalaryPeriod;
+import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyDescriptionRequest;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyOfferRequest;
+import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyUpdateRequest;
 import java.math.BigDecimal;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class VacancyOfferRequestValidatorTest {
+class VacancyUpdateRequestValidatorTest {
 
-  private final VacancyOfferRequestValidator validator = new VacancyOfferRequestValidator();
+  private final VacancyUpdateRequestValidator validator =
+      new VacancyUpdateRequestValidator(new VacancyDescriptionContentValidator());
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("validOffers")
@@ -65,9 +70,84 @@ class VacancyOfferRequestValidatorTest {
     var request = requestWith(offer);
 
     var exception =
-        assertThrows(InvalidVacancyOfferRequestException.class, () -> validator.validate(request));
+        assertThrows(InvalidVacancyUpdateRequestException.class, () -> validator.validate(request));
 
     assertEquals(expectedField, exception.getField());
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("invalidOffers")
+  @DisplayName(
+      "given an update with an offer that breaks a rule, when validated then it is rejected naming"
+          + " the field")
+  void givenUpdateWithOfferThatBreaksRuleWhenValidatedThenRejectedNamingTheField(
+      String expectedField, Offer offer) {
+    var request = new VacancyUpdateRequest().offer(offer);
+
+    var exception =
+        assertThrows(InvalidVacancyUpdateRequestException.class, () -> validator.validate(request));
+
+    assertEquals(expectedField, exception.getField());
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("validUpdates")
+  @DisplayName("given an update that follows the rules, when validated then it is accepted")
+  void givenUpdateThatFollowsTheRulesWhenValidatedThenItIsAccepted(
+      String description, VacancyUpdateRequest request) {
+    assertDoesNotThrow(() -> validator.validate(request));
+  }
+
+  static Stream<Arguments> validUpdates() {
+    return Stream.of(
+        Arguments.of("empty update", new VacancyUpdateRequest()),
+        Arguments.of("job title only", new VacancyUpdateRequest().jobTitle("Chef")),
+        Arguments.of(
+            "hours per week together",
+            new VacancyUpdateRequest()
+                .minHoursPerWeek(new BigDecimal("32"))
+                .maxHoursPerWeek(new BigDecimal("40"))),
+        Arguments.of(
+            "plain description",
+            new VacancyUpdateRequest()
+                .description(new VacancyDescriptionRequest().summary("Line one\nLine two"))));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("updatesWithHalfTheHours")
+  @DisplayName(
+      "given an update with only one end of the hours per week, when validated then it is"
+          + " rejected naming the missing end")
+  void givenUpdateWithOneEndOfHoursWhenValidatedThenRejectedNamingTheMissingEnd(
+      String expectedField, VacancyUpdateRequest request) {
+    var exception =
+        assertThrows(InvalidVacancyUpdateRequestException.class, () -> validator.validate(request));
+
+    assertEquals(expectedField, exception.getField());
+  }
+
+  static Stream<Arguments> updatesWithHalfTheHours() {
+    return Stream.of(
+        Arguments.of(
+            "maxHoursPerWeek", new VacancyUpdateRequest().minHoursPerWeek(new BigDecimal("32"))),
+        Arguments.of(
+            "minHoursPerWeek", new VacancyUpdateRequest().maxHoursPerWeek(new BigDecimal("40"))));
+  }
+
+  @Test
+  @DisplayName(
+      "given an update with markup in the description, when validated then it is rejected naming"
+          + " the field by its path in the update")
+  void givenUpdateWithMarkupInDescriptionWhenValidatedThenRejectedNamingTheFieldPath() {
+    var request =
+        new VacancyUpdateRequest()
+            .description(new VacancyDescriptionRequest().tasks("<script>alert(1)</script>"));
+
+    var exception =
+        assertThrows(
+            InvalidVacancyDescriptionRequestException.class, () -> validator.validate(request));
+
+    assertEquals("description.tasks", exception.getField());
   }
 
   static Stream<Arguments> invalidOffers() {

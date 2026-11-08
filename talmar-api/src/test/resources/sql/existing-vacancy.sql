@@ -1,6 +1,6 @@
--- One existing vacancy to set the contact person and offer of, so the offer integration tests start
--- from a known vacancy instead of creating one through the API first. Runs before every test method
--- and clears what an earlier test left behind.
+-- One existing vacancy to change, so the integration tests that update a vacancy start from a known
+-- vacancy instead of creating one through the API first. Runs before every test method and clears
+-- what an earlier test left behind.
 delete from vacancy_description_jpa_entity;
 delete from vacancy_jpa_entity;
 

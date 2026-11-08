@@ -56,31 +56,47 @@ The rest of the vacancy is added in later steps; this is the "staged creation" t
 AI generation is a separate endpoint (`generation.md`) whose drafts the user edits and then submits here. This
 endpoint never generates text itself, which keeps the human in control of what gets saved.
 
-### Set the contact person and offer — `PUT /vacancy/{id}/offer`
+### Update a vacancy — `PATCH /vacancy/{id}`
 
-The step after the core vacancy: the user fills in contact person and offer while the description may still be
-generating. Generation never writes to the vacancy, so the two do not interfere.
+The user changes whatever part of the vacancy they want: core fields, description, contact person or offer, in any
+combination. Generation never writes to the vacancy, so an update while a description is generating does not
+interfere.
 
-1. Bean validation on `VacancyOfferRequest`: both sections required, the field limits and whitelists, and the
-   `CurrencyCode` enum (European currencies only; another code is an unreadable body, `400`).
-2. `VacancyOfferRequestValidator` checks the rules that combine fields → `400` naming the field:
+1. Bean validation on `VacancyUpdateRequest`: every field is optional; the limits and whitelists of each section are
+   the same as where it is first set, and the `CurrencyCode` enum allows European currencies only (another code is an
+   unreadable body, `400`). The body is `application/merge-patch+json`.
+2. `VacancyUpdateRequestValidator` checks the rules that combine fields → `400` naming the field:
+   - `minHoursPerWeek` and `maxHoursPerWeek` come together (the missing one is named)
+   - the description has no markup or control characters (`VacancyDescriptionContentValidator`, named
+     `description.<field>`)
    - the offer has a salary or holidays (`offer`)
    - a salary needs `currency` and `salaryPeriod`
    - `salaryMin` is not greater than `salaryMax` (`offer.salaryMin`)
-3. `VacancyOfferRequestMapper` builds the domain objects. This normalises the phone number (`PhoneNumber`) and lower-cases the
-   e-mail address.
-4. `SetVacancyOfferService` loads the vacancy (`404`), replaces contact person and offer as a whole (a field left out is
-   cleared, PUT semantics), and saves (`409` on a concurrent change).
-5. Returns `200` with the `VacancyResponse`.
+3. `VacancyUpdateRequestMapper` builds an `UpdateVacancyCommand`. A field that is left out or `null` stays `null` in
+   the command. A description becomes a `MANUAL` one. The phone number is normalised (`PhoneNumber`) and the e-mail
+   address lower-cased.
+4. `UpdateVacancyService` loads the vacancy (`404`) and replaces every part that was sent. It leaves the rest
+   unchanged, then saves (`409` on a concurrent change).
+5. Returns `200` with the `VacancyResponse`. A body without fields changes nothing and returns the vacancy as it is.
 
-The controller does not log the request: it holds personal data.
+Each part is replaced as a whole (`location`, `description`, `contactPerson`, `offer`), not merged field by field.
+A field left out inside a part that is sent is cleared, so the cross-field rules can be checked on the request alone.
+A `null` field is treated as left out, so a part cannot be cleared (see "Known gaps").
+
+### Set the contact person and offer — `PUT /vacancy/{id}/offer` (deprecated)
+
+The older endpoint for the creation step where the user fills in contact person and offer. It is deprecated in the
+contract in favour of `PATCH`, and kept until the frontend has moved. It runs the same steps through the same
+validator, mapper and `UpdateVacancyService`, with both parts required. The result is identical to a `PATCH` that
+sends `contactPerson` and `offer`.
+
+The controller logs neither request: they hold personal data.
 
 ## Contract-only operations
 
-The contract also defines list, get, update (`PATCH`, which accepts `language`), delete (soft delete, status
-`ARCHIVED`), publish, fill and close. None of this is implemented: the controller answers these with `501` problem
-details (`EndpointNotImplementedException`). The domain has no `ARCHIVED` status yet. `PATCH` still lists
-`contactPerson` and `offer`; they are set through `PUT /vacancy/{id}/offer` instead.
+The contract also defines list, get, delete (soft delete, status `ARCHIVED`), publish, fill and close. None of
+these is implemented: the controller answers them with `501` problem details (`EndpointNotImplementedException`). The
+domain has no `ARCHIVED` status yet.
 
 ## Persistence
 
@@ -110,9 +126,14 @@ details (`EndpointNotImplementedException`). The domain has no `ARCHIVED` status
 
 ## Known gaps
 
-- `PATCH /vacancy/{id}` (`501`) still accepts `contactPerson` and `offer` in the contract, next to
-  `PUT /vacancy/{id}/offer`. Remove them from `VacancyUpdateRequest` (breaking) when `PATCH` is built.
-- Contact person and offer can be changed in every status, also `PUBLISHED`. Once publishing exists, a change to a
+- `PATCH /vacancy/{id}` treats `null` as "leave unchanged", unlike JSON Merge Patch (RFC 7396), where `null`
+  removes a field. The description, contact person and offer therefore cannot be removed once set. Supporting this
+  needs a way to tell an absent field from `null` in the generated model: `openApiNullable` is off, and its
+  `JsonNullable` would first have to be checked against Jackson 3.
+- `PATCH` allows a `jobTitle` of 0–200 characters, while `POST /vacancy` allows 2–100. Aligning them is a breaking
+  contract change.
+- `PUT /vacancy/{id}/offer` is deprecated. Remove it (breaking) once the frontend uses `PATCH`.
+- Every part of a vacancy can be changed in every status, also `PUBLISHED`. Once publishing exists, a change to a
   published vacancy has to reach the job boards.
 
 - The client never sends the version it last saw (no `ETag`/`If-Match`), so a user who edits a stale copy in the
