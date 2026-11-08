@@ -1,6 +1,6 @@
 package eu.talmar.api.adapter.in.rest.identity.mapper.request;
 
-import eu.talmar.api.application.port.in.command.OnboardUserCommand;
+import eu.talmar.api.application.port.in.identity.command.OnboardUserCommand;
 import eu.talmar.api.identity.adapter.in.web.contract.OnboardingRequest;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

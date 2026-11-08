@@ -8,9 +8,9 @@ import eu.talmar.api.adapter.in.rest.vacancy.mapper.response.VacancyDescriptionR
 import eu.talmar.api.adapter.in.rest.vacancy.mapper.response.VacancyResponseMapper;
 import eu.talmar.api.adapter.in.rest.vacancy.validation.VacancyDescriptionContentValidator;
 import eu.talmar.api.adapter.in.rest.vacancy.validation.VacancyUpdateRequestValidator;
-import eu.talmar.api.application.port.in.CreateVacancyUseCase;
-import eu.talmar.api.application.port.in.ManualVacancyDescriptionUseCase;
-import eu.talmar.api.application.port.in.UpdateVacancyUseCase;
+import eu.talmar.api.application.port.in.vacancy.CreateVacancyUseCase;
+import eu.talmar.api.application.port.in.vacancy.ManualVacancyDescriptionUseCase;
+import eu.talmar.api.application.port.in.vacancy.UpdateVacancyUseCase;
 import eu.talmar.api.vacancy.adapter.in.rest.VacancyApi;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyCategory;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyCoreRequest;

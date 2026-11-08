@@ -1,6 +1,6 @@
 package eu.talmar.api.adapter.in.rest.vacancy.mapper.request;
 
-import eu.talmar.api.application.port.in.command.SetManualVacancyDescriptionCommand;
+import eu.talmar.api.application.port.in.vacancy.command.SetManualVacancyDescriptionCommand;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyDescriptionRequest;
 import java.util.UUID;
 import org.mapstruct.Mapper;

@@ -1,6 +1,6 @@
 package eu.talmar.api.adapter.in.rest.vacancy.mapper.request;
 
-import eu.talmar.api.application.port.in.command.UpdateVacancyCommand;
+import eu.talmar.api.application.port.in.vacancy.command.UpdateVacancyCommand;
 import eu.talmar.api.domain.identity.valueobject.EmailAddress;
 import eu.talmar.api.domain.vacancy.valueobject.HoursPerWeek;
 import eu.talmar.api.domain.vacancy.valueobject.PhoneNumber;

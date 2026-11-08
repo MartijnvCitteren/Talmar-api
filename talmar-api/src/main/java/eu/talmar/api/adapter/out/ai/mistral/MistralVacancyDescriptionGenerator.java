@@ -1,7 +1,7 @@
 package eu.talmar.api.adapter.out.ai.mistral;
 
-import eu.talmar.api.application.port.out.GenerationResult;
-import eu.talmar.api.application.port.out.VacancyDescriptionGenerator;
+import eu.talmar.api.application.port.out.generation.GenerationResult;
+import eu.talmar.api.application.port.out.vacancy.VacancyDescriptionGenerator;
 import eu.talmar.api.domain.generation.valueobject.GeneratedDraft;
 import eu.talmar.api.domain.generation.valueobject.GenerationFailureReason;
 import eu.talmar.api.domain.generation.valueobject.GenerationInput;

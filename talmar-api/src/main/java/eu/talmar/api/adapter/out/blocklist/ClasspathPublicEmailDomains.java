@@ -1,6 +1,6 @@
 package eu.talmar.api.adapter.out.blocklist;
 
-import eu.talmar.api.application.port.out.PublicEmailDomains;
+import eu.talmar.api.application.port.out.identity.PublicEmailDomains;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;

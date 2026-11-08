@@ -1,7 +1,7 @@
 package eu.talmar.api.adapter.out.persistence.identity;
 
 import eu.talmar.api.adapter.out.persistence.identity.mapper.CompanyJpaMapper;
-import eu.talmar.api.application.port.out.CompanyRepository;
+import eu.talmar.api.application.port.out.company.CompanyRepository;
 import eu.talmar.api.domain.identity.Company;
 import java.util.Optional;
 import java.util.UUID;

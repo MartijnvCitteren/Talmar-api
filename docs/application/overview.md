@@ -24,9 +24,9 @@ HTTP ─▶ Security filter chain (uses a valid bearer token, ignores an invalid
         Controller (implements generated *Api interface)
           │  1. bean validation on the generated contract model (@Valid from the spec)
           │  2. adapter-level content validation (e.g. no raw HTML)
-          │  3. request mapper: contract model ─▶ command (application/port/in/command)
+          │  3. request mapper: contract model ─▶ command (application/port/in/<aggregate>/command)
           ▼
-        Use case (application/service, implements a port/in interface)
+        Use case (application/service/<aggregate>, implements a port/in interface)
           │  loads/creates the domain object, calls domain behaviour, saves via a port/out interface
           ▼
         Repository adapter (adapter/out/persistence, implements port/out)
@@ -42,8 +42,11 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 - **Domain** (`eu.talmar.api.domain`): plain Java, no framework or JSpecify. Aggregates guard their own invariants
   with `Objects.requireNonNull` in builders and checks in value-object constructors. Timestamps are passed in; the
   domain never reads a clock. IDs are UUIDv7 (`UuidV7Generator`), time-ordered so they index well.
-- **Application** (`eu.talmar.api.application`): one service per use case, `@NullMarked`. Inbound ports are use-case
-  interfaces with command records; outbound ports are repository interfaces. `@Transactional` is only allowed here.
+- **Application** (`eu.talmar.api.application`): one service per use case. Services and ports are grouped per
+  aggregate (`service/<aggregate>`, `port/in/<aggregate>`, `port/out/<aggregate>`); exceptions that ports throw live in
+  `application.exception`. Inbound ports are use-case interfaces with command records (`port/in/<aggregate>/command`);
+  outbound ports are repository and provider interfaces. Every package has a `package-info.java` with `@NullMarked`:
+  it does not cover subpackages, and NullAway skips a package without it. `@Transactional` is only allowed here.
 - **Inbound REST adapter** (`adapter.in.rest`): controllers implement the generated `*Api` interfaces. MapStruct
   mappers per direction (`mapper/request`, `mapper/response`); validators for contract rules the YAML cannot express
   (`validation`, e.g. the no-markup rule for vacancy text).
