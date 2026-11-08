@@ -13,6 +13,7 @@ import eu.talmar.api.vacancy.adapter.in.web.contract.SalaryPeriod;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyCategory;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyResponse;
 import eu.talmar.api.vacancy.adapter.in.web.contract.WorkplaceType;
+import io.restassured.http.ContentType;
 import java.math.BigDecimal;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -30,12 +31,6 @@ class VacancyUpdateIntegrationTest extends BaseIntegrationTest {
 
   /** Seeded by {@code sql/existing-vacancy.sql}: Sales Manager in Amsterdam, NL, 32-40 hours. */
   private static final UUID VACANCY_ID = UUID.fromString("0199a000-0000-7000-8000-000000000011");
-
-  /**
-   * JSON is always UTF-8 (RFC 8259), but RestAssured encodes an unknown content type as ISO-8859-1
-   * unless the charset is named, which would mangle a name like "Łukasz".
-   */
-  private static final String MERGE_PATCH_JSON = "application/merge-patch+json; charset=UTF-8";
 
   private static final String PROBLEM_JSON = "application/problem+json";
 
@@ -202,7 +197,7 @@ class VacancyUpdateIntegrationTest extends BaseIntegrationTest {
 
     var response =
         given()
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(ContentType.JSON)
             .body("{\"jobTitle\": \"Chef\"}")
             .when()
             .patch("/vacancy/{id}", unknownId)
@@ -223,7 +218,7 @@ class VacancyUpdateIntegrationTest extends BaseIntegrationTest {
       String expectedField, String request) {
     var response =
         given()
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(ContentType.JSON)
             .body(request)
             .when()
             .patch("/vacancy/{id}", VACANCY_ID)
@@ -241,7 +236,7 @@ class VacancyUpdateIntegrationTest extends BaseIntegrationTest {
   @DisplayName("given a currency outside Europe, when updated then 400")
   void givenCurrencyOutsideEuropeWhenUpdatedThen400() {
     given()
-        .contentType(MERGE_PATCH_JSON)
+        .contentType(ContentType.JSON)
         .body(
             "{\"offer\": {\"salaryMin\": 3800, \"currency\": \"USD\", \"salaryPeriod\": \"MONTHLY\"}}")
         .when()
@@ -283,7 +278,7 @@ class VacancyUpdateIntegrationTest extends BaseIntegrationTest {
   private static VacancyResponse patch(UUID vacancyId, String body) {
     var response =
         given()
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(ContentType.JSON)
             .body(body)
             .when()
             .patch("/vacancy/{id}", vacancyId)

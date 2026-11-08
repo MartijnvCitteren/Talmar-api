@@ -12,6 +12,10 @@ public class Constants {
       "The request failed validation on one or more fields, see 'errors' for details.";
   public static final String UNREADABLE_REQUEST_DETAIL =
       "The request body is not valid JSON or contains a value the contract does not allow.";
+  public static final String UNSUPPORTED_MEDIA_TYPE_TITLE = "Unsupported media type";
+  public static final String UNSUPPORTED_MEDIA_TYPE_DETAIL =
+      "The request body has a content type this operation does not accept, see the 'Accept'"
+          + " header for the content types it does.";
   public static final String NOT_FOUND_TITLE = "Not found";
   public static final String VACANCY_MODIFIED_CONCURRENTLY_TITLE = "Vacancy changed";
   public static final String VACANCY_MODIFIED_CONCURRENTLY_DETAIL =

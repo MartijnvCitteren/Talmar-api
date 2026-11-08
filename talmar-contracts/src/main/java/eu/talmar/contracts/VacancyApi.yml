@@ -57,6 +57,49 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      operationId: listVacancies
+      tags: [Vacancy]
+      summary: List vacancies (internal, authenticated)
+      description: >
+        Internal owner-dashboard listing across all statuses, including `DRAFT`. This endpoint is
+        authenticated and must never be exposed to anonymous candidates — it is not the public job
+        board. A separate `GET /public/vacancy` (implicitly filtered to `PUBLISHED`) is deferred
+        until the public job board is actually built.
+
+
+        Uses keyset/cursor pagination on `id` (UUIDv7, time-ordered), which scales better than
+        offset pagination and is the natural fit for a time-ordered identifier.
+      parameters:
+        - $ref: '#/components/parameters/JobTitleFilter'
+        - $ref: '#/components/parameters/StatusFilter'
+        - $ref: '#/components/parameters/CategoryFilter'
+        - $ref: '#/components/parameters/CreatedFrom'
+        - $ref: '#/components/parameters/CreatedTo'
+        - $ref: '#/components/parameters/OpenDaysMin'
+        - $ref: '#/components/parameters/OpenDaysMax'
+        - $ref: '#/components/parameters/ContactPersonName'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortDir'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Page of vacancies matching the filters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VacancyListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -95,6 +138,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/ConcurrentModification'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -144,53 +189,10 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
         '500':
           $ref: '#/components/responses/InternalServerError'
-
-
-    get:
-      operationId: listVacancies
-      tags: [Vacancy]
-      summary: List vacancies (internal, authenticated)
-      description: >
-        Internal owner-dashboard listing across all statuses, including `DRAFT`. This endpoint is
-        authenticated and must never be exposed to anonymous candidates — it is not the public job
-        board. A separate `GET /public/vacancy` (implicitly filtered to `PUBLISHED`) is deferred
-        until the public job board is actually built.
-
-
-        Uses keyset/cursor pagination on `id` (UUIDv7, time-ordered), which scales better than
-        offset pagination and is the natural fit for a time-ordered identifier.
-      parameters:
-        - $ref: '#/components/parameters/JobTitleFilter'
-        - $ref: '#/components/parameters/StatusFilter'
-        - $ref: '#/components/parameters/CategoryFilter'
-        - $ref: '#/components/parameters/CreatedFrom'
-        - $ref: '#/components/parameters/CreatedTo'
-        - $ref: '#/components/parameters/OpenDaysMin'
-        - $ref: '#/components/parameters/OpenDaysMax'
-        - $ref: '#/components/parameters/ContactPersonName'
-        - $ref: '#/components/parameters/SortBy'
-        - $ref: '#/components/parameters/SortDir'
-        - $ref: '#/components/parameters/Cursor'
-        - $ref: '#/components/parameters/Limit'
-      responses:
-        '200':
-          description: Page of vacancies matching the filters.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/VacancyListResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-
 
   /vacancy/{id}/generate-description/{generationId}:
     parameters:
@@ -262,7 +264,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/merge-patch+json:
+          application/json:
             schema:
               $ref: '#/components/schemas/VacancyUpdateRequest'
       responses:
@@ -282,6 +284,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/ConcurrentModification'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
         '500':
           $ref: '#/components/responses/InternalServerError'
     get:
@@ -369,6 +373,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -546,6 +552,20 @@ components:
       description: >
         The request was well-formed, but its content cannot be processed; changing the input is
         needed before retrying.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    UnsupportedMediaType:
+      description: >
+        The request body has a `Content-Type` this operation does not accept, or none at all. The
+        `Accept` header lists the content types it does accept; send the body again with one of
+        them. Nothing has changed.
+      headers:
+        Accept:
+          description: The content types this operation accepts for its request body.
+          schema:
+            type: string
       content:
         application/problem+json:
           schema:

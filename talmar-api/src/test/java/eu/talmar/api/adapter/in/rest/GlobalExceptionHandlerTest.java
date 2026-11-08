@@ -10,11 +10,13 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
 class GlobalExceptionHandlerTest {
@@ -89,6 +91,25 @@ class GlobalExceptionHandlerTest {
     assertEquals(HttpStatus.NOT_IMPLEMENTED.value(), body.getStatus());
     assertEquals("Operation is not implemented yet: getVacancy", body.getDetail());
     assertEquals(URI.create("/api/v1/vacancy"), body.getInstance());
+  }
+
+  @Test
+  @DisplayName(
+      "given an unsupported content type, when handling then returns a 415 problem detail with the"
+          + " supported content types in the Accept header")
+  void
+      givenUnsupportedContentTypeWhenHandleThenReturns415WithSupportedContentTypesInAcceptHeader() {
+    var supportedMediaTypes = List.of(MediaType.APPLICATION_JSON);
+    var exception =
+        new HttpMediaTypeNotSupportedException(
+            MediaType.TEXT_PLAIN, supportedMediaTypes, HttpMethod.PATCH);
+
+    var response = handler.handleHttpMediaTypeNotSupportedException(exception, request());
+
+    assertEquals(HttpStatus.UNSUPPORTED_MEDIA_TYPE, response.getStatusCode());
+    assertEquals(MediaType.APPLICATION_PROBLEM_JSON, response.getHeaders().getContentType());
+    assertEquals(supportedMediaTypes, response.getHeaders().getAccept());
+    assertEquals(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value(), response.getBody().getStatus());
   }
 
   @Test

@@ -1,5 +1,6 @@
-package eu.talmar.api.shared.config;
+package eu.talmar.api.shared.config.security;
 
+import eu.talmar.api.shared.config.WebConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -52,6 +52,6 @@ class VacancyNotImplementedIntegrationTest extends BaseIntegrationTest {
     return Stream.of(
         arguments("getVacancy", Method.GET, VACANCY),
         arguments("deleteVacancy", Method.DELETE, VACANCY),
-        arguments("listVacancies", Method.GET, VACANCY + "/generate-description"));
+        arguments("listVacancies", Method.GET, "/vacancy"));
   }
 }

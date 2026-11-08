@@ -17,7 +17,7 @@ import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyCoreRequest;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyDescriptionRequest;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyDescriptionResponse;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyListResponse;
-rimport eu.talmar.api.vacancy.adapter.in.web.contract.VacancyResponse;
+import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyResponse;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyStatus;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyTransitionRequest;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyUpdateRequest;
@@ -74,7 +74,6 @@ public class VacancyController implements VacancyApi {
 
   @Override
   public ResponseEntity<VacancyListResponse> listVacancies(
-      UUID id,
       @Nullable String jobTitle,
       @Nullable List<VacancyStatus> status,
       @Nullable List<VacancyCategory> category,

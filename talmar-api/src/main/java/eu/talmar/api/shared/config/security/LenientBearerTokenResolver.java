@@ -1,4 +1,4 @@
-package eu.talmar.api.shared.config;
+package eu.talmar.api.shared.config.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;

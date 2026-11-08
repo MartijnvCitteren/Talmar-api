@@ -64,7 +64,8 @@ interfere.
 
 1. Bean validation on `VacancyUpdateRequest`: every field is optional; the limits and whitelists of each section are
    the same as where it is first set, and the `CurrencyCode` enum allows European currencies only (another code is an
-   unreadable body, `400`). The body is `application/merge-patch+json`.
+   unreadable body, `400`). The body is plain `application/json`, not JSON Merge Patch (RFC 7396): `null` and
+   nested objects follow the rules below, not that RFC's.
 2. `VacancyUpdateRequestValidator` checks the rules that combine fields → `400` naming the field:
    - `minHoursPerWeek` and `maxHoursPerWeek` come together (the missing one is named)
    - the description has no markup or control characters (`VacancyDescriptionContentValidator`, named
@@ -124,9 +125,8 @@ the `501`. The contract declares `409` (`Conflict`) for an action that is illega
 
 ## Known gaps
 
-- `PATCH /vacancy/{id}` treats `null` as "leave unchanged", unlike JSON Merge Patch (RFC 7396), where `null`
-  removes a field. The description, contact person and offer therefore cannot be removed once set. Supporting this
-  needs a way to tell an absent field from `null` in the generated model: `openApiNullable` is off, and its
+- `PATCH /vacancy/{id}` treats `null` as "leave unchanged", so a field cannot be cleared. The description, contact
+  person and offer therefore cannot be removed once set. Supporting this needs a way to tell an absent field from `null` in the generated model: `openApiNullable` is off, and its
   `JsonNullable` would first have to be checked against Jackson 3.
 - `PATCH` allows a `jobTitle` of 0–200 characters, while `POST /vacancy` allows 2–100. Aligning them is a breaking
   contract change.
@@ -136,9 +136,6 @@ the `501`. The contract declares `409` (`Conflict`) for an action that is illega
 - The client never sends the version it last saw (no `ETag`/`If-Match`), so a user who edits a stale copy in the
   browser still overwrites a newer change. The optimistic lock only covers overlapping requests.
 
-- `listVacancies` is declared in the contract as `GET /vacancy/{id}/generate-description` (it sits under the wrong
-  path and takes a vacancy `id`). Moving it to `GET /vacancy` is a breaking contract change; do it when the listing is
-  built.
 - `CreateVacancyService` has no `@Transactional`, unlike `SetManualVacancyDescriptionService`. Harmless with a single
   save, but inconsistent.
 - `VacancyCoreRequest` in the contract lists `hoursPerWeek` under `required`, but its properties are

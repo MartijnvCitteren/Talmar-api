@@ -1,4 +1,4 @@
-package eu.talmar.api.shared.config;
+package eu.talmar.api.shared.config.security;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
