@@ -3,7 +3,7 @@ package eu.talmar.api.adapter.in.rest.identity;
 import eu.talmar.api.adapter.in.rest.AuthenticatedUser;
 import eu.talmar.api.adapter.in.rest.identity.mapper.request.OnboardingRequestMapper;
 import eu.talmar.api.adapter.in.rest.identity.mapper.response.OnboardingResponseMapper;
-import eu.talmar.api.application.port.in.OnboardUserUseCase;
+import eu.talmar.api.application.port.in.identity.OnboardUserUseCase;
 import eu.talmar.api.identity.adapter.in.rest.OnboardingApi;
 import eu.talmar.api.identity.adapter.in.web.contract.OnboardingRequest;
 import eu.talmar.api.identity.adapter.in.web.contract.OnboardingResponse;

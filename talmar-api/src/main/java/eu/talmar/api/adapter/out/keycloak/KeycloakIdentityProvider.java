@@ -1,8 +1,8 @@
 package eu.talmar.api.adapter.out.keycloak;
 
-import eu.talmar.api.application.port.out.IdentityProfile;
-import eu.talmar.api.application.port.out.IdentityProvider;
-import eu.talmar.api.application.port.out.IdentityProviderUnavailableException;
+import eu.talmar.api.application.exception.IdentityProviderUnavailableException;
+import eu.talmar.api.application.port.out.identity.IdentityProfile;
+import eu.talmar.api.application.port.out.identity.IdentityProvider;
 import eu.talmar.api.domain.identity.valueobject.EmailAddress;
 import java.io.IOException;
 import java.net.URI;

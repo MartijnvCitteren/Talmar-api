@@ -1,7 +1,7 @@
 package eu.talmar.api.adapter.out.persistence.identity;
 
 import eu.talmar.api.adapter.out.persistence.identity.mapper.UserJpaMapper;
-import eu.talmar.api.application.port.out.UserRepository;
+import eu.talmar.api.application.port.out.identity.UserRepository;
 import eu.talmar.api.domain.identity.User;
 import eu.talmar.api.domain.identity.valueobject.EmailAddress;
 import java.util.Optional;

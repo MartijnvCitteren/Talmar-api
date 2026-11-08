@@ -64,7 +64,8 @@ interfere.
 
 1. Bean validation on `VacancyUpdateRequest`: every field is optional; the limits and whitelists of each section are
    the same as where it is first set, and the `CurrencyCode` enum allows European currencies only (another code is an
-   unreadable body, `400`). The body is `application/merge-patch+json`.
+   unreadable body, `400`). The body is plain `application/json`, not JSON Merge Patch (RFC 7396): `null` and
+   nested objects follow the rules below, not that RFC's.
 2. `VacancyUpdateRequestValidator` checks the rules that combine fields → `400` naming the field:
    - `minHoursPerWeek` and `maxHoursPerWeek` come together (the missing one is named)
    - the description has no markup or control characters (`VacancyDescriptionContentValidator`, named
@@ -83,20 +84,18 @@ Each part is replaced as a whole (`location`, `description`, `contactPerson`, `o
 A field left out inside a part that is sent is cleared, so the cross-field rules can be checked on the request alone.
 A `null` field is treated as left out, so a part cannot be cleared (see "Known gaps").
 
-### Set the contact person and offer — `PUT /vacancy/{id}/offer` (deprecated)
-
-The older endpoint for the creation step where the user fills in contact person and offer. It is deprecated in the
-contract in favour of `PATCH`, and kept until the frontend has moved. It runs the same steps through the same
-validator, mapper and `UpdateVacancyService`, with both parts required. The result is identical to a `PATCH` that
-sends `contactPerson` and `offer`.
-
-The controller logs neither request: they hold personal data.
+The creation step where the user fills in contact person and offer uses this endpoint too. The controller does not
+log the request: it can hold personal data.
 
 ## Contract-only operations
 
-The contract also defines list, get, delete (soft delete, status `ARCHIVED`), publish, fill and close. None of
-these is implemented: the controller answers them with `501` problem details (`EndpointNotImplementedException`). The
-domain has no `ARCHIVED` status yet.
+The contract also defines list, get, delete (soft delete, status `ARCHIVED`) and status transitions. None of these is
+implemented: the controller answers them with `501` problem details (`EndpointNotImplementedException`). The domain
+has no `ARCHIVED` status yet.
+
+All status transitions go through one endpoint, `POST /vacancy/{id}/transitions`, with a body
+`{"action": "PUBLISH" | "FILL" | "CLOSE"}`. Bean validation rejects a missing or unknown `action` with `400` before
+the `501`. The contract declares `409` (`Conflict`) for an action that is illegal from the current status.
 
 ## Persistence
 
@@ -126,22 +125,17 @@ domain has no `ARCHIVED` status yet.
 
 ## Known gaps
 
-- `PATCH /vacancy/{id}` treats `null` as "leave unchanged", unlike JSON Merge Patch (RFC 7396), where `null`
-  removes a field. The description, contact person and offer therefore cannot be removed once set. Supporting this
-  needs a way to tell an absent field from `null` in the generated model: `openApiNullable` is off, and its
+- `PATCH /vacancy/{id}` treats `null` as "leave unchanged", so a field cannot be cleared. The description, contact
+  person and offer therefore cannot be removed once set. Supporting this needs a way to tell an absent field from `null` in the generated model: `openApiNullable` is off, and its
   `JsonNullable` would first have to be checked against Jackson 3.
 - `PATCH` allows a `jobTitle` of 0–200 characters, while `POST /vacancy` allows 2–100. Aligning them is a breaking
   contract change.
-- `PUT /vacancy/{id}/offer` is deprecated. Remove it (breaking) once the frontend uses `PATCH`.
 - Every part of a vacancy can be changed in every status, also `PUBLISHED`. Once publishing exists, a change to a
   published vacancy has to reach the job boards.
 
 - The client never sends the version it last saw (no `ETag`/`If-Match`), so a user who edits a stale copy in the
   browser still overwrites a newer change. The optimistic lock only covers overlapping requests.
 
-- `listVacancies` is declared in the contract as `GET /vacancy/{id}/generate-description` (it sits under the wrong
-  path and takes a vacancy `id`). Moving it to `GET /vacancy` is a breaking contract change; do it when the listing is
-  built.
 - `CreateVacancyService` has no `@Transactional`, unlike `SetManualVacancyDescriptionService`. Harmless with a single
   save, but inconsistent.
 - `VacancyCoreRequest` in the contract lists `hoursPerWeek` under `required`, but its properties are

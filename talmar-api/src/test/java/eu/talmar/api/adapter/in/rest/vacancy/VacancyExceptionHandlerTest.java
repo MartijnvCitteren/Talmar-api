@@ -2,8 +2,10 @@ package eu.talmar.api.adapter.in.rest.vacancy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import eu.talmar.api.application.port.out.VacancyModifiedConcurrentlyException;
-import eu.talmar.api.domain.vacancy.VacancyNotFoundException;
+import eu.talmar.api.adapter.in.rest.vacancy.exception.InvalidVacancyDescriptionRequestException;
+import eu.talmar.api.adapter.in.rest.vacancy.exception.InvalidVacancyUpdateRequestException;
+import eu.talmar.api.application.exception.VacancyModifiedConcurrentlyException;
+import eu.talmar.api.domain.vacancy.exception.VacancyNotFoundException;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

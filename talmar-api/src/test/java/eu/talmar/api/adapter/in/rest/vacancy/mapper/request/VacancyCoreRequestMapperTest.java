@@ -2,7 +2,7 @@ package eu.talmar.api.adapter.in.rest.vacancy.mapper.request;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import eu.talmar.api.application.port.in.command.CreateCoreVacancyCommand;
+import eu.talmar.api.application.port.in.vacancy.command.CreateCoreVacancyCommand;
 import eu.talmar.api.domain.vacancy.valueobject.HoursPerWeek;
 import eu.talmar.api.vacancy.adapter.in.web.contract.Language;
 import eu.talmar.api.vacancy.adapter.in.web.contract.Location;

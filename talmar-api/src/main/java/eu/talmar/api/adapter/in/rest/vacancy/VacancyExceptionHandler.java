@@ -1,7 +1,9 @@
 package eu.talmar.api.adapter.in.rest.vacancy;
 
-import eu.talmar.api.application.port.out.VacancyModifiedConcurrentlyException;
-import eu.talmar.api.domain.vacancy.VacancyNotFoundException;
+import eu.talmar.api.adapter.in.rest.vacancy.exception.InvalidVacancyDescriptionRequestException;
+import eu.talmar.api.adapter.in.rest.vacancy.exception.InvalidVacancyUpdateRequestException;
+import eu.talmar.api.application.exception.VacancyModifiedConcurrentlyException;
+import eu.talmar.api.domain.vacancy.exception.VacancyNotFoundException;
 import eu.talmar.api.shared.Constants;
 import eu.talmar.api.vacancy.adapter.in.web.contract.ProblemDetails;
 import eu.talmar.api.vacancy.adapter.in.web.contract.ProblemDetailsErrorsInner;

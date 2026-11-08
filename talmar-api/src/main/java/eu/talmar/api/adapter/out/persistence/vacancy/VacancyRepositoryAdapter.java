@@ -2,8 +2,8 @@ package eu.talmar.api.adapter.out.persistence.vacancy;
 
 import eu.talmar.api.adapter.out.persistence.vacancy.mapper.VacancyDescriptionJpaMapper;
 import eu.talmar.api.adapter.out.persistence.vacancy.mapper.VacancyJpaMapper;
-import eu.talmar.api.application.port.out.VacancyModifiedConcurrentlyException;
-import eu.talmar.api.application.port.out.VacancyRepository;
+import eu.talmar.api.application.exception.VacancyModifiedConcurrentlyException;
+import eu.talmar.api.application.port.out.vacancy.VacancyRepository;
 import eu.talmar.api.domain.vacancy.Vacancy;
 import java.util.Optional;
 import java.util.UUID;
