@@ -31,7 +31,12 @@ class VacancyUpdateIntegrationTest extends BaseIntegrationTest {
   /** Seeded by {@code sql/existing-vacancy.sql}: Sales Manager in Amsterdam, NL, 32-40 hours. */
   private static final UUID VACANCY_ID = UUID.fromString("0199a000-0000-7000-8000-000000000011");
 
-  private static final String MERGE_PATCH_JSON = "application/merge-patch+json";
+  /**
+   * JSON is always UTF-8 (RFC 8259), but RestAssured encodes an unknown content type as ISO-8859-1
+   * unless the charset is named, which would mangle a name like "Łukasz".
+   */
+  private static final String MERGE_PATCH_JSON = "application/merge-patch+json; charset=UTF-8";
+
   private static final String PROBLEM_JSON = "application/problem+json";
 
   @Test
@@ -115,6 +120,73 @@ class VacancyUpdateIntegrationTest extends BaseIntegrationTest {
   }
 
   @Test
+  @DisplayName(
+      "given an existing vacancy, when a contact person and offer are sent then phone and e-mail"
+          + " are normalised and salaries rounded to cents")
+  void givenExistingVacancyWhenContactPersonAndOfferSentThenNormalisedAndRounded() {
+    var request =
+        """
+        {
+          "contactPerson": {
+            "name": "Łukasz Kowalski",
+            "role": "Hiring manager",
+            "phone": "0048 (0)601-234 567",
+            "email": "Lukasz.Kowalski@acme.pl"
+          },
+          "offer": {
+            "salaryMin": 3800.745,
+            "salaryMax": 4600,
+            "currency": "PLN",
+            "salaryPeriod": "MONTHLY",
+            "numberOfHolidays": 26
+          }
+        }
+        """;
+
+    var vacancy = patch(VACANCY_ID, request);
+
+    var contactPerson = vacancy.getContactPerson();
+    assertEquals("Łukasz Kowalski", contactPerson.getName());
+    assertEquals("Hiring manager", contactPerson.getRole());
+    assertEquals("+48601234567", contactPerson.getPhone());
+    assertEquals("lukasz.kowalski@acme.pl", contactPerson.getEmail());
+    var offer = vacancy.getOffer();
+    assertEquals(new BigDecimal("3800.75"), offer.getSalaryMin());
+    assertEquals(new BigDecimal("4600.00"), offer.getSalaryMax());
+    assertEquals(CurrencyCode.PLN, offer.getCurrency());
+    assertEquals(SalaryPeriod.MONTHLY, offer.getSalaryPeriod());
+    assertEquals(0, new BigDecimal("26").compareTo(offer.getNumberOfHolidays()));
+  }
+
+  @Test
+  @DisplayName(
+      "given a vacancy with a contact person, when a contact person with fewer fields is sent then"
+          + " the left-out fields are cleared")
+  void givenVacancyWithContactPersonWhenFewerFieldsSentThenLeftOutFieldsCleared() {
+    patch(
+        VACANCY_ID,
+        """
+        {
+          "contactPerson": {
+            "name": "Sanne de Vries",
+            "role": "Hiring manager",
+            "phone": "+31 6 12345678",
+            "email": "sanne@acme.nl"
+          }
+        }
+        """);
+
+    var vacancy =
+        patch(
+            VACANCY_ID,
+            "{\"contactPerson\": {\"name\": \"Sanne de Vries\", \"email\": \"sanne@acme.nl\"}}");
+
+    assertEquals("Sanne de Vries", vacancy.getContactPerson().getName());
+    assertNull(vacancy.getContactPerson().getRole());
+    assertNull(vacancy.getContactPerson().getPhone());
+  }
+
+  @Test
   @DisplayName("given an existing vacancy, when a field is sent as null then it stays as it was")
   void givenExistingVacancyWhenFieldSentAsNullThenItStaysAsItWas() {
     var vacancy = patch(VACANCY_ID, "{\"jobTitle\": null, \"location\": null}");
@@ -165,6 +237,20 @@ class VacancyUpdateIntegrationTest extends BaseIntegrationTest {
     assertEquals(expectedField, problemDetails.getErrors().getFirst().getField());
   }
 
+  @Test
+  @DisplayName("given a currency outside Europe, when updated then 400")
+  void givenCurrencyOutsideEuropeWhenUpdatedThen400() {
+    given()
+        .contentType(MERGE_PATCH_JSON)
+        .body(
+            "{\"offer\": {\"salaryMin\": 3800, \"currency\": \"USD\", \"salaryPeriod\": \"MONTHLY\"}}")
+        .when()
+        .patch("/vacancy/{id}", VACANCY_ID)
+        .then()
+        .statusCode(HttpStatus.BAD_REQUEST.value())
+        .contentType(PROBLEM_JSON);
+  }
+
   static Stream<Arguments> invalidRequests() {
     return Stream.of(
         Arguments.of("maxHoursPerWeek", "{\"minHoursPerWeek\": 32}"),
@@ -173,11 +259,25 @@ class VacancyUpdateIntegrationTest extends BaseIntegrationTest {
         Arguments.of("location.country", "{\"location\": {\"country\": \"nl\", \"city\": \"A\"}}"),
         Arguments.of("description.summary", "{\"description\": {\"summary\": \"<b>Hi</b>\"}}"),
         Arguments.of(
+            "contactPerson.name",
+            "{\"contactPerson\": {\"name\": \"Sanne <b>\", \"email\": \"sanne@acme.nl\"}}"),
+        Arguments.of(
             "contactPerson.email",
             "{\"contactPerson\": {\"name\": \"Sanne de Vries\", \"email\": \"not-an-address\"}}"),
+        Arguments.of(
+            "contactPerson.phone",
+            "{\"contactPerson\": {\"name\": \"Sanne de Vries\", \"email\": \"sanne@acme.nl\","
+                + " \"phone\": \"call me\"}}"),
         Arguments.of("offer", "{\"offer\": {}}"),
         Arguments.of(
-            "offer.currency", "{\"offer\": {\"salaryMin\": 3800, \"salaryPeriod\": \"MONTHLY\"}}"));
+            "offer.currency", "{\"offer\": {\"salaryMin\": 3800, \"salaryPeriod\": \"MONTHLY\"}}"),
+        Arguments.of(
+            "offer.salaryPeriod", "{\"offer\": {\"salaryMin\": 3800, \"currency\": \"EUR\"}}"),
+        Arguments.of(
+            "offer.salaryMin",
+            "{\"offer\": {\"salaryMin\": 4600.01, \"salaryMax\": 4600, \"currency\": \"EUR\","
+                + " \"salaryPeriod\": \"MONTHLY\"}}"),
+        Arguments.of("offer.numberOfHolidays", "{\"offer\": {\"numberOfHolidays\": 61}}"));
   }
 
   private static VacancyResponse patch(UUID vacancyId, String body) {

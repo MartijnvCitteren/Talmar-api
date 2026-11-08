@@ -11,7 +11,6 @@ import eu.talmar.api.vacancy.adapter.in.web.contract.CurrencyCode;
 import eu.talmar.api.vacancy.adapter.in.web.contract.Offer;
 import eu.talmar.api.vacancy.adapter.in.web.contract.SalaryPeriod;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyDescriptionRequest;
-import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyOfferRequest;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyUpdateRequest;
 import java.math.BigDecimal;
 import java.util.stream.Stream;
@@ -172,7 +171,9 @@ class VacancyUpdateRequestValidatorTest {
                 .salaryPeriod(SalaryPeriod.MONTHLY)));
   }
 
-  private static VacancyOfferRequest requestWith(Offer offer) {
-    return new VacancyOfferRequest(new ContactPerson("Sanne de Vries", "sanne@acme.nl"), offer);
+  private static VacancyUpdateRequest requestWith(Offer offer) {
+    return new VacancyUpdateRequest()
+        .contactPerson(new ContactPerson("Sanne de Vries", "sanne@acme.nl"))
+        .offer(offer);
   }
 }

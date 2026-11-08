@@ -17,9 +17,9 @@ import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyCoreRequest;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyDescriptionRequest;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyDescriptionResponse;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyListResponse;
-import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyOfferRequest;
-import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyResponse;
+rimport eu.talmar.api.vacancy.adapter.in.web.contract.VacancyResponse;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyStatus;
+import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyTransitionRequest;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyUpdateRequest;
 import java.time.LocalDate;
 import java.util.List;
@@ -32,8 +32,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Only {@link #createVacancy}, {@link #manualVacancyDescription}, {@link #updateVacancy} and {@link
- * #setVacancyOffer} are wired up so far; the description-generation operations live in {@code
+ * Only {@link #createVacancy}, {@link #manualVacancyDescription} and {@link #updateVacancy} are
+ * wired up so far; the description-generation operations live in {@code
  * VacancyDescriptionGenerationController}. The generated {@link VacancyApi} has no default methods
  * ({@code skipDefaultInterface}), so every other operation throws {@link
  * EndpointNotImplementedException}, which responds with 501 Not Implemented.
@@ -54,11 +54,6 @@ public class VacancyController implements VacancyApi {
   private final UpdateVacancyUseCase updateVacancyUseCase;
 
   @Override
-  public ResponseEntity<VacancyResponse> closeVacancy(UUID id) {
-    throw new EndpointNotImplementedException("closeVacancy");
-  }
-
-  @Override
   public ResponseEntity<VacancyResponse> createVacancy(VacancyCoreRequest vacancyCoreRequest) {
     log.info("Received creation request: {}", vacancyCoreRequest);
     var createCoreVacancyCommand = coreRequestMapper.toCommand(vacancyCoreRequest);
@@ -70,11 +65,6 @@ public class VacancyController implements VacancyApi {
   @Override
   public ResponseEntity<Void> deleteVacancy(UUID id) {
     throw new EndpointNotImplementedException("deleteVacancy");
-  }
-
-  @Override
-  public ResponseEntity<VacancyResponse> fillVacancy(UUID id) {
-    throw new EndpointNotImplementedException("fillVacancy");
   }
 
   @Override
@@ -111,22 +101,9 @@ public class VacancyController implements VacancyApi {
   }
 
   @Override
-  public ResponseEntity<VacancyResponse> publishVacancy(UUID id) {
-    throw new EndpointNotImplementedException("publishVacancy");
-  }
-
-  /**
-   * @deprecated replaced by {@link #updateVacancy}, which takes the same contact person and offer;
-   *     kept until the frontend has moved over.
-   */
-  @Deprecated
-  @Override
-  public ResponseEntity<VacancyResponse> setVacancyOffer(
-      UUID id, VacancyOfferRequest vacancyOfferRequest) {
-    updateRequestValidator.validate(vacancyOfferRequest);
-    var command = updateRequestMapper.toCommand(id, vacancyOfferRequest);
-    var vacancy = updateVacancyUseCase.updateVacancy(command);
-    return ResponseEntity.ok(responseMapper.toVacancyResponse(vacancy));
+  public ResponseEntity<VacancyResponse> transitionVacancy(
+      UUID id, VacancyTransitionRequest vacancyTransitionRequest) {
+    throw new EndpointNotImplementedException("transitionVacancy");
   }
 
   @Override
