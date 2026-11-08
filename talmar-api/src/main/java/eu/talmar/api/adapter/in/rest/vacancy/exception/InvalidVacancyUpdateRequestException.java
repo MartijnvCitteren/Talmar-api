@@ -1,4 +1,4 @@
-package eu.talmar.api.adapter.in.rest.vacancy;
+package eu.talmar.api.adapter.in.rest.vacancy.exception;
 
 import eu.talmar.api.shared.exception.BaseException;
 

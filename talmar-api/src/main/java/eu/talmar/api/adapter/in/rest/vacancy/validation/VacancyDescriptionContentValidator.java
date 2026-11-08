@@ -1,6 +1,6 @@
 package eu.talmar.api.adapter.in.rest.vacancy.validation;
 
-import eu.talmar.api.adapter.in.rest.vacancy.InvalidVacancyDescriptionRequestException;
+import eu.talmar.api.adapter.in.rest.vacancy.exception.InvalidVacancyDescriptionRequestException;
 import eu.talmar.api.shared.validation.TextContentRules;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyDescriptionRequest;
 import org.springframework.stereotype.Component;

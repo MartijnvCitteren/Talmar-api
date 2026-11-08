@@ -1,6 +1,7 @@
 package eu.talmar.api.adapter.in.rest.vacancy.validation;
 
-import eu.talmar.api.adapter.in.rest.vacancy.InvalidVacancyUpdateRequestException;
+import eu.talmar.api.adapter.in.rest.vacancy.exception.InvalidVacancyUpdateRequestException;
+import eu.talmar.api.adapter.in.rest.vacancy.exception.InvalidVacancyDescriptionRequestException;
 import eu.talmar.api.vacancy.adapter.in.web.contract.Offer;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyOfferRequest;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyUpdateRequest;
@@ -33,7 +34,7 @@ public class VacancyUpdateRequestValidator {
    *
    * @param request the request to validate
    * @throws InvalidVacancyUpdateRequestException naming the first field that breaks a rule
-   * @throws eu.talmar.api.adapter.in.rest.vacancy.InvalidVacancyDescriptionRequestException if the
+   * @throws InvalidVacancyDescriptionRequestException if the
    *     description contains markup or control characters
    */
   public void validate(VacancyUpdateRequest request) {

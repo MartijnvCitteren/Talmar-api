@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import eu.talmar.api.adapter.in.rest.vacancy.InvalidVacancyDescriptionRequestException;
-import eu.talmar.api.adapter.in.rest.vacancy.InvalidVacancyUpdateRequestException;
+import eu.talmar.api.adapter.in.rest.vacancy.exception.InvalidVacancyDescriptionRequestException;
+import eu.talmar.api.adapter.in.rest.vacancy.exception.InvalidVacancyUpdateRequestException;
 import eu.talmar.api.vacancy.adapter.in.web.contract.ContactPerson;
 import eu.talmar.api.vacancy.adapter.in.web.contract.CurrencyCode;
 import eu.talmar.api.vacancy.adapter.in.web.contract.Offer;
