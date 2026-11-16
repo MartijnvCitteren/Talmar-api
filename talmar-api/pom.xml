@@ -16,7 +16,7 @@
   <description>Talmar - making recruitment easy</description>
 
   <properties>
-    <openapi-generator.version>7.26.0</openapi-generator.version>
+    <openapi-generator.version>7.27.0</openapi-generator.version>
     <vacancy-api.spec>${project.basedir}/../talmar-contracts/src/main/java/eu/talmar/contracts/VacancyApi.yml
     </vacancy-api.spec>
     <identity-api.spec>${project.basedir}/../talmar-contracts/src/main/java/eu/talmar/contracts/IdentityApi.yml
