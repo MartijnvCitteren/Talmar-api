@@ -45,19 +45,13 @@ public class SecurityConfig {
         .cors(Customizer.withDefaults())
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authorizeHttpRequests(
-            requests ->
-                requests
-                    .requestMatchers("/onboarding", "/me")
-                    .authenticated()
-                    .anyRequest()
-                    .permitAll())
-        .oauth2ResourceServer(
-            resourceServer ->
-                resourceServer
-                    .bearerTokenResolver(new LenientBearerTokenResolver(jwtDecoder))
-                    .jwt(Customizer.withDefaults())
-                    .authenticationEntryPoint(new BearerChallengeEntryPoint()))
+        .authorizeHttpRequests(requests ->
+            requests.requestMatchers("/onboarding", "/me").authenticated().anyRequest().permitAll())
+        .oauth2ResourceServer(resourceServer ->
+            resourceServer
+                .bearerTokenResolver(new LenientBearerTokenResolver(jwtDecoder))
+                .jwt(Customizer.withDefaults())
+                .authenticationEntryPoint(new BearerChallengeEntryPoint()))
         .build();
   }
 }

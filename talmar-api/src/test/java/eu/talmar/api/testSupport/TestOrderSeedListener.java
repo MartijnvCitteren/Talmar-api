@@ -16,10 +16,8 @@ public class TestOrderSeedListener implements TestExecutionListener {
     testPlan
         .getConfigurationParameters()
         .get(SEED_PARAMETER)
-        .ifPresent(
-            seed ->
-                System.out.printf(
-                    "Random test order seed: %s (reproduce with -Dtest.order.seed=%s)%n",
-                    seed, seed));
+        .ifPresent(seed ->
+            System.out.printf(
+                "Random test order seed: %s (reproduce with -Dtest.order.seed=%s)%n", seed, seed));
   }
 }

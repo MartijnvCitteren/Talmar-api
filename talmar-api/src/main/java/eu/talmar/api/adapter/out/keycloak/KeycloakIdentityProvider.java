@@ -126,21 +126,19 @@ class KeycloakIdentityProvider implements IdentityProvider {
     var organizations =
         restClient
             .get()
-            .uri(
-                uri ->
-                    uri.path("/organizations")
-                        .queryParam("search", emailDomain)
-                        .queryParam("exact", true)
-                        .build())
+            .uri(uri ->
+                uri.path("/organizations")
+                    .queryParam("search", emailDomain)
+                    .queryParam("exact", true)
+                    .build())
             .retrieve()
             .body(ORGANIZATIONS);
     return Objects.requireNonNull(organizations, "Keycloak returned no organization list").stream()
         .filter(organization -> organization.hasDomain(emailDomain))
         .findFirst()
         .map(KeycloakOrganization::id)
-        .orElseThrow(
-            () ->
-                new IllegalStateException("Keycloak reported a conflict but has no organization"));
+        .orElseThrow(() ->
+            new IllegalStateException("Keycloak reported a conflict but has no organization"));
   }
 
   /** Keycloak returns the new organization's URL; its last path segment is the id. */
