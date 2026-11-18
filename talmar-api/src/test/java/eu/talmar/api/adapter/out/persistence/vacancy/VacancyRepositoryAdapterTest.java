@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import eu.talmar.api.adapter.out.persistence.vacancy.mapper.VacancyDescriptionJpaMapperImpl;
 import eu.talmar.api.adapter.out.persistence.vacancy.mapper.VacancyJpaMapperImpl;
-import eu.talmar.api.application.port.out.VacancyModifiedConcurrentlyException;
+import eu.talmar.api.application.exception.VacancyModifiedConcurrentlyException;
 import eu.talmar.api.domain.vacancy.valueobject.VacancyDescription;
 import eu.talmar.api.domain.vacancy.valueobject.VacancyDescriptionSource;
 import eu.talmar.api.testSupport.VacancyFactory;

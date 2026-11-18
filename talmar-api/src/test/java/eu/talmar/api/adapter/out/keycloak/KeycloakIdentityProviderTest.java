@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
-import eu.talmar.api.application.port.out.IdentityProviderUnavailableException;
+import eu.talmar.api.application.exception.IdentityProviderUnavailableException;
 import eu.talmar.api.domain.identity.valueobject.EmailAddress;
 import java.util.List;
 import java.util.Map;

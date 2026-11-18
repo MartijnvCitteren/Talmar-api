@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -104,6 +105,29 @@ public class GlobalExceptionHandler {
     problemDetails.setInstance(URI.create(request.getRequestURI()));
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(problemDetails);
+  }
+
+  /**
+   * Turns a request body with a content type the operation does not accept (e.g. {@code text/plain}
+   * on an operation that takes {@code application/json}, or no content type at all) into an RFC
+   * 9457 415 problem response. Spring rejects such a request before any controller runs, so without
+   * this the catch-all below would answer a client mistake with a 500. The {@code Accept} header
+   * lists the content types the operation does take, as RFC 9110 (section 15.5.16) recommends, so
+   * the client can correct the request without reading the contract.
+   */
+  @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+  ResponseEntity<ProblemDetails> handleHttpMediaTypeNotSupportedException(
+      HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
+    log.warn("Unsupported request content type: {}", ex.getContentType());
+    var problemDetails =
+        new ProblemDetails(
+            Constants.UNSUPPORTED_MEDIA_TYPE_TITLE, HttpStatus.UNSUPPORTED_MEDIA_TYPE.value());
+    problemDetails.setDetail(Constants.UNSUPPORTED_MEDIA_TYPE_DETAIL);
+    problemDetails.setInstance(URI.create(request.getRequestURI()));
+    return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .headers(headers -> headers.setAccept(ex.getSupportedMediaTypes()))
         .body(problemDetails);
   }
 

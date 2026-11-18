@@ -1,6 +1,6 @@
 package eu.talmar.api.adapter.in.rest.identity.mapper.request;
 
-import eu.talmar.api.application.port.in.command.ChangeNameCommand;
+import eu.talmar.api.application.port.in.identity.command.ChangeNameCommand;
 import eu.talmar.api.identity.adapter.in.web.contract.NameChangeRequest;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

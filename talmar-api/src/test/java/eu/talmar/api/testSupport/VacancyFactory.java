@@ -1,6 +1,6 @@
 package eu.talmar.api.testSupport;
 
-import eu.talmar.api.application.port.in.command.CreateCoreVacancyCommand;
+import eu.talmar.api.application.port.in.vacancy.command.CreateCoreVacancyCommand;
 import eu.talmar.api.domain.identity.valueobject.EmailAddress;
 import eu.talmar.api.domain.vacancy.Vacancy;
 import eu.talmar.api.domain.vacancy.valueobject.ContactPerson;

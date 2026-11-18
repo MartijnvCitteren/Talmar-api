@@ -2,7 +2,7 @@ package eu.talmar.api.adapter.in.rest.identity;
 
 import eu.talmar.api.adapter.in.rest.AuthenticatedUser;
 import eu.talmar.api.adapter.in.rest.identity.mapper.request.NameChangeRequestMapper;
-import eu.talmar.api.application.port.in.ChangeNameUseCase;
+import eu.talmar.api.application.port.in.identity.ChangeNameUseCase;
 import eu.talmar.api.identity.adapter.in.rest.MeApi;
 import eu.talmar.api.identity.adapter.in.web.contract.NameChangeRequest;
 import lombok.RequiredArgsConstructor;

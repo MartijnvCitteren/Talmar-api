@@ -1,9 +1,9 @@
 package eu.talmar.api.adapter.in.rest.generation;
 
-import eu.talmar.api.domain.generation.VacancyDescriptionGenerationFailedException;
-import eu.talmar.api.domain.generation.VacancyDescriptionGenerationNotFoundException;
-import eu.talmar.api.domain.generation.VacancyDescriptionGenerationRejectedException;
-import eu.talmar.api.domain.generation.VacancyDescriptionGenerationUnavailableException;
+import eu.talmar.api.domain.generation.exception.VacancyDescriptionGenerationFailedException;
+import eu.talmar.api.domain.generation.exception.VacancyDescriptionGenerationNotFoundException;
+import eu.talmar.api.domain.generation.exception.VacancyDescriptionGenerationRejectedException;
+import eu.talmar.api.domain.generation.exception.VacancyDescriptionGenerationUnavailableException;
 import eu.talmar.api.shared.Constants;
 import eu.talmar.api.vacancy.adapter.in.web.contract.ProblemDetails;
 import eu.talmar.api.vacancy.adapter.in.web.contract.ProblemDetailsErrorsInner;

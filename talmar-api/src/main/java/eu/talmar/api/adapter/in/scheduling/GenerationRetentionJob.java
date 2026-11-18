@@ -1,6 +1,6 @@
 package eu.talmar.api.adapter.in.scheduling;
 
-import eu.talmar.api.application.port.in.PurgeExpiredGenerationsUseCase;
+import eu.talmar.api.application.port.in.generation.PurgeExpiredVacancyGenerationsUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class GenerationRetentionJob {
-  private final PurgeExpiredGenerationsUseCase purgeUseCase;
+  private final PurgeExpiredVacancyGenerationsUseCase purgeUseCase;
 
   @Scheduled(
       initialDelayString = "${talmar.generation.purge-initial-delay:PT1M}",

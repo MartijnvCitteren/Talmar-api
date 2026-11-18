@@ -170,8 +170,8 @@
 						</java>
 					</configuration>
 					<executions>
-						<!-- Fails the build on unformatted code instead of silently rewriting it.
-						     Fix locally with: ./mvnw spotless:apply -->
+						<!-- Fails the build on unformatted code instead of silently rewriting it. Locally the
+						     `format-on-build` profile formats first, so this only bites in CI (CI=true). -->
 						<execution>
 							<id>format-check</id>
 							<phase>verify</phase>
@@ -270,5 +270,36 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<!-- Local builds format the code before compiling, so `./mvnw clean install` (with or without tests) never
+		     fails on formatting. CI sets CI=true, which deactivates this profile: there `format-check` stays the gate
+		     that rejects unformatted code instead of silently rewriting it. -->
+		<profile>
+			<id>format-on-build</id>
+			<activation>
+				<property>
+					<name>!env.CI</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.diffplug.spotless</groupId>
+						<artifactId>spotless-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>format-apply</id>
+								<phase>process-sources</phase>
+								<goals>
+									<goal>apply</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 </project>

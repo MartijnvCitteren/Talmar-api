@@ -95,11 +95,12 @@ Root modules (`pom.xml` `<modules>`): **`talmar-contracts`** and **`talmar-api`*
 - **`talmar-api`** — the application core, built following **DDD + Hexagonal (Ports & Adapters)**. Hand-written code is
   organised layer-first under `eu.talmar.api`:
     - `domain/<aggregate>/` — entities, value objects (`domain/<aggregate>/valueobject/`), domain services, domain
-      events. Shared domain base types (`BaseObject`, `UuidV7Generator`) live directly in `domain/`. **Zero** framework
-      dependencies, no Spring annotations.
-    - `application/service/` — use-case orchestration and transactions.
-    - `application/port/in/` (with `application/port/in/command/` for inbound command DTOs) and `application/port/out/`
-      — ports owned by the core.
+      events, and domain exceptions (`domain/<aggregate>/exception/`). Shared domain base types (`BaseObject`,
+      `UuidV7Generator`) live directly in `domain/`. **Zero** framework dependencies, no Spring annotations.
+    - `application/service/<aggregate>/` — use-case orchestration and transactions.
+    - `application/port/in/<aggregate>/` (with `application/port/in/<aggregate>/command/` for inbound command DTOs) and
+      `application/port/out/<aggregate>/` — ports owned by the core; `application/exception/` for exceptions the ports
+      throw.
     - `adapter/in/rest/` — inbound REST adapter: cross-aggregate `GlobalExceptionHandler` at the root,
       `adapter/in/rest/<aggregate>/` per aggregate with `mapper/request/`, `mapper/response/` and `validation/`
       subpackages for explicit contract-DTO ↔ domain mapping.
@@ -267,8 +268,10 @@ roadmap of guardrails are in `docs/adr/0001-agentic-development-guardrails.md`.
 - **Never weaken a check to get green.** No skipping tests or checks (`-DskipTests`, `-Dmaven.test.skip`,
   `-D*.skip=true`, `--no-verify`), no `@Disabled`, no new `@SuppressWarnings`, no deleting or loosening assertions, no
   editing `ArchitectureTest` to make a violation pass. If a check is wrong, say so and stop — the human decides.
-- **Formatting is checked, not auto-applied** by the build (`spotless:check` in `verify`). Run `./mvnw spotless:apply`
-  before finishing.
+- **Formatting is applied locally, checked in CI.** Locally the `format-on-build` profile runs `spotless:apply` in
+  `process-sources`, so every build from that phase on (`compile`, `test`, `verify`, `install`, with or without tests)
+  formats the code. CI sets `CI=true`, which deactivates the profile: there `spotless:check` in `verify` fails on
+  unformatted code. Commit the formatted files; never set `CI` locally to dodge formatting, or unset it in CI.
 - **Agents never merge, force-push, or label PRs.** Agents push branches and open PRs; only the human maintainer merges
   and applies override labels. `gh pr merge` is denied in `.claude/settings.json`.
 - **Keep PRs reviewable**: aim for at most ~400 changed lines of production code and config per PR. CI reports the

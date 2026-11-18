@@ -73,6 +73,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -126,6 +128,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '503':
@@ -157,6 +161,20 @@ components:
             type: string
     BadRequest:
       description: The request was malformed or failed validation.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    UnsupportedMediaType:
+      description: >
+        The request body has a `Content-Type` this operation does not accept, or none at all. The
+        `Accept` header lists the content types it does accept; send the body again with one of
+        them. Nothing has changed.
+      headers:
+        Accept:
+          description: The content types this operation accepts for its request body.
+          schema:
+            type: string
       content:
         application/problem+json:
           schema:
