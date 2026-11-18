@@ -268,8 +268,10 @@ roadmap of guardrails are in `docs/adr/0001-agentic-development-guardrails.md`.
 - **Never weaken a check to get green.** No skipping tests or checks (`-DskipTests`, `-Dmaven.test.skip`,
   `-D*.skip=true`, `--no-verify`), no `@Disabled`, no new `@SuppressWarnings`, no deleting or loosening assertions, no
   editing `ArchitectureTest` to make a violation pass. If a check is wrong, say so and stop — the human decides.
-- **Formatting is checked, not auto-applied** by the build (`spotless:check` in `verify`). Run `./mvnw spotless:apply`
-  before finishing.
+- **Formatting is applied locally, checked in CI.** Locally the `format-on-build` profile runs `spotless:apply` in
+  `process-sources`, so every build from that phase on (`compile`, `test`, `verify`, `install`, with or without tests)
+  formats the code. CI sets `CI=true`, which deactivates the profile: there `spotless:check` in `verify` fails on
+  unformatted code. Commit the formatted files; never set `CI` locally to dodge formatting, or unset it in CI.
 - **Agents never merge, force-push, or label PRs.** Agents push branches and open PRs; only the human maintainer merges
   and applies override labels. `gh pr merge` is denied in `.claude/settings.json`.
 - **Keep PRs reviewable**: aim for at most ~400 changed lines of production code and config per PR. CI reports the
