@@ -95,11 +95,12 @@ Root modules (`pom.xml` `<modules>`): **`talmar-contracts`** and **`talmar-api`*
 - **`talmar-api`** — the application core, built following **DDD + Hexagonal (Ports & Adapters)**. Hand-written code is
   organised layer-first under `eu.talmar.api`:
     - `domain/<aggregate>/` — entities, value objects (`domain/<aggregate>/valueobject/`), domain services, domain
-      events. Shared domain base types (`BaseObject`, `UuidV7Generator`) live directly in `domain/`. **Zero** framework
-      dependencies, no Spring annotations.
-    - `application/service/` — use-case orchestration and transactions.
-    - `application/port/in/` (with `application/port/in/command/` for inbound command DTOs) and `application/port/out/`
-      — ports owned by the core.
+      events, and domain exceptions (`domain/<aggregate>/exception/`). Shared domain base types (`BaseObject`,
+      `UuidV7Generator`) live directly in `domain/`. **Zero** framework dependencies, no Spring annotations.
+    - `application/service/<aggregate>/` — use-case orchestration and transactions.
+    - `application/port/in/<aggregate>/` (with `application/port/in/<aggregate>/command/` for inbound command DTOs) and
+      `application/port/out/<aggregate>/` — ports owned by the core; `application/exception/` for exceptions the ports
+      throw.
     - `adapter/in/rest/` — inbound REST adapter: cross-aggregate `GlobalExceptionHandler` at the root,
       `adapter/in/rest/<aggregate>/` per aggregate with `mapper/request/`, `mapper/response/` and `validation/`
       subpackages for explicit contract-DTO ↔ domain mapping.

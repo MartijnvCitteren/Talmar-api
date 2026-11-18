@@ -1,8 +1,8 @@
 package eu.talmar.api.adapter.in.rest.vacancy.validation;
 
-import eu.talmar.api.adapter.in.rest.vacancy.InvalidVacancyUpdateRequestException;
+import eu.talmar.api.adapter.in.rest.vacancy.exception.InvalidVacancyDescriptionRequestException;
+import eu.talmar.api.adapter.in.rest.vacancy.exception.InvalidVacancyUpdateRequestException;
 import eu.talmar.api.vacancy.adapter.in.web.contract.Offer;
-import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyOfferRequest;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyUpdateRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -33,8 +33,8 @@ public class VacancyUpdateRequestValidator {
    *
    * @param request the request to validate
    * @throws InvalidVacancyUpdateRequestException naming the first field that breaks a rule
-   * @throws eu.talmar.api.adapter.in.rest.vacancy.InvalidVacancyDescriptionRequestException if the
-   *     description contains markup or control characters
+   * @throws InvalidVacancyDescriptionRequestException if the description contains markup or control
+   *     characters
    */
   public void validate(VacancyUpdateRequest request) {
     requireHoursPerWeekTogether(request);
@@ -46,16 +46,6 @@ public class VacancyUpdateRequestValidator {
     if (offer != null) {
       validateOffer(offer);
     }
-  }
-
-  /**
-   * Validates the offer of the request against the combined-field rules.
-   *
-   * @param request the request to validate
-   * @throws InvalidVacancyUpdateRequestException naming the first field that breaks a rule
-   */
-  public void validate(VacancyOfferRequest request) {
-    validateOffer(request.getOffer());
   }
 
   private void requireHoursPerWeekTogether(VacancyUpdateRequest request) {

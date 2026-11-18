@@ -1,9 +1,9 @@
 package eu.talmar.api.adapter.in.rest.identity;
 
-import eu.talmar.api.application.port.out.IdentityProviderUnavailableException;
-import eu.talmar.api.domain.identity.OnboardingNotAllowedException;
-import eu.talmar.api.domain.identity.UserAlreadyOnboardedException;
-import eu.talmar.api.domain.identity.UserNotOnboardedException;
+import eu.talmar.api.application.exception.IdentityProviderUnavailableException;
+import eu.talmar.api.domain.identity.exception.OnboardingNotAllowedException;
+import eu.talmar.api.domain.identity.exception.UserAlreadyOnboardedException;
+import eu.talmar.api.domain.identity.exception.UserNotOnboardedException;
 import eu.talmar.api.shared.Constants;
 import eu.talmar.api.vacancy.adapter.in.web.contract.ProblemDetails;
 import jakarta.servlet.http.HttpServletRequest;

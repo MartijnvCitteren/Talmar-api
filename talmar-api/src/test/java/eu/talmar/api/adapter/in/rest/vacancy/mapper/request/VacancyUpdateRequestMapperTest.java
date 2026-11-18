@@ -12,7 +12,6 @@ import eu.talmar.api.vacancy.adapter.in.web.contract.Offer;
 import eu.talmar.api.vacancy.adapter.in.web.contract.SalaryPeriod;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyCategory;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyDescriptionRequest;
-import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyOfferRequest;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyUpdateRequest;
 import eu.talmar.api.vacancy.adapter.in.web.contract.WorkplaceType;
 import java.math.BigDecimal;
@@ -30,9 +29,9 @@ class VacancyUpdateRequestMapperTest {
 
   @Test
   @DisplayName(
-      "given a vacancy id and offer request, when toCommand then maps every field, normalising"
+      "given a contact person and offer, when toCommand then maps every field, normalising"
           + " phone number and e-mail address")
-  void givenVacancyIdAndOfferRequestWhenToCommandThenMapsEveryField() {
+  void givenContactPersonAndOfferWhenToCommandThenMapsEveryField() {
     var id = UUID.randomUUID();
     var contactPerson =
         new ContactPerson("Sanne de Vries", "Sanne.deVries@ACME.nl")
@@ -46,7 +45,8 @@ class VacancyUpdateRequestMapperTest {
             .salaryPeriod(SalaryPeriod.MONTHLY)
             .numberOfHolidays(new BigDecimal("26"));
 
-    var command = mapper.toCommand(id, new VacancyOfferRequest(contactPerson, offer));
+    var command =
+        mapper.toCommand(id, new VacancyUpdateRequest().contactPerson(contactPerson).offer(offer));
 
     assertEquals(id, command.vacancyId());
     assertEquals(contactPerson.getName(), command.contactPerson().name());
@@ -67,9 +67,9 @@ class VacancyUpdateRequestMapperTest {
           + " parts are null")
   void givenNoPhoneAndNoSalaryWhenToCommandThenThosePartsAreNull() {
     var request =
-        new VacancyOfferRequest(
-            new ContactPerson("Sanne de Vries", "sanne@acme.nl"),
-            new Offer().numberOfHolidays(new BigDecimal("25")));
+        new VacancyUpdateRequest()
+            .contactPerson(new ContactPerson("Sanne de Vries", "sanne@acme.nl"))
+            .offer(new Offer().numberOfHolidays(new BigDecimal("25")));
 
     var command = mapper.toCommand(UUID.randomUUID(), request);
 

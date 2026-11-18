@@ -24,9 +24,9 @@ HTTP ─▶ Security filter chain (uses a valid bearer token, ignores an invalid
         Controller (implements generated *Api interface)
           │  1. bean validation on the generated contract model (@Valid from the spec)
           │  2. adapter-level content validation (e.g. no raw HTML)
-          │  3. request mapper: contract model ─▶ command (application/port/in/command)
+          │  3. request mapper: contract model ─▶ command (application/port/in/<aggregate>/command)
           ▼
-        Use case (application/service, implements a port/in interface)
+        Use case (application/service/<aggregate>, implements a port/in interface)
           │  loads/creates the domain object, calls domain behaviour, saves via a port/out interface
           ▼
         Repository adapter (adapter/out/persistence, implements port/out)
@@ -42,8 +42,11 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 - **Domain** (`eu.talmar.api.domain`): plain Java, no framework or JSpecify. Aggregates guard their own invariants
   with `Objects.requireNonNull` in builders and checks in value-object constructors. Timestamps are passed in; the
   domain never reads a clock. IDs are UUIDv7 (`UuidV7Generator`), time-ordered so they index well.
-- **Application** (`eu.talmar.api.application`): one service per use case, `@NullMarked`. Inbound ports are use-case
-  interfaces with command records; outbound ports are repository interfaces. `@Transactional` is only allowed here.
+- **Application** (`eu.talmar.api.application`): one service per use case. Services and ports are grouped per
+  aggregate (`service/<aggregate>`, `port/in/<aggregate>`, `port/out/<aggregate>`); exceptions that ports throw live in
+  `application.exception`. Inbound ports are use-case interfaces with command records (`port/in/<aggregate>/command`);
+  outbound ports are repository and provider interfaces. Every package has a `package-info.java` with `@NullMarked`:
+  it does not cover subpackages, and NullAway skips a package without it. `@Transactional` is only allowed here.
 - **Inbound REST adapter** (`adapter.in.rest`): controllers implement the generated `*Api` interfaces. MapStruct
   mappers per direction (`mapper/request`, `mapper/response`); validators for contract rules the YAML cannot express
   (`validation`, e.g. the no-markup rule for vacancy text).
@@ -61,7 +64,8 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 
 - **Errors** are RFC 9457 Problem Details (`application/problem+json`), shape defined in the contract. Per-aggregate
   `@RestControllerAdvice` classes run at highest precedence; `GlobalExceptionHandler` (lowest precedence) handles
-  bean-validation failures and unreadable bodies (malformed JSON, a value outside an enum: `400`), and is the
+  bean-validation failures and unreadable bodies (malformed JSON, a value outside an enum: `400`), a body with a
+  `Content-Type` the operation does not accept (`415`, with the accepted types in the `Accept` header), and is the
   catch-all for anything else as a 500 without internal details. Validation errors name the field but never echo the
   rejected value, so personal data does not end up in responses or logs. Handlers only map: each response has its own
   exception, so no handler inspects an exception to choose a status.
@@ -136,9 +140,6 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 Open issues an agent should know about before building on top of them. Remove an entry in the PR that fixes it.
 
 - Javadoc and code comments refer to ADR 0004 and ADR 0005, which are not in `docs/adr/`.
-- A request with a `Content-Type` the endpoint does not accept (e.g. `application/json` on `PATCH /vacancy/{id}`,
-  which takes `application/merge-patch+json`) hits the catch-all in `GlobalExceptionHandler` and gets a `500`
-  instead of a `415`. The contract declares no `415` response yet.
 - `BaseJpaEntity.lastModifiedBy` (an `app_user` id) is filled only for companies, by onboarding. For vacancies it
   stays empty: there is no `AuditorAware`, because the vacancy endpoints are not authenticated yet (#103).
 - Strings are `varchar` with SQL Server's Latin-1 collation unless a column is `@Nationalized`. Only the user's names

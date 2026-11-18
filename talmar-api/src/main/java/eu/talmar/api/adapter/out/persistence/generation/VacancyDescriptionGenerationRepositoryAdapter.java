@@ -1,7 +1,7 @@
 package eu.talmar.api.adapter.out.persistence.generation;
 
 import eu.talmar.api.adapter.out.persistence.generation.mapper.VacancyDescriptionGenerationJpaMapper;
-import eu.talmar.api.application.port.out.VacancyDescriptionGenerationRepository;
+import eu.talmar.api.application.port.out.generation.VacancyDescriptionGenerationRepository;
 import eu.talmar.api.domain.generation.VacancyDescriptionGeneration;
 import java.time.LocalDateTime;
 import java.util.Optional;

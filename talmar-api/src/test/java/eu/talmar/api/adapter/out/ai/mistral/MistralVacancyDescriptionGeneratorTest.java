@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
-import eu.talmar.api.application.port.out.GenerationResult;
+import eu.talmar.api.application.port.out.generation.GenerationResult;
 import eu.talmar.api.domain.generation.valueobject.GenerationFailureReason;
 import eu.talmar.api.domain.generation.valueobject.GenerationInput;
 import eu.talmar.api.domain.vacancy.valueobject.Language;

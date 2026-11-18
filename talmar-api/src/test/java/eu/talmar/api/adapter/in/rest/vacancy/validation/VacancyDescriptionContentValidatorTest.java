@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import eu.talmar.api.adapter.in.rest.vacancy.InvalidVacancyDescriptionRequestException;
+import eu.talmar.api.adapter.in.rest.vacancy.exception.InvalidVacancyDescriptionRequestException;
 import eu.talmar.api.vacancy.adapter.in.web.contract.VacancyDescriptionRequest;
 import java.util.function.Function;
 import java.util.stream.Stream;
