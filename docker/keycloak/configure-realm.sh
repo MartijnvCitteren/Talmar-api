@@ -11,7 +11,7 @@
 # The e-mail address needs nothing here: it is the username, and editing the username is off in the realm.
 set -euo pipefail
 
-readonly REALM=talmar
+readonly REALM=taldo
 readonly CONFIG=/tmp/kcadm.config
 
 kcadm() {
