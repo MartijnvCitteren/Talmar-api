@@ -3,16 +3,16 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>eu.talmar</groupId>
-	<artifactId>talmar</artifactId>
+	<groupId>eu.taldo</groupId>
+	<artifactId>taldo</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
-	<name>talmar</name>
-	<description>Talmar - making recruitment easy</description>
+	<name>taldo</name>
+	<description>Taldo - making recruitment easy</description>
 
 	<modules>
-		<module>talmar-api</module>
-		<module>talmar-contracts</module>
+		<module>taldo-api</module>
+		<module>taldo-contracts</module>
 	</modules>
 
 	<properties>

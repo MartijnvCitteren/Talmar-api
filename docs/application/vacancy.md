@@ -19,7 +19,7 @@ it gets published to job boards and receives candidates.
 | `hoursPerWeek` | `HoursPerWeek(minHours, maxHours)` | Required. `BigDecimal`, so part-time hours like 32.5 are exact. |
 | `status` | `VacancyStatus` | `DRAFT`, `PUBLISHED`, `FILLED`, `CLOSED`. Defaults to `DRAFT`. |
 | `description` | `VacancyDescription` | Optional, see below. |
-| `contactPerson` | `ContactPerson(name, role, phone, email)` | Optional. Free text, not a Talmar user (often a hiring manager without an account). `role` and `phone` are optional. `email` reuses identity's `EmailAddress` (lower case). `toString` is redacted to the role. |
+| `contactPerson` | `ContactPerson(name, role, phone, email)` | Optional. Free text, not a Taldo user (often a hiring manager without an account). `role` and `phone` are optional. `email` reuses identity's `EmailAddress` (lower case). `toString` is redacted to the role. |
 | `offer` | `Offer(salaryMin, salaryMax, currency, salaryPeriod, numberOfHolidays)` | Optional. Gross salary amounts (`BigDecimal`, rounded half up to 2 decimals in the constructor: `10.745` becomes `10.75`) per `SalaryPeriod` (`HOURLY`, `MONTHLY`, `ANNUAL`), a `java.util.Currency`, and full-time-equivalent holiday days (`BigDecimal`). The combination rules are contract rules, see the contract. |
 | `createdAt`, `lastModifiedAt`, `lastModifiedBy` | from `BaseObject` | `createdAt` is required and passed in by the use case. |
 

@@ -1,4 +1,4 @@
-name: talmar-backend
+name: taldo-backend
 
 services:
   sqlserver:
@@ -30,7 +30,7 @@ services:
     entrypoint: [ "/bin/bash", "-c" ]
     command: >
       "/opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -b -Q
-      \"IF DB_ID('talmar_db') IS NULL CREATE DATABASE talmar_db;
+      \"IF DB_ID('taldo_db') IS NULL CREATE DATABASE taldo_db;
       IF DB_ID('keycloak_db') IS NULL CREATE DATABASE keycloak_db COLLATE Latin1_General_100_CI_AS_SC_UTF8;
       ALTER DATABASE keycloak_db SET READ_COMMITTED_SNAPSHOT ON;\""
     restart: "no"
@@ -55,7 +55,7 @@ services:
       KC_DB_PASSWORD: "Super_secret-123"
       KC_HEALTH_ENABLED: "true"
       # Read by the realm import (${...} placeholder); the backend gets the same value.
-      TALMAR_BACKEND_CLIENT_SECRET: ${TALMAR_BACKEND_CLIENT_SECRET:-local-only-backend-secret}
+      TALDO_BACKEND_CLIENT_SECRET: ${TALDO_BACKEND_CLIENT_SECRET:-local-only-backend-secret}
       # RFC 9106's second recommended Argon2id option, as ADR 0003 chose for our own hashes: 64 MiB, 3 iterations,
       # parallelism 4. Keycloak's default is 7 MiB, 5 iterations, parallelism 1.
       KC_SPI_PASSWORD_HASHING__ARGON2__MEMORY: "65536"
@@ -64,7 +64,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./docker/keycloak/talmar-realm.json:/opt/keycloak/data/import/talmar-realm.json:ro
+      - ./docker/keycloak/taldo-realm.json:/opt/keycloak/data/import/taldo-realm.json:ro
     healthcheck:
       test: [ "CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3" ]
       interval: 10s
@@ -95,4 +95,4 @@ services:
 
 volumes:
   sqlserverdata:
-    name: talmar-sqlserverdata
+    name: taldo-sqlserverdata

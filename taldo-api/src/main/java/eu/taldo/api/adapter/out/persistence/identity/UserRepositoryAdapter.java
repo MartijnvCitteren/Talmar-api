@@ -1,0 +1,38 @@
+package eu.taldo.api.adapter.out.persistence.identity;
+
+import eu.taldo.api.adapter.out.persistence.identity.mapper.UserJpaMapper;
+import eu.taldo.api.application.port.out.identity.UserRepository;
+import eu.taldo.api.domain.identity.User;
+import eu.taldo.api.domain.identity.valueobject.EmailAddress;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+/**
+ * Persistence adapter for {@code UserRepository}. The company is set as a reference (no query), so
+ * the foreign key is written without loading the company.
+ */
+@Component
+@RequiredArgsConstructor
+public class UserRepositoryAdapter implements UserRepository {
+  private final UserJpaMapper jpaMapper;
+  private final UserJpaRepository jpaRepository;
+  private final CompanyJpaRepository companyJpaRepository;
+
+  @Override
+  public void save(User user) {
+    var entity = jpaMapper.toJpaEntity(user);
+    entity.setCompany(companyJpaRepository.getReferenceById(user.getCompanyId()));
+    jpaRepository.save(entity);
+  }
+
+  @Override
+  public Optional<User> findByEmail(EmailAddress email) {
+    return jpaRepository.findByEmail(email.value()).map(jpaMapper::toDomain);
+  }
+
+  @Override
+  public Optional<User> findBySubject(String subject) {
+    return jpaRepository.findBySubject(subject).map(jpaMapper::toDomain);
+  }
+}

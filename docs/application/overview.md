@@ -1,14 +1,14 @@
 # Application overview
 
-How the talmar-backend works today. Start here before changing code; read the aggregate page for the area you touch.
+How the taldo-backend works today. Start here before changing code; read the aggregate page for the area you touch.
 This describes what is on `main` — plans and roadmap live in `.claude/CLAUDE.md`, decisions in `docs/adr/`.
 
 ## Modules
 
 | Module | Role |
 |--------|------|
-| `talmar-contracts` | OpenAPI specs, the source of truth for the HTTP API: `VacancyApi.yml` and `IdentityApi.yml`. Consumed by the frontend team. |
-| `talmar-api` | The Spring Boot application. Generates the API interfaces and models from each contract at build time, one generator execution per contract (`eu.talmar.api.vacancy.adapter…`, `eu.talmar.api.identity.adapter…`). The vacancy contract gets one interface per OpenAPI tag (`VacancyApi`, `GenerationApi`). |
+| `taldo-contracts` | OpenAPI specs, the source of truth for the HTTP API: `VacancyApi.yml` and `IdentityApi.yml`. Consumed by the frontend team. |
+| `taldo-api` | The Spring Boot application. Generates the API interfaces and models from each contract at build time, one generator execution per contract (`eu.taldo.api.vacancy.adapter…`, `eu.taldo.api.identity.adapter…`). The vacancy contract gets one interface per OpenAPI tag (`VacancyApi`, `GenerationApi`). |
 
 Aggregates and their pages: [vacancy](vacancy.md) (the vacancy and its manual description), [generation](generation.md)
 (AI-drafted vacancy descriptions) and [identity](identity.md) (company and user).
@@ -39,10 +39,10 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 
 ## Layers and what lives where
 
-- **Domain** (`eu.talmar.api.domain`): plain Java, no framework or JSpecify. Aggregates guard their own invariants
+- **Domain** (`eu.taldo.api.domain`): plain Java, no framework or JSpecify. Aggregates guard their own invariants
   with `Objects.requireNonNull` in builders and checks in value-object constructors. Timestamps are passed in; the
   domain never reads a clock. IDs are UUIDv7 (`UuidV7Generator`), time-ordered so they index well.
-- **Application** (`eu.talmar.api.application`): one service per use case. Services and ports are grouped per
+- **Application** (`eu.taldo.api.application`): one service per use case. Services and ports are grouped per
   aggregate (`service/<aggregate>`, `port/in/<aggregate>`, `port/out/<aggregate>`); exceptions that ports throw live in
   `application.exception`. Inbound ports are use-case interfaces with command records (`port/in/<aggregate>/command`);
   outbound ports are repository and provider interfaces. Every package has a `package-info.java` with `@NullMarked`:
@@ -57,7 +57,7 @@ The response goes back up the same way: domain object ─▶ response mapper ─
   `IdentityProvider` port, see [identity](identity.md).
 - **Outbound persistence adapter** (`adapter.out.persistence`): JPA entities separate from domain objects, MapStruct
   mappers in between. `BaseJpaEntity` carries the audit columns, filled by Spring Data JPA auditing.
-- **Shared** (`eu.talmar.api.shared`): config (`Clock`, CORS, async, scheduling, security filter chain), `BaseException`, the GDPR annotations, `Constants` and `TextContentRules` (the no-markup,
+- **Shared** (`eu.taldo.api.shared`): config (`Clock`, CORS, async, scheduling, security filter chain), `BaseException`, the GDPR annotations, `Constants` and `TextContentRules` (the no-markup,
   no-control-character rules for vacancy text, shared by request validators and the check on AI drafts).
 
 ## Cross-cutting behaviour
@@ -77,7 +77,7 @@ The response goes back up the same way: domain object ─▶ response mapper ─
   started from `@TransactionalEventListener(AFTER_COMMIT)` listeners, so it only starts once the data it needs is
   committed; see `generation.md`. Integration tests swap in an executor that runs each task on its own thread and
   waits for it, so the work has finished when the request returns and no transaction of the request leaks into it.
-- **Scheduled jobs**: enabled in `SchedulingConfig` unless `talmar.scheduling.enabled=false` (the test profile). Every
+- **Scheduled jobs**: enabled in `SchedulingConfig` unless `taldo.scheduling.enabled=false` (the test profile). Every
   instance runs every job, so jobs must be idempotent. The only job is the generation retention clean-up.
 - **Outbound HTTP**: `spring.http.clients.*` sets a 5 s connect and 15 s read timeout on the JDK HTTP client for every
   `RestClient` built from Spring Boot's builder. Users: the Mistral adapter and the Keycloak adapter (both its Admin
@@ -86,7 +86,7 @@ The response goes back up the same way: domain object ─▶ response mapper ─
   with `spring.ai.model.*: none`). Retries are configured explicitly (`spring.ai.retry.*`, 3 attempts, 429 and 5xx
   only); the Spring AI default retries for minutes. Calls to the provider are a recurring cost per generation. Tests
   replace Mistral with WireMock (`MistralStub`), never with a mock of our own port.
-- **CORS**: allowed origins come from `talmar.cors.allowed-origins` (`CORS_ALLOWED_ORIGINS`); empty means no CORS
+- **CORS**: allowed origins come from `taldo.cors.allowed-origins` (`CORS_ALLOWED_ORIGINS`); empty means no CORS
   mapping at all.
 - **Security**: one `SecurityFilterChain` (`SecurityConfig`). The backend is an OAuth2 resource server for Keycloak's
   access tokens (ADR 0006): signature, issuer and expiry are checked with the realm's public keys, fetched on the
@@ -110,11 +110,11 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 - Keycloak (ADR 0006): `KEYCLOAK_ISSUER_URI` (the issuer in the tokens, default
   `${KEYCLOAK_BASE_URL}/realms/${KEYCLOAK_REALM}`; set it when the public URL differs), `KEYCLOAK_BASE_URL` (Keycloak
   as the backend reaches it) and `KEYCLOAK_CLIENT_SECRET` (the
-  `talmar-backend` service account) are required outside the `local` profile, which defaults them to the Docker
-  Compose values. `KEYCLOAK_REALM` (default `talmar`) and `KEYCLOAK_CLIENT_ID` (default `talmar-backend`) are
+  `taldo-backend` service account) are required outside the `local` profile, which defaults them to the Docker
+  Compose values. `KEYCLOAK_REALM` (default `taldo`) and `KEYCLOAK_CLIENT_ID` (default `taldo-backend`) are
   optional. The secret only comes from the environment; rotate it on suspicion, because the service account can
   change every user of the realm.
-- `talmar.generation.retention` (default `PT32H`) and `talmar.generation.purge-interval` (default `PT1H`) control the
+- `taldo.generation.retention` (default `PT32H`) and `taldo.generation.purge-interval` (default `PT1H`) control the
   generation clean-up.
 - Profiles: `local` (SQL Server from `docker-compose.yaml`, CORS for the Vite dev server on `localhost:5173`), `dev`
   (datasource from `SPRING_DATASOURCE_*` environment variables), `test` (in-memory H2).
@@ -122,8 +122,8 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 
   | Service | Port | Role |
   |---------|------|------|
-  | `sqlserver` (+ one-shot `sqlserver-init`) | 1433 | Databases `talmar_db` (the application, `local` profile) and `keycloak_db` (UTF-8 collation). |
-  | `keycloak` | 8080 | Identity provider (ADR 0006), admin console with `admin`/`admin`. Realm `talmar` with clients `talmar-web` and `talmar-backend`, imported from `docker/keycloak/talmar-realm.json`. The backend calls its Admin API as `talmar-backend`. |
+  | `sqlserver` (+ one-shot `sqlserver-init`) | 1433 | Databases `taldo_db` (the application, `local` profile) and `keycloak_db` (UTF-8 collation). |
+  | `keycloak` | 8080 | Identity provider (ADR 0006), admin console with `admin`/`admin`. Realm `taldo` with clients `taldo-web` and `taldo-backend`, imported from `docker/keycloak/taldo-realm.json`. The backend calls its Admin API as `taldo-backend`. |
   | `keycloak-config` (one-shot) | – | Applies the realm settings the import cannot express (`docker/keycloak/configure-realm.sh`). |
   | `mailpit` | 8025 | Catches the mails Keycloak sends; web UI on `http://localhost:8025`. |
 
