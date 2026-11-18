@@ -85,6 +85,11 @@ Constraints:
 - Estimated CI time ~5–6 minutes per PR including the smoke test (~350 PR runs per month within 2,000 private minutes).
 - Formatting is no longer applied automatically by the build; IDE formatting, the agent hook (PR 2) or
   `./mvnw spotless:apply` must be used.
+  *Revised 2026-11-18:* local builds apply formatting again (profile `format-on-build`, `spotless:apply` in
+  `process-sources`) at the maintainer's request, so a local `clean install` with or without tests never fails on
+  formatting alone. The original concern is kept: CI sets `CI=true`, which deactivates that profile, so
+  `spotless:check` in `verify` still rejects unformatted code on every PR. The superseded variant (check only, also
+  locally) was dropped for that local friction, not because the gate fell short.
 - OSV-Scanner must scan an SBOM produced by Maven, not `pom.xml`: on this multi-module build it cannot resolve the
   internal `talmar-contracts` module and silently reports zero packages and zero vulnerabilities. The first real scan
   found 14 known vulnerabilities (4 critical), fixed by upgrading Spring Boot to 4.1.1 and pinning patched Jackson and
