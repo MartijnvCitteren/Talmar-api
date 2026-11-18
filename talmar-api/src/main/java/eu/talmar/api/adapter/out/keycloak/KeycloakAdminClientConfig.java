@@ -80,12 +80,10 @@ class KeycloakAdminClientConfig {
     tokenClient.setRestClient(
         restClientBuilder
             .clone()
-            .configureMessageConverters(
-                converters -> {
-                  converters.addCustomConverter(new FormHttpMessageConverter());
-                  converters.addCustomConverter(
-                      new OAuth2AccessTokenResponseHttpMessageConverter());
-                })
+            .configureMessageConverters(converters -> {
+              converters.addCustomConverter(new FormHttpMessageConverter());
+              converters.addCustomConverter(new OAuth2AccessTokenResponseHttpMessageConverter());
+            })
             .defaultStatusHandler(new OAuth2ErrorResponseErrorHandler())
             .build());
     return tokenClient;
