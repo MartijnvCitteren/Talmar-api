@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.taldo.api.domain.generation.valueobject.GenerationInput;
+import eu.taldo.api.domain.vacancy.generation.valueobject.GenerationInput;
 import eu.taldo.api.domain.vacancy.valueobject.Language;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

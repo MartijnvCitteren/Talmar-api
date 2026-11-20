@@ -10,8 +10,12 @@ This describes what is on `main` — plans and roadmap live in `.claude/CLAUDE.m
 | `taldo-contracts` | OpenAPI specs, the source of truth for the HTTP API: `VacancyApi.yml` and `IdentityApi.yml`. Consumed by the frontend team. |
 | `taldo-api` | The Spring Boot application. Generates the API interfaces and models from each contract at build time, one generator execution per contract (`eu.taldo.api.vacancy.adapter…`, `eu.taldo.api.identity.adapter…`). The vacancy contract gets one interface per OpenAPI tag (`VacancyApi`, `GenerationApi`). |
 
-Aggregates and their pages: [vacancy](vacancy.md) (the vacancy and its manual description), [generation](generation.md)
-(AI-drafted vacancy descriptions) and [identity](identity.md) (company and user).
+Hand-written code is grouped per business module (ADR 0008), each holding one or more aggregates:
+
+| Module | Aggregates and their pages |
+|--------|----------------------------|
+| `vacancy` | [vacancy](vacancy.md) (the vacancy and its manual description) and, in the `generation` sub-package, [generation](generation.md) (AI-drafted vacancy descriptions) |
+| `identity` | [identity](identity.md) (company and user) |
 
 ## Request flow
 
@@ -24,9 +28,9 @@ HTTP ─▶ Security filter chain (uses a valid bearer token, ignores an invalid
         Controller (implements generated *Api interface)
           │  1. bean validation on the generated contract model (@Valid from the spec)
           │  2. adapter-level content validation (e.g. no raw HTML)
-          │  3. request mapper: contract model ─▶ command (application/port/in/<aggregate>/command)
+          │  3. request mapper: contract model ─▶ command (application/port/in/<module>/command)
           ▼
-        Use case (application/service/<aggregate>, implements a port/in interface)
+        Use case (application/service/<module>, implements a port/in interface)
           │  loads/creates the domain object, calls domain behaviour, saves via a port/out interface
           ▼
         Repository adapter (adapter/out/persistence, implements port/out)
@@ -43,8 +47,9 @@ The response goes back up the same way: domain object ─▶ response mapper ─
   with `Objects.requireNonNull` in builders and checks in value-object constructors. Timestamps are passed in; the
   domain never reads a clock. IDs are UUIDv7 (`UuidV7Generator`), time-ordered so they index well.
 - **Application** (`eu.taldo.api.application`): one service per use case. Services and ports are grouped per
-  aggregate (`service/<aggregate>`, `port/in/<aggregate>`, `port/out/<aggregate>`); exceptions that ports throw live in
-  `application.exception`. Inbound ports are use-case interfaces with command records (`port/in/<aggregate>/command`);
+  module (`service/<module>`, `port/in/<module>`, `port/out/<module>`, with a module's sub-packages such as
+  `service/vacancy/generation`); exceptions that ports throw live in `application.exception`. Inbound ports are
+  use-case interfaces with command records (`port/in/<module>/command`);
   outbound ports are repository and provider interfaces. Every package has a `package-info.java` with `@NullMarked`:
   it does not cover subpackages, and NullAway skips a package without it. `@Transactional` is only allowed here.
 - **Inbound REST adapter** (`adapter.in.rest`): controllers implement the generated `*Api` interfaces. MapStruct

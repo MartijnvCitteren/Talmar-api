@@ -1,10 +1,10 @@
 package eu.taldo.api.adapter.out.ai.mistral;
 
-import eu.taldo.api.application.port.out.generation.GenerationResult;
-import eu.taldo.api.application.port.out.generation.VacancyDescriptionGenerator;
-import eu.taldo.api.domain.generation.valueobject.GeneratedDraft;
-import eu.taldo.api.domain.generation.valueobject.GenerationFailureReason;
-import eu.taldo.api.domain.generation.valueobject.GenerationInput;
+import eu.taldo.api.application.port.out.vacancy.generation.GenerationResult;
+import eu.taldo.api.application.port.out.vacancy.generation.VacancyDescriptionGenerator;
+import eu.taldo.api.domain.vacancy.generation.valueobject.GeneratedDraft;
+import eu.taldo.api.domain.vacancy.generation.valueobject.GenerationFailureReason;
+import eu.taldo.api.domain.vacancy.generation.valueobject.GenerationInput;
 import java.net.SocketTimeoutException;
 import java.net.http.HttpTimeoutException;
 import java.util.UUID;

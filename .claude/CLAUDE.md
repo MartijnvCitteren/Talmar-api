@@ -94,19 +94,25 @@ Root modules (`pom.xml` `<modules>`): **`taldo-contracts`** and **`taldo-api`**.
     - Note: generated packages are aggregate-first (`eu.taldo.api.vacancy.adapter...`), hand-written code is layer-first
       (see below). Don't "fix" this inconsistency as a side effect of another change.
 - **`taldo-api`** — the application core, built following **DDD + Hexagonal (Ports & Adapters)**. Hand-written code is
-  organised layer-first under `eu.taldo.api`:
-    - `domain/<aggregate>/` — entities, value objects (`domain/<aggregate>/valueobject/`), domain services, domain
-      events, and domain exceptions (`domain/<aggregate>/exception/`). Shared domain base types (`BaseObject`,
+  organised layer-first under `eu.taldo.api`, and within each layer per business **module** (`vacancy`, `identity`;
+  ADR 0008). A module holds one or more aggregates: small, tightly linked aggregates share the module package (`User`
+  and `Company` in `domain/identity/`); a sub-area with its own lifecycle, value objects and use cases gets a
+  sub-package that is mirrored in every layer (`domain/vacancy/generation/`, `application/service/vacancy/generation/`,
+  …). An AI capability lives in the module whose concept it produces (vacancy text in `vacancy`, a candidate e-mail
+  with the candidate); never create a top-level package named after a technique (`generation`, `ai`) outside
+  `adapter/out`, where adapters are grouped by technology (`adapter/out/ai/mistral/`).
+    - `domain/<module>/` — entities, value objects (`domain/<module>/valueobject/`), domain services, domain
+      events, and domain exceptions (`domain/<module>/exception/`). Shared domain base types (`BaseObject`,
       `UuidV7Generator`) live directly in `domain/`. **Zero** framework dependencies, no Spring annotations.
-    - `application/service/<aggregate>/` — use-case orchestration and transactions.
-    - `application/port/in/<aggregate>/` (with `application/port/in/<aggregate>/command/` for inbound command DTOs) and
-      `application/port/out/<aggregate>/` — ports owned by the core; `application/exception/` for exceptions the ports
+    - `application/service/<module>/` — use-case orchestration and transactions.
+    - `application/port/in/<module>/` (with `application/port/in/<module>/command/` for inbound command DTOs) and
+      `application/port/out/<module>/` — ports owned by the core; `application/exception/` for exceptions the ports
       throw.
-    - `adapter/in/rest/` — inbound REST adapter: cross-aggregate `GlobalExceptionHandler` at the root,
-      `adapter/in/rest/<aggregate>/` per aggregate with `mapper/request/`, `mapper/response/` and `validation/`
+    - `adapter/in/rest/` — inbound REST adapter: cross-module `GlobalExceptionHandler` at the root,
+      `adapter/in/rest/<module>/` per module with `mapper/request/`, `mapper/response/` and `validation/`
       subpackages for explicit contract-DTO ↔ domain mapping.
     - `adapter/out/persistence/` — outbound JPA adapter (PostgreSQL): `BaseJpaEntity` and JPA auditing config at the root,
-      `adapter/out/persistence/<aggregate>/` per aggregate with its own `mapper/` subpackage.
+      `adapter/out/persistence/<module>/` per module with its own `mapper/` subpackage.
     - `shared/` — cross-cutting code: `shared/config/` (e.g. `WebConfig`, `ClockConfig`), `shared/exception/` (e.g.
       `BaseException`), `shared/gdpr/` (`@PersonalData`, `@ProcessData`).
     - Adapters know the domain, never the reverse. Generated contract models belong at the `adapter/in` edge, not in the
@@ -135,7 +141,7 @@ them. When a review adds a new preference, add it here in the same PR.
 **Validation: fail fast at the edge**
 - Input validation (presence, length, format, allowed characters, enums) is part of the API contract and happens in
   the adapter, before the application layer runs: as constraints in the OpenAPI YAML (bean validation on the generated
-  model), or in an adapter validator (`adapter/in/rest/<aggregate>/validation/`) when YAML cannot express it. The same
+  model), or in an adapter validator (`adapter/in/rest/<module>/validation/`) when YAML cannot express it. The same
   goes for data from an outbound adapter (e.g. an LLM response): validate it in that adapter.
 - The domain and application layers do not validate again. No null, blank, length or format checks in value objects
   or services for values the adapter has already checked. A null that slips through anyway is our bug and may surface

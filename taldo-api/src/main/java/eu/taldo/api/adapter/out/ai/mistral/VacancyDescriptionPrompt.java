@@ -1,6 +1,6 @@
 package eu.taldo.api.adapter.out.ai.mistral;
 
-import eu.taldo.api.domain.generation.valueobject.GenerationInput;
+import eu.taldo.api.domain.vacancy.generation.valueobject.GenerationInput;
 import eu.taldo.api.domain.vacancy.valueobject.Language;
 import java.util.Map;
 import org.springframework.ai.chat.prompt.PromptTemplate;

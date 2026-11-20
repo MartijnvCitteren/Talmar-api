@@ -7,8 +7,10 @@ to the vacancy automatically. The design and its rejected alternatives are in AD
 
 ## Domain model
 
-`VacancyDescriptionGeneration` (`domain/generation`) is its own aggregate, not part of `Vacancy`. It references the
-vacancy by id only and never loads it.
+`VacancyDescriptionGeneration` (`domain/vacancy/generation`) is its own aggregate, not part of `Vacancy`. It references
+the vacancy by id only and never loads it. It lives in the `vacancy` module because it only exists for a vacancy
+(ADR 0008); every layer has a matching `vacancy/generation` sub-package. The outbound AI adapter stays grouped by
+technology (`adapter/out/ai/mistral`).
 
 | Field | Notes |
 |-------|-------|

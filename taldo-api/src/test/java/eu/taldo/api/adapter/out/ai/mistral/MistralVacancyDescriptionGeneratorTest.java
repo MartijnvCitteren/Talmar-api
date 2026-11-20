@@ -17,9 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
-import eu.taldo.api.application.port.out.generation.GenerationResult;
-import eu.taldo.api.domain.generation.valueobject.GenerationFailureReason;
-import eu.taldo.api.domain.generation.valueobject.GenerationInput;
+import eu.taldo.api.application.port.out.vacancy.generation.GenerationResult;
+import eu.taldo.api.domain.vacancy.generation.valueobject.GenerationFailureReason;
+import eu.taldo.api.domain.vacancy.generation.valueobject.GenerationInput;
 import eu.taldo.api.domain.vacancy.valueobject.Language;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
