@@ -193,6 +193,8 @@ buildNumber.properties
 .mvn/timing.properties
 # https://github.com/takari/maven-wrapper#usage-without-binary-jar
 .mvn/wrapper/maven-wrapper.jar
+# Windows wrapper script: the project is built on macOS/Linux and in CI with ./mvnw only
+mvnw.cmd
 
 # Eclipse m2e generated files
 # Eclipse Core
