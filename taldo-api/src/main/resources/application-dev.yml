@@ -1,9 +1,8 @@
 spring:
   datasource:
+    # PostgreSQL (ADR 0007), e.g. jdbc:postgresql://<host>:5432/taldo_db?sslmode=verify-full. Spring Boot picks the
+    # driver from the URL and Hibernate the dialect from the database.
     url: ${SPRING_DATASOURCE_URL}
-    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-    properties:
-      hibernate.dialect: org.hibernate.dialect.SQLServerDialect
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
 

@@ -115,8 +115,7 @@ the `501`. The contract declares `409` (`Conflict`) for an action that is illega
   cannot both win. A save must start from a loaded vacancy; saving the same unsaved domain object twice fails.
 - **Contact person**: four flat columns on the vacancy table (`contact_person_name`, `_role`, `_phone`, `_email`)
   instead of an embeddable, because name, phone and e-mail are `@PersonalData` and the role is `@ProcessData`, and the
-  GDPR rule classifies an embedded field as a whole. Name and role are `nvarchar` (`@Nationalized`). A row without a
-  name has no contact person.
+  GDPR rule classifies an embedded field as a whole. A row without a name has no contact person.
 - **Offer**: `OfferJpaEmbeddable`, `offer_*` columns on the vacancy table, all `@ProcessData`. Hibernate loads it as
   `null` when every column is `null`. Salaries are `decimal(11,2)`, the currency is stored as its ISO code.
 - Every other vacancy field is `@ProcessData`. The contact person's name, phone and e-mail are the vacancy's only

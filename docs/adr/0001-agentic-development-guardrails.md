@@ -137,3 +137,12 @@ starting work that will clearly exceed it: split into stacked PRs, or one larger
 Superseded: a hard limit with a human-only override label. Rejected because the size of a reviewable PR depends on
 the change (a mechanical rename is easy to review at 600 lines, a scoring rule may not be at 200), and the review
 itself is already the gate.
+
+### 2026-11-20 — PostgreSQL instead of SQL Server
+
+The database is PostgreSQL (ADR 0007). Where this ADR says SQL Server, read PostgreSQL: the schema snapshot (PR 8)
+and the startup smoke test (PR 9) target PostgreSQL, and the deferred Flyway guardrail uses
+`flyway-database-postgresql` with Testcontainers PostgreSQL. The reason given for deferring Flyway + Testcontainers,
+an amd64-only SQL Server image that is slow on Apple Silicon, no longer holds: the PostgreSQL image is multi-arch.
+The trigger stays "before real candidate data reaches production"; whether to bring it forward is the maintainer's
+call.

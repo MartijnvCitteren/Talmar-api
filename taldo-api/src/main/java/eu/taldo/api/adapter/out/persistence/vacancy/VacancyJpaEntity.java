@@ -23,7 +23,6 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.Nationalized;
 
 /**
  * JPA entity for vacancies. Holds the inverse (non-owning) side of the {@code @OneToOne} relation
@@ -33,8 +32,7 @@ import org.hibernate.annotations.Nationalized;
  *
  * <p>The contact person is four flat columns rather than an embeddable: its name, phone number and
  * e-mail address are personal data and its role is not, and anonymization needs that split per
- * column. Name and role are {@code nvarchar}, like the user's names, so names in any script survive
- * SQL Server's Latin-1 {@code varchar} collation.
+ * column.
  */
 @Getter
 @Setter
@@ -83,12 +81,10 @@ public class VacancyJpaEntity extends BaseJpaEntity {
   private VacancyStatus status;
 
   @PersonalData
-  @Nationalized
   @Column(length = 35)
   private String contactPersonName;
 
   @ProcessData
-  @Nationalized
   @Column(length = 50)
   private String contactPersonRole;
 

@@ -156,8 +156,8 @@ in RESTEasy and Jackson 2, which the Enforcer bans.
 
 | Table | Entity | Notes |
 |-------|--------|-------|
-| `company` | `CompanyJpaEntity` | `email_domain` unique. `last_modified_by` not null. `keycloak_organization_id` nullable and **not** unique: SQL Server allows only one `NULL` in a unique column, so two unlinked companies would block each other; Keycloak keeps the ids unique. All fields `@ProcessData`. |
-| `app_user` | `UserJpaEntity` | `user` is reserved in SQL Server. `email` and `keycloak_subject` unique. `first_name` and `last_name` are `nvarchar` (`@Nationalized`): Keycloak accepts any script, and the default `varchar` collation silently turned `Ł` into `L` (found against SQL Server; H2 in the tests is Unicode, so no test catches a regression). `company_id` is a foreign key to `company` (`fk_app_user_company`), mapped as a lazy `@ManyToOne`; the adapter sets it with `getReferenceById`, without a query. Index on `company_id`. |
+| `company` | `CompanyJpaEntity` | `email_domain` unique. `last_modified_by` not null. `keycloak_organization_id` nullable and **not** unique: Keycloak keeps the ids unique. All fields `@ProcessData`. |
+| `app_user` | `UserJpaEntity` | `user` is reserved in PostgreSQL. `email` and `keycloak_subject` unique. `first_name` and `last_name` hold any script (Keycloak accepts them all): the database is UTF-8 (ADR 0007). `company_id` is a foreign key to `company` (`fk_app_user_company`), mapped as a lazy `@ManyToOne`; the adapter sets it with `getReferenceById`, without a query. Index on `company_id`. |
 
 - GDPR: `first_name`, `last_name` and `email` are `@PersonalData`. `job_role`, `membership`, `status`,
   `organization_member`, `last_modified_by` and the Keycloak ids are `@ProcessData`, following the ADR 0003 table and
