@@ -32,7 +32,7 @@ HTTP ─▶ Security filter chain (uses a valid bearer token, ignores an invalid
         Repository adapter (adapter/out/persistence, implements port/out)
           │  JPA mapper: domain ─▶ JPA entity, Spring Data repository
           ▼
-        SQL Server (H2 in tests)
+        PostgreSQL (H2 in tests)
 ```
 
 The response goes back up the same way: domain object ─▶ response mapper ─▶ generated contract model.
@@ -116,13 +116,14 @@ The response goes back up the same way: domain object ─▶ response mapper ─
   change every user of the realm.
 - `taldo.generation.retention` (default `PT32H`) and `taldo.generation.purge-interval` (default `PT1H`) control the
   generation clean-up.
-- Profiles: `local` (SQL Server from `docker-compose.yaml`, CORS for the Vite dev server on `localhost:5173`), `dev`
-  (datasource from `SPRING_DATASOURCE_*` environment variables), `test` (in-memory H2).
+- Profiles: `local` (PostgreSQL from `docker-compose.yaml`, CORS for the Vite dev server on `localhost:5173`), `dev`
+  (datasource from `SPRING_DATASOURCE_*` environment variables; use `sslmode=verify-full` against a hosted database,
+  ADR 0007), `test` (in-memory H2). Spring Boot detects the driver and Hibernate the dialect.
 - **Local stack** (`docker compose up`, no manual steps):
 
   | Service | Port | Role |
   |---------|------|------|
-  | `sqlserver` (+ one-shot `sqlserver-init`) | 1433 | Databases `taldo_db` (the application, `local` profile) and `keycloak_db` (UTF-8 collation). |
+  | `postgres` (+ one-shot `postgres-init`) | 5433 | PostgreSQL 17, the newest major version Scaleway's managed database offers (ADR 0007). Databases `taldo_db` (the application, `local` profile) and `keycloak_db`, both UTF-8. User `postgres`, password `Super_secret-123` (local only). Host port 5433 because a PostgreSQL installed on the host often holds 5432. |
   | `keycloak` | 8080 | Identity provider (ADR 0006), admin console with `admin`/`admin`. Realm `taldo` with clients `taldo-web` and `taldo-backend`, imported from `docker/keycloak/taldo-realm.json`. The backend calls its Admin API as `taldo-backend`. |
   | `keycloak-config` (one-shot) | – | Applies the realm settings the import cannot express (`docker/keycloak/configure-realm.sh`). |
   | `mailpit` | 8025 | Catches the mails Keycloak sends; web UI on `http://localhost:8025`. |
@@ -142,6 +143,5 @@ Open issues an agent should know about before building on top of them. Remove an
 - Javadoc and code comments refer to ADR 0004 and ADR 0005, which are not in `docs/adr/`.
 - `BaseJpaEntity.lastModifiedBy` (an `app_user` id) is filled only for companies, by onboarding. For vacancies it
   stays empty: there is no `AuditorAware`, because the vacancy endpoints are not authenticated yet (#103).
-- Strings are `varchar` with SQL Server's Latin-1 collation unless a column is `@Nationalized`. Only the user's names
-  are so far; vacancy texts lose characters outside Latin-1 (Polish, Czech, Greek, ...) on SQL Server. H2 in the
-  tests is Unicode and hides this.
+- Tests run on H2, not PostgreSQL: behaviour only PostgreSQL has (e.g. several `NULL`s in a unique column) is not
+  tested. Testcontainers is a deferred guardrail (ADR 0001).

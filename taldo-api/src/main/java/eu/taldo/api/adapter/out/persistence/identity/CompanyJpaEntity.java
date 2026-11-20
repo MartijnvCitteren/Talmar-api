@@ -20,9 +20,7 @@ import lombok.Setter;
  * on, or rewrites, the audit trail of a company.
  *
  * <p>{@code keycloak_organization_id} is {@code NULL} until the company is linked to its Keycloak
- * organization (ADR 0006, section 7). It has no unique constraint: SQL Server allows only one
- * {@code NULL} in a unique column, so two unlinked companies would block each other. Keycloak keeps
- * the ids unique.
+ * organization (ADR 0006, section 7). It has no unique constraint: Keycloak keeps the ids unique.
  */
 @Getter
 @Setter

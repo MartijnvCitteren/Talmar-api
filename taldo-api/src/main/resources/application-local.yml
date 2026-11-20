@@ -1,11 +1,9 @@
 spring:
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=taldo_db;trustServerCertificate=true
-    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-    properties:
-      hibernate.dialect: org.hibernate.dialect.SQLServerDialect
+    # The postgres service of docker-compose.yaml, on host port 5433 (see there).
+    url: jdbc:postgresql://localhost:5433/taldo_db
+    username: postgres
     password: Super_secret-123
-    username: sa
   security:
     oauth2:
       client:

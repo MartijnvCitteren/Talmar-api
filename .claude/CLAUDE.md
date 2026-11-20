@@ -63,7 +63,8 @@ domain model, not a layer bolted onto a finished ATS. That does not change the b
   every Spring dependency is equally far along with Java 25/virtual threads).
 - **Maven** as build tool, multi-module reactor, pinned via the Maven Wrapper (`./mvnw`, version and checksum in
   `.mvn/wrapper/maven-wrapper.properties`).
-- **SQL Server** as database (`mssql-jdbc`); tests run on in-memory H2 (`test` profile).
+- **PostgreSQL 17** as database (ADR 0007): the newest major version Scaleway's managed database offers; keep the
+  local image on the same major version as the hosted one. Tests run on in-memory H2 (`test` profile).
 - **Lombok** and **MapStruct** as annotation processors; **ArchUnit** for architecture tests; **RestAssured** for
   integration tests.
 - **Error Prone + NullAway** (JSpecify mode) in the compiler, **SpotBugs + FindSecBugs** and **Maven Enforcer** in
@@ -104,7 +105,7 @@ Root modules (`pom.xml` `<modules>`): **`taldo-contracts`** and **`taldo-api`**.
     - `adapter/in/rest/` — inbound REST adapter: cross-aggregate `GlobalExceptionHandler` at the root,
       `adapter/in/rest/<aggregate>/` per aggregate with `mapper/request/`, `mapper/response/` and `validation/`
       subpackages for explicit contract-DTO ↔ domain mapping.
-    - `adapter/out/persistence/` — outbound JPA adapter (SQL Server): `BaseJpaEntity` and JPA auditing config at the root,
+    - `adapter/out/persistence/` — outbound JPA adapter (PostgreSQL): `BaseJpaEntity` and JPA auditing config at the root,
       `adapter/out/persistence/<aggregate>/` per aggregate with its own `mapper/` subpackage.
     - `shared/` — cross-cutting code: `shared/config/` (e.g. `WebConfig`, `ClockConfig`), `shared/exception/` (e.g.
       `BaseException`), `shared/gdpr/` (`@PersonalData`, `@ProcessData`).

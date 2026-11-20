@@ -1,38 +1,42 @@
-name: taldo-backend
+name: taldo-infra
 
 services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2025-latest
-    container_name: sql-database
+  # PostgreSQL 17: the newest major version Scaleway Managed Database for PostgreSQL offers, so local matches the
+  # hosted engine. Creates the application database (taldo_db) on the first start of an empty volume. Published on
+  # host port 5433, not 5432: a PostgreSQL installed on the host (e.g. Postgres.app) takes localhost:5432 first, and
+  # the backend would then silently connect to that server instead.
+  postgres:
+    image: postgres:17.12
+    container_name: postgres
     environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "Super_secret-123"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "Super_secret-123"
+      POSTGRES_DB: taldo_db
     ports:
-      - "1433:1433"
+      - "5433:5432"
     volumes:
-      - sqlserverdata:/var/opt/mssql
+      - postgresdata:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1" ]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d taldo_db" ]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 20s
+      start_period: 10s
 
-  # Creates the application database and Keycloak's database. Keycloak needs a UTF-8 collation (names may use any
-  # script) and recommends READ_COMMITTED_SNAPSHOT, which needs exclusive access, so it is set before Keycloak connects.
-  sqlserver-init:
-    image: mcr.microsoft.com/mssql/server:2025-latest
+  # Creates Keycloak's database, also on a volume that already exists. PostgreSQL databases are UTF-8 by default and
+  # use MVCC, so the collation and READ_COMMITTED_SNAPSHOT settings SQL Server needed are not required here.
+  postgres-init:
+    image: postgres:17.12
     depends_on:
-      sqlserver:
+      postgres:
         condition: service_healthy
     environment:
-      MSSQL_SA_PASSWORD: "Super_secret-123"
-    entrypoint: [ "/bin/bash", "-c" ]
-    command: >
-      "/opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -b -Q
-      \"IF DB_ID('taldo_db') IS NULL CREATE DATABASE taldo_db;
-      IF DB_ID('keycloak_db') IS NULL CREATE DATABASE keycloak_db COLLATE Latin1_General_100_CI_AS_SC_UTF8;
-      ALTER DATABASE keycloak_db SET READ_COMMITTED_SNAPSHOT ON;\""
+      PGHOST: postgres
+      PGUSER: postgres
+      PGPASSWORD: "Super_secret-123"
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - psql -tAc "SELECT 1 FROM pg_database WHERE datname = 'keycloak_db'" | grep -q 1 || psql -v ON_ERROR_STOP=1 -c "CREATE DATABASE keycloak_db"
     restart: "no"
 
   # Identity provider (ADR 0006), development mode. The realm in docker/keycloak/ is imported on the first start
@@ -42,16 +46,16 @@ services:
     container_name: keycloak
     command: [ "start-dev", "--import-realm" ]
     depends_on:
-      sqlserver-init:
+      postgres-init:
         condition: service_completed_successfully
       mailpit:
         condition: service_started
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      KC_DB: mssql
-      KC_DB_URL: "jdbc:sqlserver://sqlserver:1433;databaseName=keycloak_db;encrypt=true;trustServerCertificate=true"
-      KC_DB_USERNAME: sa
+      KC_DB: postgres
+      KC_DB_URL: "jdbc:postgresql://postgres:5432/keycloak_db"
+      KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: "Super_secret-123"
       KC_HEALTH_ENABLED: "true"
       # Read by the realm import (${...} placeholder); the backend gets the same value.
@@ -94,5 +98,5 @@ services:
       - "8025:8025"
 
 volumes:
-  sqlserverdata:
-    name: taldo-sqlserverdata
+  postgresdata:
+    name: taldo-postgresdata

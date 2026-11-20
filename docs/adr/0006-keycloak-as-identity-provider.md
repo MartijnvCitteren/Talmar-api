@@ -330,6 +330,15 @@ Keycloak" this ADR anticipated in section 5:
 all-or-nothing (it also exposes sessions, credentials and the e-mail field), and a change there does not reach the
 copy without an event listener extension in Keycloak. Rejected for the same reason the lock exists.
 
+### 2026-11-20 — Keycloak runs on PostgreSQL
+
+The database moved to PostgreSQL (ADR 0007). Section 8 changes accordingly: Keycloak runs with `KC_DB=postgres` on
+`keycloak_db` in the `postgres` container, which `postgres-init` creates. The UTF-8 collation and
+`READ_COMMITTED_SNAPSHOT` steps are gone: PostgreSQL databases are UTF-8 in the Docker image and use MVCC by default.
+The fallback of a separate PostgreSQL container for Keycloak is no longer needed. Verified on 2026-11-20: Keycloak
+26.8.1 on PostgreSQL 17.12 becomes healthy, imports the realm `taldo`, and `keycloak-config` finishes. The
+"Verified in" sections below were run against SQL Server and are kept as they were.
+
 ## Verified in PR 1
 
 Checked on 2026-10-18 against the Docker Compose setup (Keycloak 26.8.1, SQL Server 2025), by HTTP requests against
