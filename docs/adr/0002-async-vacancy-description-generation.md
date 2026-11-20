@@ -1,6 +1,6 @@
 # ADR 0002 — Asynchronous AI vacancy description generation
 
-- **Status:** Accepted, revised 2026-10-11 (see "Revision: review of PR #96" at the end)
+- **Status:** Accepted, revised 2026-10-11 (see "Revision: review of PR #96" at the end); package location superseded by ADR 0008
 - **Date:** 2026-10-09
 
 ## Context
@@ -195,3 +195,10 @@ The maintainer's review changed the following. The original text above is kept; 
    lower-case value is a `400`.
 9. **Tests**: integration tests go through the API only and replace Mistral with WireMock instead of mocking the
    generator port; the vacancies they need are seeded with an SQL script.
+
+## Revision: package location (2026-11-20)
+
+ADR 0008 moves the generation from the top-level `generation` packages (`domain/generation/` in §1,
+`adapter/in/rest/generation/` in §5) into the `vacancy` module: `domain/vacancy/generation/` and a matching
+`vacancy/generation` sub-package in every other layer. The aggregate, its rules and everything else in this ADR are
+unchanged.

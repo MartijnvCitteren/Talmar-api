@@ -1,6 +1,6 @@
 package eu.taldo.api.adapter.in.scheduling;
 
-import eu.taldo.api.application.port.in.generation.PurgeExpiredVacancyGenerationsUseCase;
+import eu.taldo.api.application.port.in.vacancy.generation.PurgeExpiredVacancyGenerationsUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

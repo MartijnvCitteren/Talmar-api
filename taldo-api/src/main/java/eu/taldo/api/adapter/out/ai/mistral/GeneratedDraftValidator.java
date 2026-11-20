@@ -1,6 +1,6 @@
 package eu.taldo.api.adapter.out.ai.mistral;
 
-import eu.taldo.api.domain.generation.valueobject.GeneratedDraft;
+import eu.taldo.api.domain.vacancy.generation.valueobject.GeneratedDraft;
 import eu.taldo.api.shared.validation.TextContentRules;
 
 /**

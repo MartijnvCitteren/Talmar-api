@@ -1,8 +1,8 @@
 package eu.taldo.api.testSupport;
 
-import eu.taldo.api.domain.generation.VacancyDescriptionGeneration;
-import eu.taldo.api.domain.generation.valueobject.GeneratedDraft;
-import eu.taldo.api.domain.generation.valueobject.GenerationInput;
+import eu.taldo.api.domain.vacancy.generation.VacancyDescriptionGeneration;
+import eu.taldo.api.domain.vacancy.generation.valueobject.GeneratedDraft;
+import eu.taldo.api.domain.vacancy.generation.valueobject.GenerationInput;
 import eu.taldo.api.domain.vacancy.valueobject.Language;
 import java.time.LocalDateTime;
 import java.util.UUID;

@@ -1,0 +1,28 @@
+package eu.taldo.api.adapter.in.rest.vacancy.generation.mapper.response;
+
+import eu.taldo.api.domain.vacancy.generation.valueobject.GeneratedDraft;
+import eu.taldo.api.vacancy.adapter.in.web.contract.VacancyDescriptionGeneration;
+import eu.taldo.api.vacancy.adapter.in.web.contract.VacancyDescriptionResponse;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
+
+/**
+ * Maps a generation to the contract's poll response. The draft only carries the generated sections;
+ * {@code whatWeOffer} and {@code aboutUs} stay absent.
+ */
+@Mapper(
+    componentModel = "spring",
+    unmappedSourcePolicy = ReportingPolicy.IGNORE,
+    unmappedTargetPolicy = ReportingPolicy.WARN)
+public interface VacancyDescriptionGenerationResponseMapper {
+
+  @Mapping(target = "generationId", source = "id")
+  @Mapping(target = "description", source = "draft")
+  VacancyDescriptionGeneration toResponse(
+      eu.taldo.api.domain.vacancy.generation.VacancyDescriptionGeneration generation);
+
+  @Mapping(target = "whatWeOffer", ignore = true)
+  @Mapping(target = "aboutUs", ignore = true)
+  VacancyDescriptionResponse toDescription(GeneratedDraft draft);
+}
