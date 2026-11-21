@@ -11,8 +11,9 @@
 # The e-mail address needs nothing here: it is the username, and editing the username is off in the realm.
 #
 # Sign-up (taldo-web, src/keycloak-theme):
-# - Terms are accepted on the registration form (the "registration-terms-and-conditions" step), so Keycloak records
-#   when they were accepted. Not as the separate TERMS_AND_CONDITIONS required action after registration.
+# - Terms are accepted on the registration form (the "registration-terms-and-conditions" step): Keycloak refuses the
+#   form without the box. It doesn't store the acceptance (Keycloak 26.8: that step's success() is empty); only the
+#   separate TERMS_AND_CONDITIONS required action after registration stores a terms_and_conditions attribute.
 # - The Taldo login theme, Dutch by default, when the server has it: started with docker-compose.theme.yaml, which
 #   mounts the theme JAR from taldo-web. Without it the realm keeps Keycloak's own theme.
 set -euo pipefail
