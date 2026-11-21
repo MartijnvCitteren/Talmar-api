@@ -30,7 +30,8 @@ spring:
 
   # Access tokens are validated against the realm's issuer; Spring fetches its keys on the first
   # request, not at startup. The issuer is the public URL in the tokens, which may differ from the
-  # URL the backend uses for the Admin API.
+  # URL the backend uses for the Admin API. Only tokens issued for this API are accepted: the realm
+  # puts taldo-api in their audience (ADR 0006, revision 2026-11-21, point 3).
   # The taldo-backend service account calls the Keycloak Admin API (ADR 0006, section 6). Its token
   # URI is set explicitly: with an issuer URI, Spring would call Keycloak at startup to discover it.
   security:
@@ -38,6 +39,7 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:${taldo.keycloak.base-url}/realms/${taldo.keycloak.realm}}
+          audiences: taldo-api
       client:
         registration:
           keycloak-admin:

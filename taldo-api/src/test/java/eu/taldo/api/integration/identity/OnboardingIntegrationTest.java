@@ -16,6 +16,7 @@ import static eu.taldo.api.testSupport.KeycloakStub.accessToken;
 import static eu.taldo.api.testSupport.KeycloakStub.expiredAccessToken;
 import static eu.taldo.api.testSupport.KeycloakStub.foreignAccessToken;
 import static eu.taldo.api.testSupport.KeycloakStub.json;
+import static eu.taldo.api.testSupport.KeycloakStub.otherAudienceAccessToken;
 import static eu.taldo.api.testSupport.KeycloakStub.stubRealm;
 import static eu.taldo.api.testSupport.KeycloakStub.user;
 import static io.restassured.RestAssured.given;
@@ -175,6 +176,7 @@ class OnboardingIntegrationTest extends BaseIntegrationTest {
         arguments("no token", null),
         arguments("expired token", expiredAccessToken(NEW_SUBJECT)),
         arguments("token signed with another key", foreignAccessToken(NEW_SUBJECT)),
+        arguments("token for another audience", otherAudienceAccessToken(NEW_SUBJECT)),
         arguments("not a token", "not-a-jwt"));
   }
 

@@ -3,6 +3,7 @@ package eu.taldo.api.integration.security;
 import static eu.taldo.api.testSupport.KeycloakStub.KEYCLOAK_WIREMOCK;
 import static eu.taldo.api.testSupport.KeycloakStub.expiredAccessToken;
 import static eu.taldo.api.testSupport.KeycloakStub.foreignAccessToken;
+import static eu.taldo.api.testSupport.KeycloakStub.otherAudienceAccessToken;
 import static eu.taldo.api.testSupport.KeycloakStub.stubRealm;
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -63,6 +64,7 @@ class InvalidAccessTokenIntegrationTest extends BaseIntegrationTest {
     return Stream.of(
         arguments("expired token", expiredAccessToken(SUBJECT)),
         arguments("token signed with another key", foreignAccessToken(SUBJECT)),
+        arguments("token for another audience", otherAudienceAccessToken(SUBJECT)),
         arguments("not a token", "not-a-jwt"));
   }
 }

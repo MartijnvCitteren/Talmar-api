@@ -10,6 +10,10 @@
 #
 # The e-mail address needs nothing here: it is the username, and editing the username is off in the realm.
 #
+# Token and session lifetimes (ADR 0006, revision 2026-11-21, point 6) come from the environment, so each environment
+# sets its own; the import cannot do this because it runs on the first start only. The refresh token lives as long as
+# the SSO session.
+#
 # Sign-up (taldo-web, src/keycloak-theme):
 # - Terms are accepted on the registration form (the "registration-terms-and-conditions" step): Keycloak refuses the
 #   form without the box. It doesn't store the acceptance (Keycloak 26.8: that step's success() is empty); only the
@@ -34,6 +38,11 @@ if [[ "$default_account_roles" == *'"name" : "manage-account"'* ]]; then
 fi
 
 kcadm update authentication/required-actions/UPDATE_PROFILE -r "$REALM" -s enabled=false
+
+kcadm update "realms/$REALM" \
+  -s "accessTokenLifespan=${KEYCLOAK_ACCESS_TOKEN_LIFESPAN_SECONDS:?}" \
+  -s "ssoSessionIdleTimeout=${KEYCLOAK_SSO_SESSION_IDLE_SECONDS:?}" \
+  -s "ssoSessionMaxLifespan=${KEYCLOAK_SSO_SESSION_MAX_SECONDS:?}"
 
 terms_execution=$(kcadm get authentication/flows/registration/executions -r "$REALM" \
   --fields id,providerId --format csv --noquotes | grep ',registration-terms-and-conditions$' | cut -d, -f1)

@@ -85,6 +85,11 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # Access token 10 minutes (renewed silently), SSO session 24 hours idle and 36 hours at most (ADR 0006, revision
+      # 2026-11-21). Set shorter values to try expiry, e.g. KEYCLOAK_SSO_SESSION_IDLE_SECONDS=300 docker compose up.
+      KEYCLOAK_ACCESS_TOKEN_LIFESPAN_SECONDS: ${KEYCLOAK_ACCESS_TOKEN_LIFESPAN_SECONDS:-600}
+      KEYCLOAK_SSO_SESSION_IDLE_SECONDS: ${KEYCLOAK_SSO_SESSION_IDLE_SECONDS:-86400}
+      KEYCLOAK_SSO_SESSION_MAX_SECONDS: ${KEYCLOAK_SSO_SESSION_MAX_SECONDS:-129600}
     entrypoint: [ "/bin/bash", "/opt/keycloak/configure-realm.sh" ]
     volumes:
       - ./docker/keycloak/configure-realm.sh:/opt/keycloak/configure-realm.sh:ro
