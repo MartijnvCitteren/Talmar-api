@@ -9,6 +9,12 @@
 #   disable it alone: a partial requiredActions list replaces Keycloak's defaults.
 #
 # The e-mail address needs nothing here: it is the username, and editing the username is off in the realm.
+#
+# Sign-up (taldo-web, src/keycloak-theme):
+# - Terms are accepted on the registration form (the "registration-terms-and-conditions" step), so Keycloak records
+#   when they were accepted. Not as the separate TERMS_AND_CONDITIONS required action after registration.
+# - The Taldo login theme, Dutch by default, when the server has it: started with docker-compose.theme.yaml, which
+#   mounts the theme JAR from taldo-web. Without it the realm keeps Keycloak's own theme.
 set -euo pipefail
 
 readonly REALM=taldo
@@ -27,5 +33,17 @@ if [[ "$default_account_roles" == *'"name" : "manage-account"'* ]]; then
 fi
 
 kcadm update authentication/required-actions/UPDATE_PROFILE -r "$REALM" -s enabled=false
+
+terms_execution=$(kcadm get authentication/flows/registration/executions -r "$REALM" \
+  --fields id,providerId --format csv --noquotes | grep ',registration-terms-and-conditions$' | cut -d, -f1)
+kcadm update authentication/flows/registration/executions -r "$REALM" \
+  -b "{\"id\":\"$terms_execution\",\"requirement\":\"REQUIRED\"}"
+
+if kcadm get serverinfo | grep -q '"name" : "taldo"'; then
+  kcadm update "realms/$REALM" -s loginTheme=taldo -s internationalizationEnabled=true \
+    -s 'supportedLocales=["nl","en"]' -s defaultLocale=nl
+else
+  echo "Taldo login theme not installed; keeping Keycloak's theme"
+fi
 
 echo "Realm $REALM configured"
