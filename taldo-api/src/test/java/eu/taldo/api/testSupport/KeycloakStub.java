@@ -38,6 +38,7 @@ public final class KeycloakStub {
   public static final String TOKEN_PATH = "/realms/" + REALM + "/protocol/openid-connect/token";
   public static final String ADMIN_PATH = "/admin/realms/" + REALM;
   public static final String SERVICE_ACCOUNT_TOKEN = "service-account-token";
+  private static final String API_AUDIENCE = "taldo-api";
   private static final String REALM_PATH = "/realms/" + REALM;
   private static final String CERTS_PATH = REALM_PATH + "/protocol/openid-connect/certs";
   private static final Clock CLOCK = Clock.systemUTC();
@@ -74,9 +75,17 @@ public final class KeycloakStub {
     stubServiceAccountToken();
   }
 
-  /** An access token for the account, signed by the realm and valid for five minutes. */
+  /**
+   * An access token for the account, signed by the realm, issued for the API and valid for five
+   * minutes.
+   */
   public static String accessToken(String subject) {
-    return sign(REALM_KEY, subject, Instant.now(CLOCK).plus(Duration.ofMinutes(5)));
+    return sign(REALM_KEY, subject, API_AUDIENCE, Instant.now(CLOCK).plus(Duration.ofMinutes(5)));
+  }
+
+  /** A valid access token of the realm, but issued for another audience than the API. */
+  public static String otherAudienceAccessToken(String subject) {
+    return sign(REALM_KEY, subject, "account", Instant.now(CLOCK).plus(Duration.ofMinutes(5)));
   }
 
   /**
@@ -84,12 +93,12 @@ public final class KeycloakStub {
    * skew.
    */
   public static String expiredAccessToken(String subject) {
-    return sign(REALM_KEY, subject, Instant.now(CLOCK).minus(Duration.ofMinutes(2)));
+    return sign(REALM_KEY, subject, API_AUDIENCE, Instant.now(CLOCK).minus(Duration.ofMinutes(2)));
   }
 
   /** An access token signed with a key the realm does not publish. */
   public static String foreignAccessToken(String subject) {
-    return sign(OTHER_KEY, subject, Instant.now(CLOCK).plus(Duration.ofMinutes(5)));
+    return sign(OTHER_KEY, subject, API_AUDIENCE, Instant.now(CLOCK).plus(Duration.ofMinutes(5)));
   }
 
   /** Lets the token endpoint hand out the service-account token, valid for five minutes. */
@@ -117,7 +126,7 @@ public final class KeycloakStub {
         "enabled", true);
   }
 
-  private static String sign(RSAKey key, String subject, Instant expiresAt) {
+  private static String sign(RSAKey key, String subject, String audience, Instant expiresAt) {
     var header =
         new JWSHeader.Builder(JWSAlgorithm.RS256)
             .keyID(key.getKeyID())
@@ -127,6 +136,7 @@ public final class KeycloakStub {
         new JWTClaimsSet.Builder()
             .issuer(issuer())
             .subject(subject)
+            .audience(audience)
             .issueTime(Date.from(expiresAt.minus(Duration.ofMinutes(5))))
             .expirationTime(Date.from(expiresAt))
             .claim("azp", "taldo-web")

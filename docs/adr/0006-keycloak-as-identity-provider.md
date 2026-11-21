@@ -339,6 +339,94 @@ The fallback of a separate PostgreSQL container for Keycloak is no longer needed
 26.8.1 on PostgreSQL 17.12 becomes healthy, imports the realm `taldo`, and `keycloak-config` finishes. The
 "Verified in" sections below were run against SQL Server and are kept as they were.
 
+### 2026-11-21 — login, access token and company scoping (#103)
+
+Decided with the maintainer before #103 was built. Where this differs from the scope written in #103, this revision
+wins: #103 was written before these trade-offs were discussed.
+
+**1. The token says who you are; Taldo says what you may do.** The access token's `sub` is the only claim the
+backend uses to identify a user. On every request it looks up `app_user` by `keycloak_subject` (unique, indexed) and
+takes the company, status and membership from there. The organization in Keycloak (section 4) is not used for
+authorization; it stays for per-customer SSO.
+
+- Why: one source of truth that Taldo owns, as the context of this ADR demands ("the identity provider does not decide
+  who belongs to which company"). Approving, blocking or moving a user takes effect on their next request, not when
+  their token expires.
+- Cost: one primary-key lookup per request. No cache until a measurement asks for one.
+- **Alternative considered — the company in the token** (Keycloak's `organization` claim, whose alias is the company
+  id; this is what #103 sketched). Fully stateless, but two sources of truth (the organization membership and
+  `app_user.company_id`) that onboarding and approval must keep in step; a removed user keeps access until the token
+  expires; and the claim is a list once a user is in more than one organization. Rejected.
+- **SSO stays open.** With per-customer SSO, Keycloak brokers the customer's identity provider and still issues its own
+  tokens with its own `sub`, so this decision does not change. Rules that keep it that way:
+  - The identity key is `sub`, never the e-mail address. The address is used once, at onboarding, to find the company.
+  - An account that already exists and later logs in through SSO is linked to the same Keycloak user (first broker
+    login flow), so its `sub` stays the same. Configured when SSO is built.
+  - Rights that come from the customer's identity provider (e.g. a group "HR admins") are copied into Taldo at login
+    or onboarding, not read from the token per request. Designed when a customer asks for it.
+  - A user the customer blocks keeps an existing Keycloak session until it expires (point 6). OIDC back-channel
+    logout or SCIM closes that when SSO is built.
+
+**2. The access token carries ids and technical claims only.** The `taldo-web` client uses Keycloak's *lightweight
+access token* (`client.use.lightweight.access.token.enabled`): only claims from mappers marked
+`lightweight.claim` get in. The client has two such mappers: `sub` and an audience mapper (point 3). The access token
+then holds `iss`, `sub`, `aud`, `exp`, `iat`, `jti`, `typ`, `azp`, `sid` and `scope`: no name, no e-mail address, no
+`preferred_username` (which is the e-mail address in this realm). The ID token is not affected and still carries the
+names, which the current frontend shows; ADR 0009 removes the ID token from the browser.
+
+- **Alternative considered — switch off the access-token flag on every mapper of the `profile` and `email` scopes.**
+  A deny list: a mapper Keycloak adds in a later version, or a scope someone adds, would put its claim in the token
+  again. The lightweight token is an allow list. Rejected.
+- Without its own mapper the lightweight token has no `sub` at all (tried, see "Verified in #103").
+
+**3. The backend only accepts tokens meant for it.** The audience mapper puts `taldo-api` in `aud`, and the resource
+server rejects a token without it (`spring.security.oauth2.resourceserver.jwt.audiences`). Before this, any token the
+realm issued was accepted, also one for another or a future client. The audience names the API, not a company:
+every token for Taldo carries the same value.
+
+**4. Company scoping is explicit in the application layer.** The REST adapter turns the request's `sub` into the
+acting user (user id, company id, status). Use cases receive the company id, and repository ports only offer methods
+scoped to a company (e.g. `findByIdAndCompanyId`). A vacancy belongs to a company in the domain. A vacancy of another
+company answers `404`, so its existence is not revealed. The client never sends a company id.
+
+- **Alternative considered — Hibernate `@TenantId`.** Filters every query automatically, but hides the tenant in a
+  resolver that reads the security context of the current thread. The `@Async` description generation (virtual
+  threads) and the scheduled clean-up have no such context and would need a bypass. Rejected for the explicit
+  variant, which also makes ownership a visible domain concept.
+- **Alternative considered — PostgreSQL row-level security.** Strong defence in depth, but the tests run on H2 and
+  could not check it. Deferred until the tests run on PostgreSQL.
+
+**5. Rights within a company: no roles yet.** Every `ACTIVE` user may do everything within their own company. A user
+without an `app_user` or with status `PENDING_APPROVAL` may only call `POST /onboarding`, `GET /me` and `PATCH /me`;
+every other endpoint answers `403`. What only an `OWNER` may do (company data and settings, approving members) is
+checked in the use case, from `membership` in `app_user`, when those endpoints are built. No Keycloak realm roles:
+#103 asked for them, but nothing needs them; they come back for platform-level rights such as Taldo staff.
+
+**6. Token and session lifetimes come from the environment.**
+
+| Setting | Value | Why |
+|---------|-------|-----|
+| Access token | 10 minutes | The frontend renews it silently; short limits what a stolen token is worth. |
+| SSO session idle | 24 hours | A user who stops at 17:00 and starts at 9:00 (16 hours) stays logged in. |
+| SSO session max | 36 hours | Log in at most once every two days: logging in at 9:00 on Monday lasts until Tuesday evening. |
+
+The refresh token lives as long as the session. `configure-realm.sh` applies the three values after every start, from
+`KEYCLOAK_ACCESS_TOKEN_LIFESPAN_SECONDS`, `KEYCLOAK_SSO_SESSION_IDLE_SECONDS` and
+`KEYCLOAK_SSO_SESSION_MAX_SECONDS`; Docker Compose defaults to the values above, and a test environment can set
+short ones to exercise expiry. The realm import cannot do this: it runs on the first start only.
+
+- **Cost:** while the frontend holds the tokens (the public `taldo-web` client of section 8), a script injected into
+  the frontend can steal a refresh token that stays usable for up to 36 hours. The maintainer accepted these
+  lifetimes together with a backend-for-frontend that keeps tokens out of the browser (ADR 0009); until that is built
+  the exposure is accepted for local development only.
+
+**7. An invalid token is answered with `401`.** Once every endpoint requires a token (except health and the OpenAPI
+documentation), `LenientBearerTokenResolver` has no purpose and is removed.
+
+**Delivery** (stacked PRs, each leaving the build green): (1) this revision, ADR 0009, the realm and the audience
+check; (2) the strict filter chain, the acting user and `GET /me`; (3) `company_id` on the vacancy and scoped vacancy
+use cases; (4) scoped generation endpoints and cross-company tests; then the backend-for-frontend of ADR 0009.
+
 ## Verified in PR 1
 
 Checked on 2026-10-18 against the Docker Compose setup (Keycloak 26.8.1, SQL Server 2025), by HTTP requests against
@@ -371,3 +459,15 @@ Checked on 2026-10-18 against the Docker Compose setup: before onboarding, `PATC
 changing the last name and then the first name answered `204` twice. Keycloak then held `José` / `Żółć-李` with the
 e-mail address, its verified flag and the required actions unchanged, and `app_user` held the same names. A name with
 a digit answered `400`.
+
+## Verified in #103
+
+Checked on 2026-11-21 against Keycloak 26.8.1 from Docker Compose, in a separate throwaway realm with a public client
+configured as `taldo-web` (lightweight access token, the `sub` and audience mappers) and the lifetimes of revision
+2026-11-21, point 6:
+
+- With the lightweight access token alone, the token had no `sub`; with the `sub` mapper it has.
+- The access token held `exp`, `iat`, `jti`, `iss`, `aud` (`taldo-api`), `sub`, `typ`, `azp`, `sid` and `scope`: no
+  name, e-mail address or `preferred_username`. The ID token still held `name`, `given_name`, `family_name`,
+  `email` and `preferred_username`.
+- The token response had `expires_in` 600 and `refresh_expires_in` 86400.

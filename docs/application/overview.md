@@ -94,8 +94,8 @@ The response goes back up the same way: domain object ─▶ response mapper ─
 - **CORS**: allowed origins come from `taldo.cors.allowed-origins` (`CORS_ALLOWED_ORIGINS`); empty means no CORS
   mapping at all.
 - **Security**: one `SecurityFilterChain` (`SecurityConfig`). The backend is an OAuth2 resource server for Keycloak's
-  access tokens (ADR 0006): signature, issuer and expiry are checked with the realm's public keys, fetched on the
-  first request and cached. Security is relaxed for now: only `/onboarding` and `/me` require a token, because they
+  access tokens (ADR 0006): signature, issuer, expiry and audience (`taldo-api`) are checked with the realm's public
+  keys, fetched on the first request and cached. A token issued for another audience is treated like a forged one. Security is relaxed for now: only `/onboarding` and `/me` require a token, because they
   act on the account in it. The vacancy endpoints are open although their contract declares bearer auth; #103 secures
   them. An expired, forged or malformed token is ignored (`LenientBearerTokenResolver`, logged at `warn`) instead of
   answered with `401`, so a stale token in a client does not block open endpoints; on `/onboarding` and `/me` it gets
@@ -130,12 +130,14 @@ The response goes back up the same way: domain object ─▶ response mapper ─
   |---------|------|------|
   | `postgres` (+ one-shot `postgres-init`) | 5433 | PostgreSQL 17, the newest major version Scaleway's managed database offers (ADR 0007). Databases `taldo_db` (the application, `local` profile) and `keycloak_db`, both UTF-8. User `postgres`, password `Super_secret-123` (local only). Host port 5433 because a PostgreSQL installed on the host often holds 5432. |
   | `keycloak` | 8080 | Identity provider (ADR 0006), admin console with `admin`/`admin`. Realm `taldo` with clients `taldo-web` and `taldo-backend`, imported from `docker/keycloak/taldo-realm.json`. The backend calls its Admin API as `taldo-backend`. |
-  | `keycloak-config` (one-shot) | – | Applies the realm settings the import cannot express (`docker/keycloak/configure-realm.sh`). |
+  | `keycloak-config` (one-shot) | – | Applies the realm settings the import cannot express (`docker/keycloak/configure-realm.sh`), including the token and session lifetimes from `KEYCLOAK_ACCESS_TOKEN_LIFESPAN_SECONDS` (default 600), `KEYCLOAK_SSO_SESSION_IDLE_SECONDS` (default 86400) and `KEYCLOAK_SSO_SESSION_MAX_SECONDS` (default 129600). |
   | `mailpit` | 8025 | Catches the mails Keycloak sends; web UI on `http://localhost:8025`. |
 
   Keycloak imports the realm on its first start only. After changing the realm file, delete the realm in the admin
   console and restart Keycloak, or reset everything with `docker compose down -v`. Its e-mail pattern must match
   `identity/public-email-domains.txt`; `KeycloakRealmTest` fails and prints the new pattern when it does not.
+  `KeycloakRealmAccessTokenTest` checks that the frontend's client keeps personal data out of the access token and puts
+  the audience the backend accepts in it (see [identity](identity.md#access-token)).
 - **Schema management is `ddl-auto: update`**: Hibernate changes the schema from the entities on startup. There are no
   migrations. Any entity change is therefore a schema change and is flagged by `guardrail-diff` (`schema-change`).
   `update` never alters existing columns: a new `NOT NULL` column on a table with rows (such as `vacancy.language`) or a

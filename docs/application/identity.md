@@ -112,9 +112,9 @@ file differ. Onboarding checks it again through the `PublicEmailDomains` port, i
   named in the request, so `403`, `404` and `409` say something about the caller's own account and nothing about
   other accounts. `ACTIVE` versus `PENDING_APPROVAL` does tell whether the e-mail domain already has a company, but
   only to an account with a verified address at that domain.
-- The backend is an OAuth2 resource server (`spring-boot-starter-security-oauth2-resource-server`, only `issuer-uri`).
-  It checks signature, issuer and expiry with Keycloak's public keys, fetched on the first request and cached, so no
-  call to Keycloak per request. `SecurityConfig` requires a token for `/onboarding` and `/me` only. An expired, forged
+- The backend is an OAuth2 resource server (`spring-boot-starter-security-oauth2-resource-server`, `issuer-uri` and
+  `audiences`). It checks signature, issuer, expiry and audience with Keycloak's public keys, fetched on the first
+  request and cached, so no call to Keycloak per request. `SecurityConfig` requires a token for `/onboarding` and `/me` only. An expired, forged
   or malformed token is ignored (`LenientBearerTokenResolver`, see `overview.md`), so on these endpoints it is the same
   as no token: `401` with an empty body and only the RFC 6750 challenge `WWW-Authenticate: Bearer`. Spring's default
   `error_description` (why the token was rejected) and `resource_metadata` link are left out
@@ -123,6 +123,22 @@ file differ. Onboarding checks it again through the `PublicEmailDomains` port, i
   client's address: no token at `info`, an ignored token at `warn` with the reason, anything unexpected at `error`
   with its stack trace. When Keycloak is unreachable while the keys are fetched, Spring Security rethrows the failure:
   Tomcat logs it at `error` with the cause (e.g. `503` on `.../certs`) and the client gets a bare `500`.
+
+## Access token
+
+What the frontend's client `taldo-web` gets from the realm (ADR 0006, revision 2026-11-21):
+
+- **Lightweight access token**: only claims from mappers marked as lightweight. The client has two: `sub` and an
+  audience mapper that adds `taldo-api`. The token holds `iss`, `sub`, `aud`, `exp`, `iat`, `jti`, `typ`, `azp`,
+  `sid` and `scope`, and no name, e-mail address or `preferred_username` (the e-mail address in this realm).
+- The ID token still carries the names and the e-mail address; the frontend shows them. The backend never reads it.
+- **Lifetimes**: access token 10 minutes, SSO session 24 hours idle and 36 hours at most; the refresh token lives as
+  long as the session. Set by `configure-realm.sh` from environment variables on every start (see `overview.md`).
+- The realm import runs on Keycloak's first start only: a local realm created before these settings needs a reset
+  (`docker compose down -v`, which also empties `taldo_db`, so existing `app_user` rows do not point at deleted
+  accounts).
+- `KeycloakRealmAccessTokenTest` reads the realm file and fails when the lightweight token, the `sub` mapper or the
+  audience mapper is missing, or when the audience differs from the one in `application.yml`.
 
 ## Identity provider: Keycloak
 
