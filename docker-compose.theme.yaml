@@ -1,0 +1,15 @@
+# Runs Keycloak with the Taldo login theme from the taldo-web repository next to this one. Build the theme first:
+#
+#   (cd ../taldo-web && npm run build-keycloak-theme)
+#   docker compose -f docker-compose.yaml -f docker-compose.theme.yaml up -d
+#
+# configure-realm.sh then makes it the realm's login theme. Without this file Keycloak keeps its own theme.
+services:
+  keycloak:
+    volumes:
+      - type: bind
+        source: ../taldo-web/dist_keycloak/taldo-keycloak-theme.jar
+        target: /opt/keycloak/providers/taldo-keycloak-theme.jar
+        read_only: true
+        bind:
+          create_host_path: false
